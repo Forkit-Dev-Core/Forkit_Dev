@@ -2,8 +2,9 @@
 
 > Identity and provenance infrastructure for AI models and agents.
 
-[![PyPI version](https://img.shields.io/pypi/v/forkit-core.svg)](https://pypi.org/project/forkit-core/)
-[![Python](https://img.shields.io/pypi/pyversions/forkit-core.svg)](https://pypi.org/project/forkit-core/)
+[![Python](https://img.shields.io/badge/python-3.10%2B-2f2a62.svg)](#install)
+[![Dependencies](https://img.shields.io/badge/dependencies-zero-008190.svg)](#forkit-core)
+[![Mode](https://img.shields.io/badge/mode-offline--first-6aa7ab.svg)](#forkit-core)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 `forkit-core` gives every AI model and agent a **cryptographically-identified passport** — a structured, versioned, verifiable record of what it is, where it came from, and what it is authorised to do.
