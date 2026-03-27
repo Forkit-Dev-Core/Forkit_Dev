@@ -44,13 +44,6 @@ Included in OSS:
 - LangGraph and LangChain adapters
 - self-host and local development examples
 
-Excluded from OSS:
-
-- tenant or workspace controls
-- organization, account, or seat management
-- RBAC, approvals, policy workflows, or hosted governance logic
-- billing, plans, entitlements, or usage metering
-- hosted-only dashboards, admin consoles, or multi-tenant operations
 
 Contribution rules:
 
