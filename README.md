@@ -11,6 +11,8 @@
 
 Zero hard dependencies. Works offline. Deterministic IDs.
 
+Forkit Core stays local and file-based, with developer-friendly compatibility tools for GitHub CI passport validation and Hugging Face model card export.
+
 ---
 
 ## What's inside
@@ -92,7 +94,7 @@ The included web demo is mock-backed and intended for exploration of the open so
 
 ### GitHub passport validation
 
-Forkit Core now includes a lightweight GitHub-native integration for validating a committed passport file in CI. It checks that the file exists, validates the JSON against the current open source `ModelPassport` or `AgentPassport` schema, and verifies that the stored deterministic `id` matches the file content.
+Forkit Core includes a lightweight GitHub-native CI integration for validating a committed passport file. It checks that the file exists, validates the JSON against the current open source `ModelPassport` or `AgentPassport` schema, and verifies that the stored deterministic `id` matches the file content.
 
 Included files:
 
@@ -122,6 +124,26 @@ Use the action from another repository:
 ```
 
 This repo's sample workflow validates [`examples/forkit-passport.model.json`](./examples/forkit-passport.model.json). In your own repo, point `passport-path` to the file you want to enforce in CI.
+
+### Hugging Face model card export
+
+Hugging Face model cards describe models for distribution and discovery. Forkit passports add deterministic identity, integrity-ready hashes, and lineage fields on top of that. This repo includes a small file-based exporter that turns a `ModelPassport` JSON file into a Hugging Face-friendly markdown card with YAML front matter.
+
+Included files:
+
+- [`scripts/export_hf_model_card.py`](./scripts/export_hf_model_card.py) to export a model passport into markdown
+- [`examples/forkit-passport.model.json`](./examples/forkit-passport.model.json) as the source example
+- [`examples/huggingface-model-card.md`](./examples/huggingface-model-card.md) as generated output
+
+Export a model card locally:
+
+```bash
+python scripts/export_hf_model_card.py \
+  --path examples/forkit-passport.model.json \
+  --output examples/huggingface-model-card.md
+```
+
+The exporter is intentionally compatibility-only for now: it stays local, does not call the Hugging Face API, and simply helps developers reuse Forkit provenance metadata in a repository-friendly model card format.
 
 ---
 

@@ -1,4 +1,4 @@
-import { ArrowRight, Fingerprint, GitBranch, Search, ShieldCheck } from 'lucide-react'
+import { ArrowRight, FileText, Fingerprint, GitBranch, Github, Search, ShieldCheck } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { LineageGraph } from '@/components/LineageGraph'
 import PassportCard from '@/components/PassportCard'
@@ -64,6 +64,18 @@ export function LandingPage() {
             <p className="max-w-3xl text-[1.08rem] leading-relaxed text-muted md:text-xl">
               Explore the current Forkit Core release in the browser. The web UI is mock-backed for demonstration, while the real open source value already ships in the schemas, local registry, SDK, CLI, and examples.
             </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 text-sm text-muted">
+            <span className="eyebrow !mb-0">Works with</span>
+            <div className="inline-flex items-center gap-2 rounded-full border border-border/75 bg-white/78 px-3.5 py-2 shadow-[0_10px_22px_rgba(42,31,85,0.05)]">
+              <Github className="h-4 w-4 text-primary" />
+              <span className="font-medium text-text">GitHub CI validation</span>
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-border/75 bg-white/78 px-3.5 py-2 shadow-[0_10px_22px_rgba(42,31,85,0.05)]">
+              <FileText className="h-4 w-4 text-accent-dark" />
+              <span className="font-medium text-text">Hugging Face model card export</span>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-4">
