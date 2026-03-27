@@ -7,7 +7,6 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from langchain.agents import create_agent
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
 
 from forkit.sdk import ForkitClient
@@ -28,18 +27,13 @@ def main() -> None:
         creator=creator,
     )
 
-    agent = create_agent(
+    bound = adapter.create_and_bind(
         model=FakeListChatModel(responses=["hello from forkit"]),
+        create_kwargs={"name": "demo-agent"},
         system_prompt="Be concise.",
-        name="demo-agent",
-    )
-    bound = adapter.bind_runnable(
-        agent,
-        name="demo-agent",
         version="1.0.0",
         model_id=model_id,
         creator=creator,
-        system_prompt="Be concise.",
     )
 
     result = bound.invoke({"messages": [{"role": "user", "content": "say hi"}]})

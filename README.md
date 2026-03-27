@@ -349,10 +349,11 @@ It keeps the same passport registration path as the core SDK, but adds:
 
 - runnable and agent registration based on LangChain graph shape
 - lazy registration wrappers for `invoke` and `stream` style usage
+- `create_and_register(...)` and `create_and_bind(...)` helpers for `create_agent()`
+- tool metadata capture for tool-calling agents
 - a lightweight callback handler that captures runtime event summaries
 
 ```python
-from langchain.agents import create_agent
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
 
 from forkit.sdk import ForkitClient
@@ -361,24 +362,23 @@ from forkit_langchain import LangChainAdapter
 client = ForkitClient()
 adapter = LangChainAdapter(client=client)
 
-agent = create_agent(
+bound = adapter.create_and_bind(
     model=FakeListChatModel(responses=["hello there"]),
+    create_kwargs={"name": "demo-agent"},
     system_prompt="Be concise.",
-    name="demo-agent",
-)
-bound = adapter.bind_runnable(
-    agent,
-    name="demo-agent",
     version="1.0.0",
     model_id="<model-passport-id>",
     creator={"name": "Hamza", "organization": "ForkIt"},
-    system_prompt="Be concise.",
 )
 
 result = bound.invoke({"messages": [{"role": "user", "content": "say hi"}]})
 print(bound.passport_id)
 print(bound.runtime_summary()["counts"])
 ```
+
+If you already have an agent from `langchain.agents.create_agent(...)`, you can
+still call `adapter.bind_runnable(agent, tools=[...], ...)` to preserve tool
+metadata in the passport.
 
 Use [`examples/langchain_quickstart.py`](./examples/langchain_quickstart.py) for
 an end-to-end runnable example.

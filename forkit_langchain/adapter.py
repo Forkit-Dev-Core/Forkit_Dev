@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import inspect
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -460,6 +460,7 @@ class LangChainPassportAdapter:
         self,
         runnable: Any,
         *,
+        tools: Sequence[Any] | None = None,
         runnable_config: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Extract a deterministic runnable spec from a LangChain runnable or agent."""
@@ -482,6 +483,10 @@ class LangChainPassportAdapter:
         schemas = self._extract_schemas(runnable)
         if schemas:
             runnable_spec["schemas"] = schemas
+
+        tools_spec = self._extract_tools_spec(tools)
+        if tools_spec:
+            runnable_spec["tools"] = tools_spec
 
         if runnable_config:
             runnable_spec["config"] = self._normalise_value(dict(runnable_config))
@@ -540,17 +545,29 @@ class LangChainPassportAdapter:
         model_id: str,
         creator: dict[str, Any] | CreatorInfo,
         runnable_spec: Mapping[str, Any] | None = None,
+        tools: Sequence[Any] | None = None,
         runnable_config: Mapping[str, Any] | None = None,
         metadata: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> str:
         """Register a LangChain runnable or agent using extracted runtime structure."""
         resolved_runnable_spec = dict(
-            runnable_spec or self.extract_runnable_spec(runnable, runnable_config=runnable_config)
+            runnable_spec
+            or self.extract_runnable_spec(
+                runnable,
+                tools=tools,
+                runnable_config=runnable_config,
+            )
         )
         metadata_payload = dict(metadata or {})
         runtime_metadata = dict(metadata_payload.get("langchain_runtime") or {})
         runtime_metadata["bound_type"] = self._describe_value(runnable)
+        if tools:
+            runtime_metadata["tool_names"] = [
+                tool_spec["name"]
+                for tool_spec in self._extract_tools_spec(tools)
+                if "name" in tool_spec
+            ]
         if runnable_config:
             runtime_metadata["config"] = self._normalise_value(dict(runnable_config))
         metadata_payload["langchain_runtime"] = runtime_metadata
@@ -579,6 +596,79 @@ class LangChainPassportAdapter:
             adapter=self,
             registration_kwargs=registration_kwargs,
             callback_handler=callback_handler,
+        )
+
+    def create_agent(self, **kwargs: Any) -> Any:
+        """Create a LangChain agent via the public factory."""
+        _require_langchain()
+        from langchain.agents import create_agent
+
+        return create_agent(**kwargs)
+
+    def create_and_register(
+        self,
+        *,
+        model: Any,
+        tools: Sequence[Any] | None = None,
+        system_prompt: Any | None = None,
+        create_kwargs: Mapping[str, Any] | None = None,
+        runnable_config: Mapping[str, Any] | None = None,
+        **registration_kwargs: Any,
+    ) -> tuple[Any, str]:
+        """Create a LangChain agent and immediately register it."""
+        resolved_create_kwargs = dict(create_kwargs or {})
+        agent = self.create_agent(
+            model=model,
+            tools=tools,
+            system_prompt=system_prompt,
+            **resolved_create_kwargs,
+        )
+        resolved_registration_kwargs = dict(registration_kwargs)
+        resolved_registration_kwargs.setdefault(
+            "name",
+            self._resolve_name(agent) or resolved_create_kwargs.get("name") or "langchain-agent",
+        )
+        if system_prompt is not None:
+            resolved_registration_kwargs.setdefault("system_prompt", system_prompt)
+        passport_id = self.register_runnable(
+            agent,
+            tools=tools,
+            runnable_config=runnable_config,
+            **resolved_registration_kwargs,
+        )
+        return agent, passport_id
+
+    def create_and_bind(
+        self,
+        *,
+        model: Any,
+        tools: Sequence[Any] | None = None,
+        system_prompt: Any | None = None,
+        create_kwargs: Mapping[str, Any] | None = None,
+        callback_handler: ForkitLangChainCallbackHandler | None = None,
+        **registration_kwargs: Any,
+    ) -> BoundLangChainRunnable:
+        """Create a LangChain agent and return a lazy registration wrapper."""
+        resolved_create_kwargs = dict(create_kwargs or {})
+        agent = self.create_agent(
+            model=model,
+            tools=tools,
+            system_prompt=system_prompt,
+            **resolved_create_kwargs,
+        )
+        resolved_registration_kwargs = dict(registration_kwargs)
+        resolved_registration_kwargs.setdefault(
+            "name",
+            self._resolve_name(agent) or resolved_create_kwargs.get("name") or "langchain-agent",
+        )
+        if system_prompt is not None:
+            resolved_registration_kwargs.setdefault("system_prompt", system_prompt)
+        if tools is not None:
+            resolved_registration_kwargs.setdefault("tools", list(tools))
+        return self.bind_runnable(
+            agent,
+            callback_handler=callback_handler,
+            **resolved_registration_kwargs,
         )
 
     def merge_runtime_config(
@@ -685,6 +775,40 @@ class LangChainPassportAdapter:
                     schemas[field] = self._describe_value(value)
         return schemas
 
+    def _extract_tools_spec(self, tools: Sequence[Any] | None) -> list[dict[str, Any]]:
+        if not tools:
+            return []
+
+        tool_specs: list[dict[str, Any]] = []
+        for tool in tools:
+            if isinstance(tool, Mapping):
+                tool_spec = {
+                    "tool_type": "mapping",
+                    "keys": sorted(str(key) for key in tool.keys()),
+                }
+                for field in ("name", "description"):
+                    value = tool.get(field)
+                    if isinstance(value, str) and value:
+                        tool_spec[field] = value
+                tool_specs.append(tool_spec)
+                continue
+
+            tool_spec: dict[str, Any] = {
+                "name": self._resolve_tool_name(tool),
+                "tool_type": self._describe_value(tool),
+            }
+            description = getattr(tool, "description", None) or inspect.getdoc(tool)
+            if isinstance(description, str) and description:
+                tool_spec["description"] = description.strip()
+            args_schema = getattr(tool, "args_schema", None)
+            if args_schema is not None:
+                tool_spec["args_schema"] = self._describe_value(args_schema)
+            if hasattr(tool, "return_direct"):
+                tool_spec["return_direct"] = bool(getattr(tool, "return_direct"))
+            tool_specs.append(tool_spec)
+
+        return tool_specs
+
     @staticmethod
     def _resolve_name(runnable: Any) -> str | None:
         if hasattr(runnable, "get_name"):
@@ -698,6 +822,18 @@ class LangChainPassportAdapter:
         if isinstance(name, str) and name:
             return name
         return None
+
+    @staticmethod
+    def _resolve_tool_name(tool: Any) -> str:
+        name = getattr(tool, "name", None)
+        if isinstance(name, str) and name:
+            return name
+        name = getattr(tool, "__name__", None)
+        if isinstance(name, str) and name:
+            return name
+        if inspect.isclass(tool):
+            return tool.__name__
+        return type(tool).__name__
 
     @classmethod
     def _normalise_value(cls, value: Any) -> Any:
