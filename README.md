@@ -338,6 +338,16 @@ forkit sync push https://example.com/sync/passports --target main-server
 forkit sync pull https://example.com/export --source remote-dev
 ```
 
+Runnable self-host demo:
+
+```bash
+python examples/self_host_sync_quickstart.py
+```
+
+That example spins up two local registries, pushes one registry's outbox into
+the other's inbox, then pulls the source registry's exported passports into the
+mirror registry.
+
 Remote contract:
 
 - Method: `POST`
