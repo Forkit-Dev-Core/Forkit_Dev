@@ -1,4 +1,4 @@
-# forkit-core
+# forkit-core (Passport for Models and Agents)
 
 > Identity and provenance infrastructure for AI models and agents.
 
