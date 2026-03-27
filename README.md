@@ -44,14 +44,13 @@ Included in OSS:
 - LangGraph and LangChain adapters
 - self-host and local development examples
 
-
 Contribution rules:
 
 1. Keep `passport_id` deterministic and local.
 2. Keep systems connected through documents and HTTP contracts, not shared databases.
 3. Keep OSS useful offline and without any hosted dependency.
 4. Keep remote metadata separate from passport identity.
-5. Keep hosted-only business logic out of this repository.
+5. Keep this repository focused on portable passports, verification, and integration adapters.
 
 ---
 
@@ -357,8 +356,8 @@ reference ingestion.
 ## Sync Bridge
 
 The OSS package now includes a generic remote sync bridge on top of the local
-outbox. It does not know anything about enterprise schemas or databases. It
-only pushes versioned passport change batches to a remote HTTP endpoint.
+outbox. It only pushes versioned passport change batches to a remote HTTP
+endpoint and keeps the local passport contract unchanged.
 
 Python SDK:
 
