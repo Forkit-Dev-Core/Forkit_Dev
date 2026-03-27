@@ -41,6 +41,7 @@ With optional extras:
 ```bash
 pip install "forkit-core[pydantic]"   # Pydantic v2 backend + JSON Schema
 pip install "forkit-core[cli]"        # Typer CLI
+pip install "forkit-core[langgraph]"  # LangGraph adapter helpers
 pip install "forkit-core[server]"     # local FastAPI service
 pip install "forkit-core[all]"        # everything
 ```

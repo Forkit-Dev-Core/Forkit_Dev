@@ -1,5 +1,8 @@
-"""Tests for the LangGraph integration skeleton."""
+"""Tests for the LangGraph adapter."""
 
+from typing import TypedDict
+
+import pytest
 from forkit.sdk import ForkitClient
 from forkit.schemas import AgentTaskType, TaskType
 from forkit_langgraph import BoundLangGraphRunnable, LangGraphAdapter
@@ -174,3 +177,50 @@ class TestLangGraphAdapter:
         assert result["ok"] is True
         assert compiled.invoke_calls == [{"question": "hello"}]
         assert client.agents.get(bound.passport_id) is not None
+
+    def test_real_langgraph_stategraph_compile_and_register(self, tmp_path):
+        graph_module = pytest.importorskip("langgraph.graph")
+        StateGraph = graph_module.StateGraph
+        START = graph_module.START
+        END = graph_module.END
+
+        class State(TypedDict):
+            value: int
+
+        def increment(state: State) -> State:
+            return {"value": state["value"] + 1}
+
+        client = ForkitClient(registry_root=tmp_path / "registry")
+        adapter = LangGraphAdapter(client=client)
+
+        model_id = client.models.register(
+            name="langgraph-model",
+            version="1.0.0",
+            task_type=TaskType.TEXT_GENERATION,
+            architecture="transformer",
+            creator=CREATOR,
+        )
+
+        builder = StateGraph(State)
+        builder.add_node(increment)
+        builder.add_edge(START, "increment")
+        builder.add_edge("increment", END)
+
+        compiled, passport_id = adapter.compile_and_register(
+            builder,
+            compile_kwargs={"name": "increment-runtime"},
+            name="increment-graph",
+            version="1.0.0",
+            model_id=model_id,
+            creator=CREATOR,
+            system_prompt="Increment the counter.",
+        )
+
+        result = compiled.invoke({"value": 1})
+        agent = client.agents.get(passport_id)
+
+        assert result["value"] == 2
+        assert agent is not None
+        assert agent.metadata["langgraph"]["graph_spec"]["compiled"] is True
+        assert "increment" in agent.metadata["langgraph"]["graph_spec"]["nodes"]
+        assert client.verify(passport_id)["valid"] is True
