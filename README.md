@@ -292,8 +292,11 @@ Bootstrap routes:
 - `POST /verify/{id}` — verify stored content against the passport ID
 - `GET /lineage/{id}` — fetch ancestor/descendant lineage
 - `GET /export` — export cursor-based change records for sync
+- `POST /sync/passports` — receive generic remote sync batches for later processing
 
-This is the service shell for future registry and sync endpoints.
+The local service now covers both sides of the generic sync contract:
+`GET /export` for outgoing batches and `POST /sync/passports` for incoming
+reference ingestion.
 
 ---
 
@@ -337,6 +340,12 @@ Remote contract:
 
 Local sync state is stored in `sync_state.json` and only tracks acknowledged
 cursors per target. It does not affect `passport_id`.
+
+The local service also ships a reference receiver for the same contract at
+`POST /sync/passports`. Incoming envelopes are stored append-only under:
+
+- `sync_inbox.jsonl` — raw received batch envelopes
+- `sync_inbox/<target>/<passport_id>.jsonl` — received records keyed by passport ID
 
 ---
 
@@ -482,6 +491,10 @@ an end-to-end runnable example.
   lineage.json      ← Lineage graph snapshot
   outbox.jsonl      ← Append-only local change log for export/sync
   sync_state.json   ← Last acknowledged sync cursor per remote target
+  sync_inbox.jsonl  ← Append-only received sync batch envelopes
+  sync_inbox/
+    <target>/
+      <passport-id>.jsonl  ← Received sync records keyed by passport ID
   models/
     <sha256>.json   ← One file per ModelPassport
   agents/

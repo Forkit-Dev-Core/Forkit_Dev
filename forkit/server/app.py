@@ -10,6 +10,7 @@ from .. import __version__
 from ..registry.local import LocalRegistry
 from .config import ServerSettings
 from .routes.passports import router as passports_router
+from .routes.sync import router as sync_router
 from .routes.system import router as system_router
 
 
@@ -39,4 +40,5 @@ def create_app(
     )
     app.include_router(system_router)
     app.include_router(passports_router)
+    app.include_router(sync_router)
     return app

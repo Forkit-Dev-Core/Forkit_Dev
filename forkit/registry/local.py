@@ -50,6 +50,8 @@ class LocalRegistry:
         self.lineage_path = self.root / "lineage.json"
         self.outbox_path  = self.root / "outbox.jsonl"
         self.sync_state_path = self.root / "sync_state.json"
+        self.sync_inbox_dir = self.root / "sync_inbox"
+        self.sync_batches_path = self.root / "sync_inbox.jsonl"
         self._lineage: LineageGraph | None = None
         self._outbox_cursor: int | None = None
 
@@ -59,7 +61,9 @@ class LocalRegistry:
         """Create directory tree and initialise the DB. Idempotent."""
         self.models_dir.mkdir(parents=True, exist_ok=True)
         self.agents_dir.mkdir(parents=True, exist_ok=True)
+        self.sync_inbox_dir.mkdir(parents=True, exist_ok=True)
         self.outbox_path.touch(exist_ok=True)
+        self.sync_batches_path.touch(exist_ok=True)
         if not self.sync_state_path.exists():
             self.sync_state_path.write_text("{}\n", encoding="utf-8")
         with RegistryDB(self.db_path):
@@ -266,6 +270,52 @@ class LocalRegistry:
         )
         return entry
 
+    def ingest_sync_batch(self, envelope: dict[str, Any]) -> dict[str, Any]:
+        """Persist an incoming sync envelope and append records keyed by passport ID."""
+        self.init()
+
+        target = str(envelope["target"])
+        source = str(envelope["source"])
+        received_at = datetime.now(timezone.utc).isoformat()
+        target_dir = self.sync_inbox_dir / self._safe_sync_target(target)
+        target_dir.mkdir(parents=True, exist_ok=True)
+
+        envelope_record = {
+            "received_at": received_at,
+            **envelope,
+        }
+        with self.sync_batches_path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(envelope_record, sort_keys=True))
+            handle.write("\n")
+
+        stored_passport_ids: list[str] = []
+        for item in envelope["items"]:
+            passport_id = str(item["passport_id"])
+            stored_passport_ids.append(passport_id)
+            item_record = {
+                "received_at": received_at,
+                "source": source,
+                "target": target,
+                "after": envelope["after"],
+                "cursor": envelope["cursor"],
+                "has_more": envelope["has_more"],
+                "item": item,
+            }
+            item_path = target_dir / f"{passport_id}.jsonl"
+            with item_path.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(item_record, sort_keys=True))
+                handle.write("\n")
+
+        return {
+            "status": "accepted",
+            "source": source,
+            "target": target,
+            "cursor": envelope["cursor"],
+            "accepted": len(envelope["items"]),
+            "stored_passports": len(set(stored_passport_ids)),
+            "received_at": received_at,
+        }
+
     # ── Lineage ────────────────────────────────────────────────────────────────
 
     @property
@@ -357,3 +407,9 @@ class LocalRegistry:
                 if isinstance(record, dict):
                     records.append(record)
         return records
+
+    @staticmethod
+    def _safe_sync_target(target: str) -> str:
+        safe = "".join(char if char.isalnum() or char in ("-", "_", ".") else "-" for char in target)
+        safe = safe.strip(".-")
+        return safe or "default"

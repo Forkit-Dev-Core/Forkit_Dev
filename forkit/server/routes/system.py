@@ -28,6 +28,8 @@ def service_info(
             "lineage_path": str(registry.lineage_path),
             "outbox_path": str(registry.outbox_path),
             "sync_state_path": str(registry.sync_state_path),
+            "sync_batches_path": str(registry.sync_batches_path),
+            "sync_inbox_dir": str(registry.sync_inbox_dir),
         },
         "docs": {
             "openapi": settings.openapi_url,
@@ -64,4 +66,6 @@ def ready(
         "agents_dir_exists": registry.agents_dir.exists(),
         "outbox_exists": registry.outbox_path.exists(),
         "sync_state_exists": registry.sync_state_path.exists(),
+        "sync_batches_exists": registry.sync_batches_path.exists(),
+        "sync_inbox_exists": registry.sync_inbox_dir.exists(),
     }
