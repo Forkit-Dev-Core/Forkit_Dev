@@ -1,0 +1,15 @@
+{
+  "passport_type": "model",
+  "name": "forkit-core-demo-model",
+  "version": "1.0.0",
+  "creator": {
+    "name": "Forkit Team",
+    "organization": "ForkIt OSS"
+  },
+  "description": "Starter ModelPassport template for repository CI validation.",
+  "license": "Apache-2.0",
+  "status": "active",
+  "task_type": "text-generation",
+  "architecture": "transformer",
+  "id": "86daba093ae01f6d639d1f0255fa42d6009543bdd343b02c8810e9c06b8801be"
+}

@@ -1,0 +1,17 @@
+{
+  "passport_type": "agent",
+  "name": "broken-agent",
+  "version": "1.0.0",
+  "creator": {
+    "name": "Forkit Demo",
+    "organization": "ForkIt OSS"
+  },
+  "description": "Deliberately invalid AgentPassport example for local validator tests.",
+  "license": "Apache-2.0",
+  "status": "active",
+  "model_id": "not-a-sha256-digest",
+  "task_type": "code-assistant",
+  "architecture": "ReAct",
+  "role": "assistant",
+  "id": "a40ce3e691247dc8b1f9c1cdba19d867c235c44ef31f1c482f4ca3cb6eb0ece4"
+}

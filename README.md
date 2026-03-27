@@ -90,6 +90,39 @@ The included web demo is mock-backed and intended for exploration of the open so
 |---|---|---|
 | ![Forkit Core Home demo](docs/images/home.png) | ![Forkit Core Registry demo](docs/images/registry.png) | ![Forkit Core Inspect demo](docs/images/inspect.png) |
 
+### GitHub passport validation
+
+Forkit Core now includes a lightweight GitHub-native integration for validating a committed passport file in CI. It checks that the file exists, validates the JSON against the current open source `ModelPassport` or `AgentPassport` schema, and verifies that the stored deterministic `id` matches the file content.
+
+Included files:
+
+- [`.github/actions/validate-passport/action.yml`](./.github/actions/validate-passport/action.yml) for reusable CI validation
+- [`.github/workflows/validate-passport.yml`](./.github/workflows/validate-passport.yml) as a sample workflow
+- [`scripts/validate_passport.py`](./scripts/validate_passport.py) for local and CI validation
+- [`scripts/generate_passport_template.py`](./scripts/generate_passport_template.py) for a starter `forkit-passport.json`
+
+Generate a starter passport:
+
+```bash
+python scripts/generate_passport_template.py --passport-type model --output forkit-passport.json
+```
+
+Validate a passport locally:
+
+```bash
+python scripts/validate_passport.py --path forkit-passport.json
+```
+
+Use the action from another repository:
+
+```yaml
+- uses: arpitasarker01/Forkit_Dev/.github/actions/validate-passport@main
+  with:
+    passport-path: forkit-passport.json
+```
+
+This repo's sample workflow validates [`examples/forkit-passport.model.json`](./examples/forkit-passport.model.json). In your own repo, point `passport-path` to the file you want to enforce in CI.
+
 ---
 
 ## Quickstart — SDK

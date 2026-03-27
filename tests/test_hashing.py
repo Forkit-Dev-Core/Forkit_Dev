@@ -40,8 +40,7 @@ class TestPrimitiveHashing:
     def test_hash_string_known_value(self):
         # SHA-256("abc") known value
         assert HashEngine.hash_string("abc") == \
-            "ba7816bf8f01cfea414140de5dae2ec73b00361bbef0469fa72a444b7171db5c"  \
-            [:64]  # trim to confirm it's hex
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
 
     def test_hash_dict_order_independent(self):
         d1 = {"b": 2, "a": 1, "c": 3}

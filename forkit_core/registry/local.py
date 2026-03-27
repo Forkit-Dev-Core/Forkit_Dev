@@ -17,7 +17,6 @@ import json
 from pathlib import Path
 from typing import Any
 
-from ..hashing import HashEngine
 from ..lineage import LineageGraph
 from ..schemas import AgentPassport, ModelPassport
 from .db import RegistryDB
@@ -202,8 +201,7 @@ class LocalRegistry:
         if passport is None:
             return {"valid": False, "reason": "not_found"}
 
-        data = passport.to_dict()
-        recomputed = HashEngine.passport_id(data)
+        recomputed = passport._compute_id()
         match = recomputed == passport_id
 
         return {

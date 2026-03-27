@@ -1,0 +1,27 @@
+name: Validate Forkit Passport
+description: Validate a Forkit ModelPassport or AgentPassport JSON file in CI.
+
+inputs:
+  passport-path:
+    description: Path to the passport JSON file relative to the repository root.
+    required: false
+    default: forkit-passport.json
+  python-version:
+    description: Python version used to run the validator.
+    required: false
+    default: "3.11"
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Validate Forkit passport
+      shell: bash
+      env:
+        PASSPORT_PATH: ${{ inputs.passport-path }}
+      run: |
+        python "${{ github.action_path }}/../../../scripts/validate_passport.py" --path "${PASSPORT_PATH}"

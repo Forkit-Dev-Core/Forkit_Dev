@@ -16,13 +16,26 @@ def registry(tmp_path):
 
 
 def make_model(**kwargs) -> ModelPassport:
-    defaults = dict(name="base-llm", version="1.0.0", architecture="transformer", creator=CREATOR)
+    defaults = dict(
+        name="base-llm",
+        version="1.0.0",
+        architecture="transformer",
+        task_type="text-generation",
+        creator=CREATOR,
+    )
     defaults.update(kwargs)
     return ModelPassport(**defaults)
 
 
 def make_agent(model_id: str, **kwargs) -> AgentPassport:
-    defaults = dict(name="support-agent", version="1.0.0", model_id=model_id, creator=CREATOR)
+    defaults = dict(
+        name="support-agent",
+        version="1.0.0",
+        model_id=model_id,
+        task_type="customer-support",
+        architecture="ReAct",
+        creator=CREATOR,
+    )
     defaults.update(kwargs)
     return AgentPassport(**defaults)
 

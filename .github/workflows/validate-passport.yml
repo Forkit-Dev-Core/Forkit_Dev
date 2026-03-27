@@ -1,0 +1,38 @@
+name: Validate Forkit passport
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/actions/validate-passport/**"
+      - ".github/workflows/validate-passport.yml"
+      - "forkit/**"
+      - "forkit_core/**"
+      - "pyproject.toml"
+      - "scripts/validate_passport.py"
+      - "scripts/generate_passport_template.py"
+      - "examples/forkit-passport.model.json"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/actions/validate-passport/**"
+      - ".github/workflows/validate-passport.yml"
+      - "forkit/**"
+      - "forkit_core/**"
+      - "pyproject.toml"
+      - "scripts/validate_passport.py"
+      - "scripts/generate_passport_template.py"
+      - "examples/forkit-passport.model.json"
+
+jobs:
+  validate-example-passport:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate the sample ModelPassport
+        uses: ./.github/actions/validate-passport
+        with:
+          passport-path: examples/forkit-passport.model.json
