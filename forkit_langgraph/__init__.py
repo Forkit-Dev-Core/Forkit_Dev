@@ -1,5 +1,5 @@
 """LangGraph integration skeleton for forkit-core."""
 
-from .adapter import LangGraphAdapter, LangGraphPassportAdapter
+from .adapter import BoundLangGraphRunnable, LangGraphAdapter, LangGraphPassportAdapter
 
-__all__ = ["LangGraphAdapter", "LangGraphPassportAdapter"]
+__all__ = ["LangGraphAdapter", "LangGraphPassportAdapter", "BoundLangGraphRunnable"]
