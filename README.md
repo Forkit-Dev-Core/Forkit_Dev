@@ -3,8 +3,8 @@
 > Identity and provenance infrastructure for AI models and agents.
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-2f2a62.svg)](#install)
-[![Dependencies](https://img.shields.io/badge/dependencies-zero-008190.svg)](#forkit-core)
-[![Mode](https://img.shields.io/badge/mode-offline--first-6aa7ab.svg)](#forkit-core)
+[![Dependencies](https://img.shields.io/badge/dependencies-zero-008190.svg)](#install)
+[![Mode](https://img.shields.io/badge/mode-offline--first-6aa7ab.svg)](#install)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 `forkit-core` gives every AI model and agent a **cryptographically-identified passport** — a structured, versioned, verifiable record of what it is, where it came from, and what it is authorised to do.
@@ -76,23 +76,26 @@ Contribution rules:
 
 ## Install
 
+PyPI publication is not live yet. Install from the current GitHub checkout:
+
 ```bash
-pip install forkit-core
+git clone https://github.com/arpitasarker01/Forkit_Dev.git
+cd Forkit_Dev
+pip install -e .
 ```
 
-Python imports should use `forkit.*`. The legacy `forkit_core.*` namespace is
-kept as a compatibility shim in v0.1.x.
+Python imports should use `forkit.*`. The legacy `forkit_core.*` namespace is kept as a compatibility shim in v0.1.x.
 
 With optional extras:
 
 ```bash
-pip install "forkit-core[pydantic]"   # Pydantic v2 backend + JSON Schema
-pip install "forkit-core[cli]"        # Typer CLI
-pip install "forkit-core[langchain]"  # LangChain adapter helpers
-pip install "forkit-core[langgraph]"  # LangGraph adapter helpers
-pip install "forkit-core[server]"     # local FastAPI service
-pip install "forkit-core[postgres]"   # Postgres-backed sync receiver
-pip install "forkit-core[all]"        # everything
+pip install -e ".[pydantic]"   # Pydantic v2 backend + JSON Schema
+pip install -e ".[cli]"        # Typer CLI
+pip install -e ".[langchain]"  # LangChain adapter helpers
+pip install -e ".[langgraph]"  # LangGraph adapter helpers
+pip install -e ".[server]"     # local FastAPI service
+pip install -e ".[postgres]"   # Postgres-backed sync receiver
+pip install -e ".[all]"        # everything
 ```
 
 For development:
