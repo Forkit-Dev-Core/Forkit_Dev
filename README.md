@@ -13,8 +13,37 @@ Zero hard dependencies. Works offline. Deterministic IDs.
 
 Forkit Core stays local and file-based, with developer-friendly compatibility tools for GitHub CI passport validation and Hugging Face model card export.
 
-For OSS scope and contribution boundaries, see
-[`docs/oss-architecture.md`](./docs/oss-architecture.md).
+---
+
+## OSS Scope
+
+This repository is the open-source, local-first core of Forkit.
+
+Included in OSS:
+
+- passport schemas and deterministic `passport_id` derivation
+- artifact hashing, integrity verification, and lineage
+- local JSON + SQLite registry
+- local HTTP service for registration, lookup, verification, lineage, and export
+- generic sync built on `GET /export`, `POST /sync/passports`, `sync push`, and `sync pull`
+- LangGraph and LangChain adapters
+- self-host and local development examples
+
+Excluded from OSS:
+
+- tenant or workspace controls
+- organization, account, or seat management
+- RBAC, approvals, policy workflows, or hosted governance logic
+- billing, plans, entitlements, or usage metering
+- hosted-only dashboards, admin consoles, or multi-tenant operations
+
+Contribution rules:
+
+1. Keep `passport_id` deterministic and local.
+2. Keep systems connected through documents and HTTP contracts, not shared databases.
+3. Keep OSS useful offline and without any hosted dependency.
+4. Keep remote metadata separate from passport identity.
+5. Keep hosted-only business logic out of this repository.
 
 ---
 
