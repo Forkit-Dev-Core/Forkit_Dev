@@ -86,6 +86,8 @@ class BasePassport:
         self.version = validate_version(self.version)
 
         # Derive id if not already set (i.e. new passport, not a replay)
+        # `metadata`, `status`, tags, and any future application-side attachments
+        # are intentionally excluded from identity derivation.
         if not self.id:
             self.id = compute_id(
                 passport_type = getattr(self, "passport_type", self.__class__.__name__),

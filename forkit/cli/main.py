@@ -7,6 +7,9 @@ Commands
 ────────
   forkit register model <yaml-file>
   forkit register agent <yaml-file>
+  forkit sync push <endpoint>
+  forkit sync pull <endpoint>
+  forkit serve
   forkit inspect <id>
   forkit list [--type model|agent] [--status active|draft|deprecated|revoked]
   forkit search <query>
@@ -37,10 +40,13 @@ except ImportError:
 
 from ..registry.local import LocalRegistry
 from ..schemas import AgentPassport, ModelPassport
+from ..sync import RemoteSyncBridge
 
 app     = typer.Typer(name="forkit", help="forkit-core — AI model/agent identity CLI")
 reg_app = typer.Typer(help="Register a passport from a YAML file")
+sync_app = typer.Typer(help="Push and pull generic sync batches")
 app.add_typer(reg_app, name="register")
+app.add_typer(sync_app, name="sync")
 
 _REGISTRY_ROOT = Path.home() / ".forkit" / "registry"
 
@@ -145,6 +151,109 @@ def stats():
     """Print registry statistics."""
     s = _registry().stats()
     typer.echo(json.dumps(s, indent=2))
+
+
+# ── sync ──────────────────────────────────────────────────────────────────────
+
+@sync_app.command("status")
+def sync_status():
+    """Print saved sync cursors keyed by target."""
+    typer.echo(json.dumps(_registry().get_sync_state(), indent=2))
+
+
+@sync_app.command("push")
+def sync_push(
+    endpoint: str = typer.Argument(..., help="Remote POST endpoint for sync batches"),
+    target: Optional[str] = typer.Option(None, "--target", help="Stable local name for this sync target"),
+    after: Optional[int] = typer.Option(None, "--after", help="Override the saved cursor and start after this value"),
+    limit: int = typer.Option(100, "--limit", min=1, max=1000, help="Maximum number of changes per batch"),
+    passport_type: Optional[str] = typer.Option(None, "--type", "-t", help="model | agent"),
+    timeout: float = typer.Option(30.0, "--timeout", min=1.0, help="HTTP timeout in seconds"),
+    token: Optional[str] = typer.Option(None, "--token", envvar="FORKIT_SYNC_TOKEN", help="Optional bearer token"),
+):
+    """Push local outbox changes to a remote endpoint and persist the acknowledged cursor."""
+    bridge = RemoteSyncBridge(_registry())
+    result = bridge.push(
+        endpoint,
+        target=target,
+        after=after,
+        limit=limit,
+        passport_type=passport_type,
+        timeout=timeout,
+        token=token,
+    )
+    typer.echo(json.dumps(result, indent=2))
+
+
+@sync_app.command("pull")
+def sync_pull(
+    endpoint: str = typer.Argument(..., help="Remote GET endpoint that serves exported change batches"),
+    source: Optional[str] = typer.Option(None, "--source", help="Stable local name for this remote source"),
+    after: Optional[int] = typer.Option(None, "--after", help="Override the saved cursor and start after this value"),
+    limit: int = typer.Option(100, "--limit", min=1, max=1000, help="Maximum number of changes per batch"),
+    passport_type: Optional[str] = typer.Option(None, "--type", "-t", help="model | agent"),
+    timeout: float = typer.Option(30.0, "--timeout", min=1.0, help="HTTP timeout in seconds"),
+    token: Optional[str] = typer.Option(None, "--token", envvar="FORKIT_SYNC_TOKEN", help="Optional bearer token"),
+):
+    """Pull remote export batches into the local registry without re-appending them to the outbox."""
+    bridge = RemoteSyncBridge(_registry())
+    result = bridge.pull(
+        endpoint,
+        source=source,
+        after=after,
+        limit=limit,
+        passport_type=passport_type,
+        timeout=timeout,
+        token=token,
+    )
+    typer.echo(json.dumps(result, indent=2))
+
+
+# ── serve ─────────────────────────────────────────────────────────────────────
+
+@app.command()
+def serve(
+    host: str = typer.Option("127.0.0.1", "--host", help="Bind host"),
+    port: int = typer.Option(8000, "--port", help="Bind port"),
+    registry_root: Path = typer.Option(_REGISTRY_ROOT, "--registry-root", help="Registry root path"),
+):
+    """Run the local HTTP service over the registry."""
+    try:
+        import uvicorn
+    except ImportError:
+        typer.echo(
+            "Server support requires FastAPI and Uvicorn.\n"
+            "Install with:\n"
+            "  pip install 'forkit-core[server]'",
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    try:
+        from ..server import ServerSettings, create_app
+    except ImportError:
+        typer.echo(
+            "Server support is not available in this environment.\n"
+            "Install with:\n"
+            "  pip install 'forkit-core[server]'",
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    settings = ServerSettings(
+        registry_root=registry_root.expanduser().resolve(),
+        host=host,
+        port=port,
+    )
+    typer.echo(
+        f"Serving forkit local service on http://{settings.host}:{settings.port}\n"
+        f"Registry root: {settings.registry_root}"
+    )
+    uvicorn.run(
+        create_app(settings=settings),
+        host=settings.host,
+        port=settings.port,
+    )
 
 
 # ── entrypoint ────────────────────────────────────────────────────────────────

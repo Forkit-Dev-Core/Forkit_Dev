@@ -1,4 +1,3 @@
-from .db import RegistryDB
-from .local import LocalRegistry
+from forkit.registry import LocalRegistry, RegistryDB
 
 __all__ = ["LocalRegistry", "RegistryDB"]

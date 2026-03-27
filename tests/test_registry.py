@@ -2,7 +2,13 @@
 
 import pytest
 from forkit_core.registry import LocalRegistry
-from forkit_core.schemas import AgentPassport, ModelPassport
+from forkit_core.schemas import (
+    AgentArchitecture,
+    AgentPassport,
+    AgentTaskType,
+    ModelPassport,
+    TaskType,
+)
 
 
 CREATOR = {"name": "Hamza", "organization": "ForkIt"}
@@ -19,8 +25,8 @@ def make_model(**kwargs) -> ModelPassport:
     defaults = dict(
         name="base-llm",
         version="1.0.0",
+        task_type=TaskType.TEXT_GENERATION,
         architecture="transformer",
-        task_type="text-generation",
         creator=CREATOR,
     )
     defaults.update(kwargs)
@@ -32,8 +38,8 @@ def make_agent(model_id: str, **kwargs) -> AgentPassport:
         name="support-agent",
         version="1.0.0",
         model_id=model_id,
-        task_type="customer-support",
-        architecture="ReAct",
+        task_type=AgentTaskType.CUSTOMER_SUPPORT,
+        architecture=AgentArchitecture.REACT,
         creator=CREATOR,
     )
     defaults.update(kwargs)
@@ -129,3 +135,50 @@ class TestLocalRegistry:
         registry.register_model(make_model(name="second-model", version="2.0.0"))
         count = registry.rebuild_index()
         assert count == 2
+
+    def test_export_changes_returns_cursor_ordered_documents(self, registry):
+        model = make_model()
+        registry.register_model(model)
+        agent = make_agent(model_id=model.id)
+        registry.register_agent(agent)
+
+        result = registry.export_changes()
+
+        assert result["cursor"] == 2
+        assert result["has_more"] is False
+        assert [item["passport_id"] for item in result["items"]] == [model.id, agent.id]
+        assert result["items"][0]["document"]["id"] == model.id
+        assert result["items"][1]["document"]["id"] == agent.id
+
+    def test_export_changes_includes_delete_tombstones(self, registry):
+        model = make_model()
+        registry.register_model(model)
+
+        assert registry.delete(model.id) is True
+
+        result = registry.export_changes()
+
+        assert [item["operation"] for item in result["items"]] == ["upsert", "delete"]
+        assert result["items"][0]["document"]["id"] == model.id
+        assert result["items"][1]["passport_id"] == model.id
+        assert result["items"][1]["document"] is None
+
+    def test_apply_changes_imports_passports_without_reemitting_outbox(self, tmp_path):
+        source = LocalRegistry(root=tmp_path / "source")
+        source.init()
+        model = make_model()
+        source.register_model(model)
+        agent = make_agent(model_id=model.id)
+        source.register_agent(agent)
+
+        target = LocalRegistry(root=tmp_path / "target")
+        target.init()
+
+        applied = target.apply_changes(source.export_changes()["items"])
+        exported = target.export_changes()
+
+        assert applied == {"applied": 2, "upserts": 2, "deletes": 0}
+        assert target.get_model(model.id) is not None
+        assert target.get_agent(agent.id) is not None
+        assert exported["cursor"] == 0
+        assert exported["items"] == []

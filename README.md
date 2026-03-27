@@ -15,6 +15,53 @@ Forkit Core stays local and file-based, with developer-friendly compatibility to
 
 ---
 
+## Start Here
+
+Recommended first runs:
+
+- SDK core flow: [`examples/sdk_quickstart.py`](./examples/sdk_quickstart.py)
+- LangGraph registration + sync: [`examples/langgraph_sync_quickstart.py`](./examples/langgraph_sync_quickstart.py)
+- LangChain registration + sync: [`examples/langchain_sync_quickstart.py`](./examples/langchain_sync_quickstart.py)
+- Generic self-host sync: [`examples/self_host_sync_quickstart.py`](./examples/self_host_sync_quickstart.py)
+
+If you are evaluating Forkit for framework adoption, start with LangGraph or
+LangChain first. They show the current adapter pattern that can later be
+extended to other ecosystems.
+
+---
+
+## OSS Scope
+
+This repository is the open-source, local-first core of Forkit.
+
+Included in OSS:
+
+- passport schemas and deterministic `passport_id` derivation
+- artifact hashing, integrity verification, and lineage
+- local JSON + SQLite registry
+- local HTTP service for registration, lookup, verification, lineage, and export
+- generic sync built on `GET /export`, `POST /sync/passports`, `sync push`, and `sync pull`
+- LangGraph and LangChain adapters
+- self-host and local development examples
+
+Excluded from OSS:
+
+- tenant or workspace controls
+- organization, account, or seat management
+- RBAC, approvals, policy workflows, or hosted governance logic
+- billing, plans, entitlements, or usage metering
+- hosted-only dashboards, admin consoles, or multi-tenant operations
+
+Contribution rules:
+
+1. Keep `passport_id` deterministic and local.
+2. Keep systems connected through documents and HTTP contracts, not shared databases.
+3. Keep OSS useful offline and without any hosted dependency.
+4. Keep remote metadata separate from passport identity.
+5. Keep hosted-only business logic out of this repository.
+
+---
+
 ## What's inside
 
 | Module | Purpose |
@@ -33,11 +80,18 @@ Forkit Core stays local and file-based, with developer-friendly compatibility to
 pip install forkit-core
 ```
 
+Python imports should use `forkit.*`. The legacy `forkit_core.*` namespace is
+kept as a compatibility shim in v0.1.x.
+
 With optional extras:
 
 ```bash
 pip install "forkit-core[pydantic]"   # Pydantic v2 backend + JSON Schema
 pip install "forkit-core[cli]"        # Typer CLI
+pip install "forkit-core[langchain]"  # LangChain adapter helpers
+pip install "forkit-core[langgraph]"  # LangGraph adapter helpers
+pip install "forkit-core[server]"     # local FastAPI service
+pip install "forkit-core[postgres]"   # Postgres-backed sync receiver
 pip install "forkit-core[all]"        # everything
 ```
 
@@ -256,9 +310,230 @@ forkit lineage <passport-id>
 # Verify integrity
 forkit verify <passport-id>
 
+# Sync local outbox changes to a remote API
+forkit sync status
+forkit sync push https://example.com/sync/passports --target main-server
+forkit sync pull https://example.com/export --source remote-dev
+
 # Registry stats
 forkit stats
 ```
+
+---
+
+## Local Service
+
+Install the server extra and run the local HTTP service on top of the same
+filesystem-backed registry:
+
+```bash
+forkit serve --host 127.0.0.1 --port 8000
+```
+
+Optional receiver configuration:
+
+- `FORKIT_SYNC_BACKEND=local|postgres`
+- `FORKIT_SYNC_POSTGRES_DSN=postgresql://...`
+- `FORKIT_SYNC_POSTGRES_SCHEMA=public`
+- `FORKIT_SYNC_BEARER_TOKEN=...`
+
+Use `forkit-core[postgres]` when `FORKIT_SYNC_BACKEND=postgres`.
+
+Bootstrap routes:
+
+- `GET /`       — service info and registry paths
+- `GET /healthz` — liveness check
+- `GET /readyz`  — readiness check
+- `POST /models` — register a model passport
+- `POST /agents` — register an agent passport
+- `GET /passports/{id}` — fetch a stored passport
+- `POST /verify/{id}` — verify stored content against the passport ID
+- `GET /lineage/{id}` — fetch ancestor/descendant lineage
+- `GET /export` — export cursor-based change records for sync
+- `POST /sync/passports` — receive generic remote sync batches for later processing
+
+The local service now covers both sides of the generic sync contract:
+`GET /export` for outgoing batches and `POST /sync/passports` for incoming
+reference ingestion.
+
+---
+
+## Sync Bridge
+
+The OSS package now includes a generic remote sync bridge on top of the local
+outbox. It does not know anything about enterprise schemas or databases. It
+only pushes versioned passport change batches to a remote HTTP endpoint.
+
+Python SDK:
+
+```python
+from forkit.sdk import ForkitClient
+
+client = ForkitClient()
+result = client.sync.push(
+    "https://example.com/sync/passports",
+    target="main-server",
+)
+print(result["cursor"])
+```
+
+CLI:
+
+```bash
+forkit sync status
+forkit sync push https://example.com/sync/passports --target main-server
+forkit sync pull https://example.com/export --source remote-dev
+```
+
+Runnable self-host demo:
+
+```bash
+python examples/self_host_sync_quickstart.py
+```
+
+That example spins up two local registries, pushes one registry's outbox into
+the other's inbox, then pulls the source registry's exported passports into the
+mirror registry.
+
+Remote contract:
+
+- Method: `POST`
+- Content type: `application/json`
+- Body fields:
+  - `source` — local registry identifier/path
+  - `target` — stable local target name
+  - `after` — previous local cursor
+  - `cursor` — current batch cursor
+  - `has_more` — whether more local changes remain
+  - `items` — exported passport change records
+
+Local sync state is stored in `sync_state.json` and only tracks acknowledged
+cursors per target or pulled source. It does not affect `passport_id`.
+
+`forkit sync pull` reads a generic `GET /export` endpoint, validates the
+returned passport documents, and applies them into the local registry without
+re-emitting them into the local outbox.
+
+The local service also ships a reference receiver for the same contract at
+`POST /sync/passports`. In `local` mode, incoming envelopes are stored
+append-only under:
+
+- `sync_inbox.jsonl` — raw received batch envelopes
+- `sync_inbox/<target>/<passport_id>.jsonl` — received records keyed by passport ID
+
+In `postgres` mode, the same envelopes are stored idempotently by
+`target + cursor` in `forkit_sync_batches`, `forkit_sync_items`, and
+`forkit_sync_passports`.
+
+---
+
+## LangGraph Skeleton
+
+The repo now includes a minimal LangGraph-facing adapter in
+`forkit_langgraph`. It still avoids a hard LangGraph dependency in the core
+package, but it now supports both spec-based registration and runtime-oriented
+hooks for builder/compiled graph objects.
+
+```python
+from forkit.sdk import ForkitClient
+from forkit_langgraph import LangGraphAdapter
+
+client = ForkitClient()
+adapter = LangGraphAdapter(client=client)
+
+agent_id = adapter.register_agent(
+    name="triage-graph",
+    version="1.0.0",
+    model_id="<model-passport-id>",
+    creator={"name": "Hamza", "organization": "ForkIt"},
+    graph_spec={"entrypoint": "router", "nodes": ["router", "support"]},
+)
+```
+
+For real builder flows, the adapter also exposes:
+
+```python
+compiled, passport_id = adapter.compile_and_register(
+    builder,
+    compile_kwargs={"name": "triage-runtime", "debug": True},
+    name="triage-graph",
+    version="1.0.0",
+    model_id="<model-passport-id>",
+    creator={"name": "Hamza", "organization": "ForkIt"},
+)
+
+bound = adapter.compile_and_bind(
+    builder,
+    name="triage-graph",
+    version="1.0.0",
+    model_id="<model-passport-id>",
+    creator={"name": "Hamza", "organization": "ForkIt"},
+)
+result = bound.invoke({"question": "hello"})
+```
+
+This is the minimal runtime integration layer for future direct LangGraph hooks.
+
+Runnable LangGraph sync demo:
+
+```bash
+python examples/langgraph_sync_quickstart.py
+```
+
+That example compiles a real LangGraph `StateGraph`, registers its passport,
+and pulls the resulting model + graph passports into a second local registry.
+
+---
+
+## LangChain Adapter
+
+The repo also ships a thin LangChain-facing adapter in `forkit_langchain`.
+It keeps the same passport registration path as the core SDK, but adds:
+
+- runnable and agent registration based on LangChain graph shape
+- lazy registration wrappers for `invoke` and `stream` style usage
+- `create_and_register(...)` and `create_and_bind(...)` helpers for `create_agent()`
+- tool metadata capture for tool-calling agents
+- a lightweight callback handler that captures runtime event summaries
+
+```python
+from langchain_core.language_models.fake_chat_models import FakeListChatModel
+
+from forkit.sdk import ForkitClient
+from forkit_langchain import LangChainAdapter
+
+client = ForkitClient()
+adapter = LangChainAdapter(client=client)
+
+bound = adapter.create_and_bind(
+    model=FakeListChatModel(responses=["hello there"]),
+    create_kwargs={"name": "demo-agent"},
+    system_prompt="Be concise.",
+    version="1.0.0",
+    model_id="<model-passport-id>",
+    creator={"name": "Hamza", "organization": "ForkIt"},
+)
+
+result = bound.invoke({"messages": [{"role": "user", "content": "say hi"}]})
+print(bound.passport_id)
+print(bound.runtime_summary()["counts"])
+```
+
+If you already have an agent from `langchain.agents.create_agent(...)`, you can
+still call `adapter.bind_runnable(agent, tools=[...], ...)` to preserve tool
+metadata in the passport.
+
+Use [`examples/langchain_quickstart.py`](./examples/langchain_quickstart.py) for
+an end-to-end runnable example.
+
+Runnable LangChain sync demo:
+
+```bash
+python examples/langchain_sync_quickstart.py
+```
+
+That example creates a tool-calling LangChain agent, registers its passport,
+and pulls the resulting model + agent passports into a second local registry.
 
 ---
 
@@ -289,12 +564,33 @@ forkit stats
 
 ---
 
+## Identity Boundary
+
+`passport_id` is the stable join key for a passport across tools and systems.
+
+- Identity fields are limited to `passport_type`, `name`, `version`,
+  `creator`, and optional `artifact_hash`.
+- Extra application metadata such as sync state, labels, review notes, or
+  runtime configuration must not affect the passport ID.
+- If you need those fields, attach them alongside the passport, keyed by
+  `passport_id`, either in your own database or in a separate sync layer.
+- Do not overload `creator.organization` with later ownership or routing data.
+  It records the originating creator and does participate in identity derivation.
+
+---
+
 ## Registry layout
 
 ```
 ~/.forkit/registry/
   index.db          ← SQLite index (always rebuildable)
   lineage.json      ← Lineage graph snapshot
+  outbox.jsonl      ← Append-only local change log for export/sync
+  sync_state.json   ← Last acknowledged sync cursor per remote target
+  sync_inbox.jsonl  ← Append-only received sync batch envelopes
+  sync_inbox/
+    <target>/
+      <passport-id>.jsonl  ← Received sync records keyed by passport ID
   models/
     <sha256>.json   ← One file per ModelPassport
   agents/

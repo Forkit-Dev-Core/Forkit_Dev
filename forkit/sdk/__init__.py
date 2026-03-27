@@ -1,5 +1,5 @@
-"""forkit.sdk — Python SDK for the local registry."""
+"""forkit.sdk — Canonical Python SDK for the local registry."""
 
-from .client import ForkitClient
+from .client import AgentClient, ForkitClient, LineageClient, ModelClient, SyncClient
 
-__all__ = ["ForkitClient"]
+__all__ = ["ForkitClient", "ModelClient", "AgentClient", "LineageClient", "SyncClient"]

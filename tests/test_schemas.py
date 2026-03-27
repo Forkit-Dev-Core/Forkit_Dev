@@ -1,6 +1,7 @@
 """Tests for ModelPassport and AgentPassport schemas."""
 
 import pytest
+from forkit.domain import verify_passport_id
 from forkit_core.schemas import (
     AgentArchitecture,
     AgentPassport,
@@ -110,6 +111,50 @@ class TestModelPassport:
         m = make_model()
         assert m.status == PassportStatus.DRAFT
 
+    def test_external_metadata_does_not_change_id(self):
+        context_a = {
+            "context": {
+                "sync_state": "queued",
+                "label": "alpha",
+                "review_note": "first pass",
+                "runtime_profile": "cpu",
+                "integration_target": "local-registry",
+            }
+        }
+        context_b = {
+            "context": {
+                "sync_state": "synced",
+                "label": "beta",
+                "review_note": "second pass",
+                "runtime_profile": "gpu",
+                "integration_target": "remote-bridge",
+            }
+        }
+
+        m1 = make_model(metadata=context_a, status=PassportStatus.DRAFT)
+        m2 = make_model(metadata=context_b, status=PassportStatus.ACTIVE)
+
+        assert m1.id == m2.id
+        assert verify_passport_id(m1.to_dict())["valid"] is True
+        assert verify_passport_id(m2.to_dict())["valid"] is True
+
+    def test_creator_org_is_identity_but_metadata_labels_are_not(self):
+        m1 = make_model(
+            creator={"name": "Hamza", "organization": "ForkIt"},
+            metadata={"context": {"label": "owner-a"}},
+        )
+        m2 = make_model(
+            creator={"name": "Hamza", "organization": "ForkIt"},
+            metadata={"context": {"label": "owner-b"}},
+        )
+        m3 = make_model(
+            creator={"name": "Hamza", "organization": "Another Org"},
+            metadata={"context": {"label": "owner-a"}},
+        )
+
+        assert m1.id == m2.id
+        assert m1.id != m3.id
+
     def test_to_dict_roundtrip(self):
         m = make_model(
             tags=["llm", "arabic"],
@@ -195,6 +240,23 @@ class TestAgentPassport:
         m = make_model()
         a = make_agent(model_id=m.id)
         assert a.tools == []
+
+    def test_agent_external_metadata_does_not_change_id(self):
+        m = make_model()
+        a1 = make_agent(
+            model_id=m.id,
+            metadata={"context": {"sync_state": "queued", "runtime_profile": "cpu"}},
+            status=PassportStatus.DRAFT,
+        )
+        a2 = make_agent(
+            model_id=m.id,
+            metadata={"context": {"sync_state": "synced", "runtime_profile": "gpu"}},
+            status=PassportStatus.ACTIVE,
+        )
+
+        assert a1.id == a2.id
+        assert verify_passport_id(a1.to_dict())["valid"] is True
+        assert verify_passport_id(a2.to_dict())["valid"] is True
 
     def test_to_dict_roundtrip(self):
         m = make_model()

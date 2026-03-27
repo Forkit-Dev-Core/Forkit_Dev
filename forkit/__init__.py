@@ -67,9 +67,18 @@ from .schemas import (
 try:
     from .registry import LocalRegistry
     from .sdk import ForkitClient
+    from .sync import RemoteSyncBridge
 except Exception:
     LocalRegistry = None   # type: ignore[assignment,misc]
     ForkitClient  = None   # type: ignore[assignment,misc]
+    RemoteSyncBridge = None  # type: ignore[assignment,misc]
+
+# ── Local service (optional FastAPI dependency) ───────────────────────────────
+try:
+    from .server import ServerSettings, create_app
+except Exception:
+    ServerSettings = None  # type: ignore[assignment,misc]
+    create_app = None      # type: ignore[assignment,misc]
 
 __all__ = [
     "__version__",
@@ -87,4 +96,7 @@ __all__ = [
     "_PYDANTIC_AVAILABLE",
     # Registry / SDK
     "LocalRegistry", "ForkitClient",
+    "RemoteSyncBridge",
+    # Local service
+    "ServerSettings", "create_app",
 ]

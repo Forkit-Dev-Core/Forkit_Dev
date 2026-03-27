@@ -4,7 +4,14 @@ forkit-core SDK quickstart.
 Run: python examples/sdk_quickstart.py
 """
 
-from forkit_core.sdk import ForkitClient
+from pathlib import Path
+import sys
+
+# Make the package importable when run from the repo root or examples/
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from forkit.sdk import ForkitClient
+from forkit.schemas import AgentArchitecture, AgentTaskType, TaskType
 
 client = ForkitClient(registry_root="/tmp/forkit-demo-registry")
 
@@ -12,6 +19,7 @@ client = ForkitClient(registry_root="/tmp/forkit-demo-registry")
 model_id = client.models.register(
     name="llama-3-8b-demo",
     version="1.0.0",
+    task_type=TaskType.TEXT_GENERATION,
     architecture="transformer",
     creator={"name": "Hamza", "organization": "ForkIt"},
     parameter_count=8_000_000_000,
@@ -25,6 +33,8 @@ agent_id = client.agents.register(
     name="support-agent-demo",
     version="1.0.0",
     model_id=model_id,
+    task_type=AgentTaskType.CUSTOMER_SUPPORT,
+    architecture=AgentArchitecture.REACT,
     creator={"name": "Hamza", "organization": "ForkIt"},
     system_prompt="You are a helpful support assistant. Answer concisely.",
     temperature=0.3,

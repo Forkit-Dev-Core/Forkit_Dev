@@ -16,6 +16,8 @@ Invariants (never change without a version bump)
 3. Passport ID = sha256(payload).hexdigest()
 4. Hash fields are normalised to lowercase before storage and validation.
 5. Version must be 2- or 3-part semver (e.g. "1.0" or "1.0.0").
+6. Application-side metadata such as sync state, labels, review notes, and
+   runtime configuration never participates in the ID.
 """
 
 from __future__ import annotations
@@ -89,6 +91,8 @@ def compute_id(
     The identity fields are: passport_type, name, version, creator name and org.
     When artifact_hash is provided it is prepended to the payload so that two
     passports with the same metadata but different artifacts get different IDs.
+    Additional application metadata must be attached separately and not written
+    into the identity material.
 
     This function is the canonical implementation.  Both the dataclass and the
     optional Pydantic backends delegate here.

@@ -1,45 +1,76 @@
 """
-forkit-core — Identity and provenance infrastructure for AI models and agents.
+Legacy compatibility namespace for forkit-core.
+
+`forkit.*` is the canonical public namespace. `forkit_core.*` remains available
+in v0.1.x as a compatibility layer for existing imports.
 """
 
-__version__ = "0.1.0"
-
-# These modules have no Pydantic dependency — always importable.
-from .hashing import HashEngine, engine as hash_engine
-from .lineage import LineageGraph
-
-# Schemas handle the Pydantic/compat switch internally.
-from .schemas import (
-    ModelPassport,
+from forkit import (
+    AgentArchitecture,
+    AgentCapabilities,
     AgentPassport,
+    AgentRole,
+    AgentTaskType,
+    Architecture,
+    BasePassport,
     CreatorInfo,
+    EdgeType,
+    ForkitClient,
+    HashEngine,
+    LicenseType,
+    LineageEdge,
+    LineageGraph,
+    LineageNode,
+    LocalRegistry,
+    MemoryType,
+    ModelCapabilities,
+    ModelPassport,
+    Modality,
+    NodeType,
     PassportStatus,
+    RemoteSyncBridge,
+    SystemPromptRecord,
+    TaskType,
+    ToolRef,
+    TrainingDataRef,
+    ServerSettings,
     _PYDANTIC_AVAILABLE,
+    __version__,
+    create_app,
+    hash_engine,
 )
-
-# Registry and SDK require Pydantic (they import schemas internally).
-# Import gracefully so the package is still usable without Pydantic.
-try:
-    from .registry import LocalRegistry
-    from .sdk import ForkitClient
-except Exception:
-    LocalRegistry = None  # type: ignore[assignment,misc]
-    ForkitClient  = None  # type: ignore[assignment]
 
 __all__ = [
     "__version__",
     "_PYDANTIC_AVAILABLE",
-    # Core schemas
-    "ModelPassport",
-    "AgentPassport",
+    "BasePassport",
     "CreatorInfo",
+    "LicenseType",
     "PassportStatus",
-    # Hashing
+    "ModelPassport",
+    "ModelCapabilities",
+    "TrainingDataRef",
+    "Architecture",
+    "Modality",
+    "TaskType",
+    "AgentPassport",
+    "AgentCapabilities",
+    "AgentRole",
+    "AgentTaskType",
+    "AgentArchitecture",
+    "MemoryType",
+    "SystemPromptRecord",
+    "ToolRef",
     "HashEngine",
     "hash_engine",
-    # Lineage
     "LineageGraph",
-    # Registry + SDK (None when Pydantic unavailable)
+    "LineageNode",
+    "LineageEdge",
+    "NodeType",
+    "EdgeType",
     "LocalRegistry",
     "ForkitClient",
+    "RemoteSyncBridge",
+    "ServerSettings",
+    "create_app",
 ]

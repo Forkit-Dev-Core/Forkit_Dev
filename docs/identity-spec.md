@@ -42,6 +42,24 @@ passport. They are the only fields that feed into the ID hash:
 All other fields (description, tags, metadata, timestamps, etc.) are
 **non-identity** — changing them does not change the passport ID.
 
+### 2.1 Additional metadata fields
+
+Application and integration metadata must remain outside the identity material.
+Examples include:
+
+- sync state
+- labels or UI annotations
+- review notes
+- runtime configuration
+- integration-specific routing fields
+
+These fields may be stored alongside the passport and joined by `passport_id`,
+either in a sidecar table/document or under a namespaced metadata block such as
+`metadata.context`. They must not be copied into the ID inputs.
+
+Important: `creator.organization` is provenance and does participate in the ID.
+It is not the same thing as later routing, sync, or application ownership data.
+
 ---
 
 ## 3. ID derivation algorithm
