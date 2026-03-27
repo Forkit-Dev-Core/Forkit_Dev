@@ -262,6 +262,10 @@ forkit lineage <passport-id>
 # Verify integrity
 forkit verify <passport-id>
 
+# Sync local outbox changes to a remote API
+forkit sync status
+forkit sync push https://example.com/sync/passports --target main-server
+
 # Registry stats
 forkit stats
 ```
@@ -290,6 +294,49 @@ Bootstrap routes:
 - `GET /export` — export cursor-based change records for sync
 
 This is the service shell for future registry and sync endpoints.
+
+---
+
+## Sync Bridge
+
+The OSS package now includes a generic remote sync bridge on top of the local
+outbox. It does not know anything about enterprise schemas or databases. It
+only pushes versioned passport change batches to a remote HTTP endpoint.
+
+Python SDK:
+
+```python
+from forkit.sdk import ForkitClient
+
+client = ForkitClient()
+result = client.sync.push(
+    "https://example.com/sync/passports",
+    target="main-server",
+)
+print(result["cursor"])
+```
+
+CLI:
+
+```bash
+forkit sync status
+forkit sync push https://example.com/sync/passports --target main-server
+```
+
+Remote contract:
+
+- Method: `POST`
+- Content type: `application/json`
+- Body fields:
+  - `source` — local registry identifier/path
+  - `target` — stable local target name
+  - `after` — previous local cursor
+  - `cursor` — current batch cursor
+  - `has_more` — whether more local changes remain
+  - `items` — exported passport change records
+
+Local sync state is stored in `sync_state.json` and only tracks acknowledged
+cursors per target. It does not affect `passport_id`.
 
 ---
 
@@ -434,6 +481,7 @@ an end-to-end runnable example.
   index.db          ← SQLite index (always rebuildable)
   lineage.json      ← Lineage graph snapshot
   outbox.jsonl      ← Append-only local change log for export/sync
+  sync_state.json   ← Last acknowledged sync cursor per remote target
   models/
     <sha256>.json   ← One file per ModelPassport
   agents/

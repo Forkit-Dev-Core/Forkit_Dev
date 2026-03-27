@@ -49,6 +49,7 @@ class LocalRegistry:
         self.db_path      = self.root / "index.db"
         self.lineage_path = self.root / "lineage.json"
         self.outbox_path  = self.root / "outbox.jsonl"
+        self.sync_state_path = self.root / "sync_state.json"
         self._lineage: LineageGraph | None = None
         self._outbox_cursor: int | None = None
 
@@ -59,6 +60,8 @@ class LocalRegistry:
         self.models_dir.mkdir(parents=True, exist_ok=True)
         self.agents_dir.mkdir(parents=True, exist_ok=True)
         self.outbox_path.touch(exist_ok=True)
+        if not self.sync_state_path.exists():
+            self.sync_state_path.write_text("{}\n", encoding="utf-8")
         with RegistryDB(self.db_path):
             pass  # DDL runs on connect
 
@@ -215,6 +218,53 @@ class LocalRegistry:
             "lineage_edges":  len(lg._edges),
             "registry_root":  str(self.root),
         }
+
+    def get_sync_state(self) -> dict[str, Any]:
+        """Return the persisted sync cursor state keyed by target name."""
+        self.init()
+        try:
+            data = json.loads(self.sync_state_path.read_text(encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError):
+            return {}
+        return data if isinstance(data, dict) else {}
+
+    def get_sync_cursor(self, target: str) -> int:
+        """Return the last acknowledged cursor for a sync target."""
+        state = self.get_sync_state()
+        entry = state.get(target)
+        if not isinstance(entry, dict):
+            return 0
+        cursor = entry.get("cursor", 0)
+        return cursor if isinstance(cursor, int) and cursor >= 0 else 0
+
+    def set_sync_cursor(
+        self,
+        target: str,
+        cursor: int,
+        *,
+        endpoint: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Persist the last acknowledged cursor and metadata for a sync target."""
+        if cursor < 0:
+            raise ValueError("'cursor' must be greater than or equal to 0.")
+
+        state = self.get_sync_state()
+        entry = dict(state.get(target) or {})
+        entry["cursor"] = cursor
+        entry["updated_at"] = datetime.now(timezone.utc).isoformat()
+        if endpoint is not None:
+            entry["endpoint"] = endpoint
+        if metadata:
+            extra = dict(entry.get("metadata") or {})
+            extra.update(metadata)
+            entry["metadata"] = extra
+        state[target] = entry
+        self.sync_state_path.write_text(
+            json.dumps(state, indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
+        return entry
 
     # ── Lineage ────────────────────────────────────────────────────────────────
 

@@ -32,16 +32,19 @@ class TestServerBootstrap:
         assert root_json["service"] == "forkit-local-service"
         assert root_json["registry"]["root"] == str(settings.registry_root)
         assert root_json["registry"]["outbox_path"] == str(settings.registry_root / "outbox.jsonl")
+        assert root_json["registry"]["sync_state_path"] == str(settings.registry_root / "sync_state.json")
         assert health_json["status"] == "ok"
         assert health_json["initialized"] is True
         assert ready_json["status"] == "ready"
         assert ready_json["index_db_exists"] is True
         assert ready_json["outbox_exists"] is True
+        assert ready_json["sync_state_exists"] is True
 
         assert (settings.registry_root / "models").exists()
         assert (settings.registry_root / "agents").exists()
         assert (settings.registry_root / "index.db").exists()
         assert (settings.registry_root / "outbox.jsonl").exists()
+        assert (settings.registry_root / "sync_state.json").exists()
 
     def test_serve_help_is_available(self):
         runner = CliRunner()

@@ -7,6 +7,7 @@ Commands
 ────────
   forkit register model <yaml-file>
   forkit register agent <yaml-file>
+  forkit sync push <endpoint>
   forkit serve
   forkit inspect <id>
   forkit list [--type model|agent] [--status active|draft|deprecated|revoked]
@@ -38,10 +39,13 @@ except ImportError:
 
 from ..registry.local import LocalRegistry
 from ..schemas import AgentPassport, ModelPassport
+from ..sync import RemoteSyncBridge
 
 app     = typer.Typer(name="forkit", help="forkit-core — AI model/agent identity CLI")
 reg_app = typer.Typer(help="Register a passport from a YAML file")
+sync_app = typer.Typer(help="Push local outbox changes to a remote endpoint")
 app.add_typer(reg_app, name="register")
+app.add_typer(sync_app, name="sync")
 
 _REGISTRY_ROOT = Path.home() / ".forkit" / "registry"
 
@@ -146,6 +150,38 @@ def stats():
     """Print registry statistics."""
     s = _registry().stats()
     typer.echo(json.dumps(s, indent=2))
+
+
+# ── sync ──────────────────────────────────────────────────────────────────────
+
+@sync_app.command("status")
+def sync_status():
+    """Print saved sync cursors keyed by target."""
+    typer.echo(json.dumps(_registry().get_sync_state(), indent=2))
+
+
+@sync_app.command("push")
+def sync_push(
+    endpoint: str = typer.Argument(..., help="Remote POST endpoint for sync batches"),
+    target: Optional[str] = typer.Option(None, "--target", help="Stable local name for this sync target"),
+    after: Optional[int] = typer.Option(None, "--after", help="Override the saved cursor and start after this value"),
+    limit: int = typer.Option(100, "--limit", min=1, max=1000, help="Maximum number of changes per batch"),
+    passport_type: Optional[str] = typer.Option(None, "--type", "-t", help="model | agent"),
+    timeout: float = typer.Option(30.0, "--timeout", min=1.0, help="HTTP timeout in seconds"),
+    token: Optional[str] = typer.Option(None, "--token", envvar="FORKIT_SYNC_TOKEN", help="Optional bearer token"),
+):
+    """Push local outbox changes to a remote endpoint and persist the acknowledged cursor."""
+    bridge = RemoteSyncBridge(_registry())
+    result = bridge.push(
+        endpoint,
+        target=target,
+        after=after,
+        limit=limit,
+        passport_type=passport_type,
+        timeout=timeout,
+        token=token,
+    )
+    typer.echo(json.dumps(result, indent=2))
 
 
 # ── serve ─────────────────────────────────────────────────────────────────────

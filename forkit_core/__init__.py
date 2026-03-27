@@ -28,6 +28,7 @@ from forkit import (
     Modality,
     NodeType,
     PassportStatus,
+    RemoteSyncBridge,
     SystemPromptRecord,
     TaskType,
     ToolRef,
@@ -69,6 +70,7 @@ __all__ = [
     "EdgeType",
     "LocalRegistry",
     "ForkitClient",
+    "RemoteSyncBridge",
     "ServerSettings",
     "create_app",
 ]

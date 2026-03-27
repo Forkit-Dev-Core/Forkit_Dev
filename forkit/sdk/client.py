@@ -24,6 +24,7 @@ from ..schemas import (
     SystemPromptRecord,
     TaskType,
 )
+from ..sync import RemoteSyncBridge
 
 
 class ModelClient:
@@ -161,6 +162,58 @@ class LineageClient:
         return self.graph.to_dict()
 
 
+class SyncClient:
+    """Cursor-based export and remote push helpers for the local outbox."""
+
+    def __init__(self, registry: LocalRegistry):
+        self._registry = registry
+        self._bridge = RemoteSyncBridge(registry)
+
+    def export(
+        self,
+        *,
+        after: int = 0,
+        limit: int = 100,
+        passport_type: str | None = None,
+    ) -> dict[str, Any]:
+        return self._registry.export_changes(
+            after=after,
+            limit=limit,
+            passport_type=passport_type,
+        )
+
+    def push(
+        self,
+        endpoint: str,
+        *,
+        target: str | None = None,
+        after: int | None = None,
+        limit: int = 100,
+        passport_type: str | None = None,
+        timeout: float = 30.0,
+        token: str | None = None,
+        source: str | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
+        return self._bridge.push(
+            endpoint,
+            target=target,
+            after=after,
+            limit=limit,
+            passport_type=passport_type,
+            timeout=timeout,
+            token=token,
+            source=source,
+            headers=headers,
+        )
+
+    def cursor(self, target: str) -> int:
+        return self._registry.get_sync_cursor(target)
+
+    def status(self) -> dict[str, Any]:
+        return self._bridge.status()
+
+
 class ForkitClient:
     """
     Top-level SDK client for the local forkit registry.
@@ -180,6 +233,7 @@ class ForkitClient:
         self.models = ModelClient(self._registry)
         self.agents = AgentClient(self._registry)
         self.lineage = LineageClient(self._registry)
+        self.sync = SyncClient(self._registry)
 
     def register_model(self, passport: ModelPassport) -> str:
         return self.models.register_passport(passport)
