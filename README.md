@@ -15,6 +15,21 @@ Forkit Core stays local and file-based, with developer-friendly compatibility to
 
 ---
 
+## Start Here
+
+Recommended first runs:
+
+- SDK core flow: [`examples/sdk_quickstart.py`](./examples/sdk_quickstart.py)
+- LangGraph registration + sync: [`examples/langgraph_sync_quickstart.py`](./examples/langgraph_sync_quickstart.py)
+- LangChain registration + sync: [`examples/langchain_sync_quickstart.py`](./examples/langchain_sync_quickstart.py)
+- Generic self-host sync: [`examples/self_host_sync_quickstart.py`](./examples/self_host_sync_quickstart.py)
+
+If you are evaluating Forkit for framework adoption, start with LangGraph or
+LangChain first. They show the current adapter pattern that can later be
+extended to other ecosystems.
+
+---
+
 ## OSS Scope
 
 This repository is the open-source, local-first core of Forkit.
