@@ -11,7 +11,7 @@
 
 Zero hard dependencies. Works offline. Deterministic IDs.
 
-Forkit Core stays local and file-based, with developer-friendly compatibility tools for GitHub CI passport validation and Hugging Face model card export.
+Forkit Core stays local and file-based, with integration helpers for LangGraph, LangChain, OpenClaw, GitHub CI passport validation, and Hugging Face model card export.
 
 ---
 
@@ -22,6 +22,7 @@ Recommended first runs:
 - SDK core flow: [`examples/sdk_quickstart.py`](./examples/sdk_quickstart.py)
 - LangGraph registration + sync: [`examples/langgraph_sync_quickstart.py`](./examples/langgraph_sync_quickstart.py)
 - LangChain registration + sync: [`examples/langchain_sync_quickstart.py`](./examples/langchain_sync_quickstart.py)
+- OpenClaw config + plugin registration: [`examples/openclaw_quickstart.py`](./examples/openclaw_quickstart.py)
 - Generic self-host sync: [`examples/self_host_sync_quickstart.py`](./examples/self_host_sync_quickstart.py)
 
 If you are evaluating Forkit for framework adoption, start with LangGraph or
@@ -41,7 +42,7 @@ Included in OSS:
 - local JSON + SQLite registry
 - local HTTP service for registration, lookup, verification, lineage, and export
 - generic sync built on `GET /export`, `POST /sync/passports`, `sync push`, and `sync pull`
-- LangGraph and LangChain adapters
+- LangGraph, LangChain, and OpenClaw adapters
 - self-host and local development examples
 
 Contribution rules:
@@ -63,6 +64,7 @@ Contribution rules:
 | `forkit.registry` | Local filesystem store (JSON files + SQLite index) |
 | `forkit.sdk` | `ForkitClient` Python SDK |
 | `forkit.cli` | `forkit` command-line tool |
+| `forkit_openclaw` | Thin adapter for local OpenClaw gateway config and plugin manifests |
 
 ---
 

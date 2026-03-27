@@ -2,6 +2,7 @@ import {
   ArrowRight,
   Cable,
   CheckCircle2,
+  Compass,
   FileText,
   Github,
   Network,
@@ -69,6 +70,22 @@ const bridgeCards = [
   },
 ]
 
+const thinAdapterCards = [
+  {
+    title: 'OpenClaw',
+    depth: 'Thin adapter',
+    icon: Compass,
+    tone: 'text-brand',
+    summary:
+      'Registers local OpenClaw gateway config, plugin manifests, extension entrypoints, and hook metadata into a Forkit agent passport.',
+    install: 'pip install -e .',
+    start: 'examples/openclaw_quickstart.py',
+    outcome:
+      'A local passport for an OpenClaw gateway config and bundled plugin surface, with tool and hook metadata preserved.',
+    proof: 'Validated against local openclaw.json, openclaw.plugin.json, extension registrations, and HOOK.md parsing.',
+  },
+]
+
 const strategyRules = [
   'Go deep only when runtime metadata is part of the value.',
   'Stay bridge-first when file export or CI already solves the main use case.',
@@ -102,16 +119,16 @@ const nextTargets = [
       'Polish the current export flow before adding API-level complexity.',
   },
   {
-    title: 'OpenClaw',
-    label: 'Next adapter',
-    description:
-      'Logical next target because it matches the same thin adapter model as Lang runtimes.',
-  },
-  {
     title: 'NeMo',
     label: 'Later adapter',
     description:
       'Better after the runtime adapter pattern is proven, because the surface is broader and heavier.',
+  },
+  {
+    title: 'Additional runtime adapters',
+    label: 'After proof',
+    description:
+      'Expand further only after Lang and OpenClaw show real user pull through the same passport contract.',
   },
 ]
 
@@ -199,7 +216,8 @@ export function EcosystemsPage() {
             <p className="max-w-3xl text-[1.05rem] leading-relaxed text-muted md:text-xl">
               Forkit Dev gives models and agents a local-first passport with deterministic identity, provenance, and
               verification. The cleanest adoption path is to attach Forkit to tools people already use, then show the
-              exact outcome they can expect from each integration.
+              exact outcome they can expect from each integration. LangGraph and LangChain are the deepest adapters
+              today, OpenClaw is now a thin local adapter, and GitHub plus Hugging Face stay lightweight bridges.
             </p>
           </div>
 
@@ -257,6 +275,19 @@ export function EcosystemsPage() {
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {adapterCards.map((card) => (
+            <IntegrationCard key={card.title} {...card} />
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-6">
+        <div>
+          <div className="eyebrow">Thin Adapters</div>
+          <h2 className="mt-2 text-3xl font-bold text-text">Use these for local config ecosystems</h2>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {thinAdapterCards.map((card) => (
             <IntegrationCard key={card.title} {...card} />
           ))}
         </div>

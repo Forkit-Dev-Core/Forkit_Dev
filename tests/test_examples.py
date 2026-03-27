@@ -73,3 +73,18 @@ class TestExamples:
         assert payload["mirrored_tool_names"] == ["lookup_status"]
         assert payload["runtime_counts"]["tool_start"] >= 1
         assert payload["runtime_counts"]["tool_end"] >= 1
+
+    def test_openclaw_quickstart_runs(self, capsys):
+        runpy.run_path(
+            str(REPO_ROOT / "examples" / "openclaw_quickstart.py"),
+            run_name="__main__",
+        )
+
+        output = capsys.readouterr().out
+        payload = json.loads(output)
+
+        assert payload["architecture"] == "Tool-Use"
+        assert payload["tool_names"] == ["incident_lookup"]
+        assert payload["plugin_name"] == "@forkit/openclaw-ops"
+        assert payload["channel_names"] == ["matrix"]
+        assert payload["hook_names"] == ["session-memory"]

@@ -82,7 +82,7 @@ Repository = "https://github.com/arpitasarker01/Forkit_Dev"
 Issues     = "https://github.com/arpitasarker01/Forkit_Dev/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["forkit", "forkit_core", "forkit_langchain", "forkit_langgraph"]  # ship both during transition
+packages = ["forkit", "forkit_core", "forkit_langchain", "forkit_langgraph", "forkit_openclaw"]  # ship both during transition
 
 [tool.ruff]
 line-length = 100
