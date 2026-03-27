@@ -7,6 +7,8 @@ import { LineagePage } from './pages/LineagePage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { PassportDetailPage } from './pages/PassportDetailPage'
 import { PassportListPage } from './pages/PassportListPage'
+import { RegistryStatsPage } from './pages/RegistryStatsPage'
+import { SearchPage } from './pages/SearchPage'
 import { VerifyPassportPage } from './pages/VerifyPassportPage'
 
 function App() {
@@ -15,11 +17,14 @@ function App() {
       <Route element={<AppShell />}>
         <Route index element={<LandingPage />} />
         <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="passports" element={<PassportListPage />} />
+        <Route path="registry" element={<PassportListPage />} />
+        <Route path="passports" element={<Navigate to="/registry" replace />} />
         <Route path="passports/create" element={<CreatePassportPage />} />
-        <Route path="passports/:passportSlug" element={<PassportDetailPage />} />
+        <Route path="passports/:passportId" element={<PassportDetailPage />} />
+        <Route path="search" element={<SearchPage />} />
         <Route path="verify" element={<VerifyPassportPage />} />
         <Route path="lineage" element={<LineagePage />} />
+        <Route path="registry/stats" element={<RegistryStatsPage />} />
         <Route path="home" element={<Navigate to="/" replace />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>

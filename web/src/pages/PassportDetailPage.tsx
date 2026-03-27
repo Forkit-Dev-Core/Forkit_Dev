@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  Activity,
   ArrowRight,
-  ExternalLink,
   Fingerprint,
   GitBranch,
   Loader2,
@@ -15,10 +13,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { LineageGraph } from '@/components/LineageGraph'
 import PassportCard from '@/components/PassportCard'
 import { fetchApi } from '@/lib/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
 import type { Passport, PassportEdge } from '@/types'
 
+function getStatusVariant(status: Passport['verificationStatus']) {
+  if (status === 'verified') {
+    return 'success'
+  }
+
+  if (status === 'warning') {
+    return 'warning'
+  }
+
+  return 'outline'
+}
+
+const fieldPanelClass = 'rounded-2xl border border-border bg-surface-soft p-4'
+
 export function PassportDetailPage() {
-  const { passportSlug } = useParams()
+  usePageTitle('Inspect Passport')
+  const { passportId } = useParams()
   const [passport, setPassport] = useState<Passport | null>(null)
   const [family, setFamily] = useState<Passport[]>([])
   const [edges, setEdges] = useState<PassportEdge[]>([])
@@ -27,17 +41,17 @@ export function PassportDetailPage() {
 
   useEffect(() => {
     const load = async () => {
-      if (!passportSlug) {
-        setError('Missing passport identifier.')
+      if (!passportId) {
+        setError('Missing Passport ID.')
         setLoading(false)
         return
       }
 
       try {
         const [passportData, lineageData] = await Promise.all([
-          fetchApi<Passport>(`/v1/passports/${passportSlug}`),
+          fetchApi<Passport>(`/v1/passports/${passportId}`),
           fetchApi<{ focus: Passport; family: Passport[]; edges: PassportEdge[] }>(
-            `/v1/passports/${passportSlug}/lineage`,
+            `/v1/passports/${passportId}/lineage`,
           ),
         ])
 
@@ -45,275 +59,204 @@ export function PassportDetailPage() {
         setFamily(lineageData.family ?? [])
         setEdges(lineageData.edges ?? [])
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load passport.')
+        setError(err instanceof Error ? err.message : 'Failed to inspect passport.')
       } finally {
         setLoading(false)
       }
     }
 
     void load()
-  }, [passportSlug])
+  }, [passportId])
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full flex items-center justify-center">
-        <Loader2 className="w-10 h-10 animate-spin text-[#6aa7ab]" />
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-center px-4 py-16 sm:px-6 lg:px-8">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     )
   }
 
   if (error || !passport) {
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">
-        <div className="waterdrop-glass rounded-[2rem] p-10 border border-[#f1ebdf]/10 text-center">
-          <h1 className="text-3xl font-bold text-[#f1ebdf]">Passport not found</h1>
-          <p className="text-dark-text-secondary mt-3">{error || 'No passport data returned.'}</p>
+      <div className="mx-auto w-full max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="rounded-[2rem] border border-border/80 p-10 text-center waterdrop-glass">
+          <h1 className="font-display text-3xl font-bold text-text">Passport not found</h1>
+          <p className="mt-3 text-muted">{error || 'No passport data returned.'}</p>
           <Link
-            to="/passports"
-            className="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-gradient-to-r from-[#008190] to-[#2a1f55] text-[#f1ebdf] rounded-xl font-semibold"
+            to="/registry"
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3 font-semibold text-[#f1ebdf] shadow-[0_14px_28px_rgba(0,129,144,0.18)] transition-all hover:bg-accent-dark hover:shadow-[0_18px_30px_rgba(0,129,144,0.22)]"
           >
-            Return to Passport List
+            Return to Registry
           </Link>
         </div>
       </div>
     )
   }
 
-  const relatedPassports = family.filter((candidate) => candidate.gaid !== passport.gaid)
+  const relatedPassports = family.filter((candidate) => candidate.id !== passport.id)
+  const summaryCards = [
+    { label: 'Creator', value: passport.creator.name },
+    { label: 'License', value: passport.license },
+    { label: 'Updated', value: new Date(passport.updatedAt).toLocaleString() },
+    { label: 'Record Path', value: passport.recordPath, mono: true },
+  ]
+
+  const integrityFields = [
+    { label: 'artifact_hash', value: passport.artifactHash },
+    { label: 'parent_hash', value: passport.parentHash },
+    { label: 'base_model_id', value: passport.baseModelId },
+    { label: 'model_id', value: passport.modelId },
+    { label: 'system_prompt_hash', value: passport.systemPromptHash },
+    { label: 'endpoint_hash', value: passport.endpointHash },
+  ].filter((item) => item.value)
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 w-full">
-      <section className="waterdrop-glass rounded-[2rem] border border-[#f1ebdf]/10 overflow-hidden">
-        <div className="h-1.5 w-full bg-gradient-to-r from-[#008190] via-[#2a1f55] to-[#f49355]" />
-        <div className="p-8 space-y-8">
-          <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+      <section className="overflow-hidden rounded-[2rem] border border-border/80 waterdrop-glass">
+        <div className="h-1.5 w-full bg-gradient-to-r from-accent via-primary to-brand" />
+        <div className="space-y-8 p-8">
+          <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
             <div className="space-y-5">
               <div className="flex flex-wrap items-center gap-3">
-                <Badge variant="outline">{passport.passportType}</Badge>
-                <Badge
-                  variant={
-                    passport.verificationStatus === 'verified'
-                      ? 'success'
-                      : passport.verificationStatus === 'monitoring'
-                        ? 'warning'
-                        : passport.verificationStatus === 'draft'
-                          ? 'outline'
-                          : 'danger'
-                  }
-                >
+                <Badge variant="outline">
+                  {passport.passportType === 'model' ? 'ModelPassport' : 'AgentPassport'}
+                </Badge>
+                <Badge variant={getStatusVariant(passport.verificationStatus)}>
                   {passport.verificationStatus}
                 </Badge>
               </div>
               <div>
-                <h1 className="text-4xl font-bold text-[#f1ebdf] tracking-tight">
-                  {passport.name}
+                <h1 className="font-display text-4xl font-bold tracking-tight text-text">
+                  Inspect Passport
                 </h1>
-                <p className="text-dark-text-secondary mt-3 max-w-3xl text-lg leading-relaxed">
-                  {passport.description}
+                <p className="mt-3 max-w-3xl text-lg leading-relaxed text-text">
+                  {passport.name} v{passport.version}
                 </p>
+                <p className="mt-2 max-w-3xl text-muted">{passport.description}</p>
               </div>
               <div className="flex flex-wrap gap-4">
                 <Link
-                  to={`/verify?id=${passport.gaid}`}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#008190] to-[#2a1f55] text-[#f1ebdf] rounded-xl font-semibold"
+                  to={`/verify?id=${passport.id}`}
+                  className="inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3 font-semibold text-[#f1ebdf] shadow-[0_14px_28px_rgba(0,129,144,0.18)] transition-all hover:bg-accent-dark hover:shadow-[0_18px_30px_rgba(0,129,144,0.22)]"
                 >
-                  Verify Passport
-                  <ShieldCheck className="w-4 h-4" />
+                  Verify
+                  <ShieldCheck className="h-4 w-4" />
                 </Link>
                 <Link
-                  to={`/lineage?id=${passport.gaid}`}
-                  className="inline-flex items-center gap-2 px-6 py-3 border border-[#f1ebdf]/10 rounded-xl text-[#f1ebdf] hover:bg-[#f1ebdf]/5 transition-colors"
+                  to={`/lineage?id=${passport.id}`}
+                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-white/80 px-6 py-3 font-semibold text-text transition-colors hover:border-accent/30 hover:bg-accent/5 hover:text-accent-dark"
                 >
-                  Explore Lineage
-                  <GitBranch className="w-4 h-4" />
+                  Lineage
+                  <GitBranch className="h-4 w-4" />
                 </Link>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 min-w-full xl:min-w-[360px] xl:max-w-[420px]">
-              <div className="rounded-2xl bg-[#0B0F19]/60 border border-[#f1ebdf]/10 p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-dark-text-secondary">
-                  Governance
+            <div className="grid min-w-full grid-cols-2 gap-4 xl:min-w-[360px] xl:max-w-[420px]">
+              {summaryCards.map((item) => (
+                <div key={item.label} className={fieldPanelClass}>
+                  <div className="text-xs uppercase tracking-[0.2em] text-muted">{item.label}</div>
+                  <div
+                    className={`mt-2 ${item.mono ? 'font-mono text-xs break-all' : 'text-sm'} font-semibold text-text`}
+                  >
+                    {item.value}
+                  </div>
                 </div>
-                <div className="mt-2 text-3xl font-bold text-[#f1ebdf]">
-                  {passport.metadata.governanceScore}
-                </div>
-              </div>
-              <div className="rounded-2xl bg-[#0B0F19]/60 border border-[#f1ebdf]/10 p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-dark-text-secondary">
-                  Integrity
-                </div>
-                <div className="mt-2 text-3xl font-bold text-[#f1ebdf]">
-                  {passport.metadata.integrityScore}
-                </div>
-              </div>
-              <div className="rounded-2xl bg-[#0B0F19]/60 border border-[#f1ebdf]/10 p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-dark-text-secondary">
-                  Risk
-                </div>
-                <div className="mt-2 text-3xl font-bold text-amber-300">
-                  {passport.metadata.riskLevel}
-                </div>
-              </div>
-              <div className="rounded-2xl bg-[#0B0F19]/60 border border-[#f1ebdf]/10 p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-dark-text-secondary">
-                  Last Verified
-                </div>
-                <div className="mt-2 text-sm font-semibold text-[#f1ebdf]">
-                  {new Date(passport.metadata.lastVerifiedAt).toLocaleString()}
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-[1.1fr_0.9fr] gap-6">
-            <Card className="border border-[#f1ebdf]/10">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Fingerprint className="w-5 h-5 text-[#6aa7ab]" />
-                  Identity Overview
+                  <Fingerprint className="h-5 w-5 text-primary" />
+                  Identity Fields
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="rounded-2xl bg-[#0B0F19]/60 border border-[#f1ebdf]/10 p-4">
-                  <div className="text-[11px] uppercase tracking-[0.2em] text-dark-text-secondary">
-                    GAID
-                  </div>
-                  <div className="mt-2 font-mono text-sm text-[#f1ebdf] break-all">
-                    {passport.gaid}
-                  </div>
+                <div className={fieldPanelClass}>
+                  <div className="text-[11px] uppercase tracking-[0.2em] text-muted">Passport ID</div>
+                  <div className="mt-2 break-all font-mono text-sm text-text">{passport.id}</div>
                 </div>
-                <div className="rounded-2xl bg-[#0B0F19]/60 border border-[#f1ebdf]/10 p-4">
-                  <div className="text-[11px] uppercase tracking-[0.2em] text-dark-text-secondary">
-                    Checksum
-                  </div>
-                  <div className="mt-2 font-mono text-sm text-[#f1ebdf] break-all">
-                    {passport.checksumSha256 || 'Not sealed yet'}
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="rounded-2xl bg-[#0B0F19]/60 border border-[#f1ebdf]/10 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-dark-text-secondary">
-                      Owner
-                    </div>
-                    <div className="mt-2 text-sm text-[#f1ebdf]">
-                      {passport.ownerName} · {passport.organization}
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className={fieldPanelClass}>
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-muted">Type</div>
+                    <div className="mt-2 text-sm text-text">
+                      {passport.passportType === 'model' ? 'ModelPassport' : 'AgentPassport'}
                     </div>
                   </div>
-                  <div className="rounded-2xl bg-[#0B0F19]/60 border border-[#f1ebdf]/10 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-dark-text-secondary">
+                  <div className={fieldPanelClass}>
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-muted">Version</div>
+                    <div className="mt-2 text-sm text-text">{passport.version}</div>
+                  </div>
+                  <div className={fieldPanelClass}>
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-muted">
                       Architecture
                     </div>
-                    <div className="mt-2 text-sm text-[#f1ebdf]">
-                      {passport.architecture || 'Not specified'}
+                    <div className="mt-2 text-sm text-text">
+                      {passport.architecture || 'Not stored'}
                     </div>
                   </div>
-                </div>
-                <div className="rounded-2xl bg-[#0B0F19]/60 border border-[#f1ebdf]/10 p-4">
-                  <div className="text-[11px] uppercase tracking-[0.2em] text-dark-text-secondary">
-                    Source
+                  <div className={fieldPanelClass}>
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-muted">
+                      Task Type
+                    </div>
+                    <div className="mt-2 text-sm text-text">
+                      {passport.taskType || 'Not stored'}
+                    </div>
                   </div>
-                  {passport.sourceUrl ? (
-                    <a
-                      href={passport.sourceUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-2 inline-flex items-center gap-2 text-sm text-[#6aa7ab] hover:text-[#f1ebdf] transition-colors"
-                    >
-                      {passport.sourceUrl}
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  ) : (
-                    <div className="mt-2 text-sm text-dark-text-secondary">No source URL attached.</div>
-                  )}
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border border-[#f1ebdf]/10">
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-[#6aa7ab]" />
-                  Verification Checklist
+                  <ShieldCheck className="h-5 w-5 text-accent" />
+                  Integrity Fields
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {passport.verificationChecks.map((check) => (
-                  <div
-                    key={check.label}
-                    className="rounded-2xl bg-[#0B0F19]/60 border border-[#f1ebdf]/10 p-4"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="text-sm font-semibold text-[#f1ebdf]">{check.label}</div>
-                      <Badge
-                        variant={
-                          check.status === 'pass'
-                            ? 'success'
-                            : check.status === 'warn'
-                              ? 'warning'
-                              : 'outline'
-                        }
-                      >
-                        {check.status}
-                      </Badge>
+                {integrityFields.length > 0 ? (
+                  integrityFields.map((item) => (
+                    <div key={item.label} className={fieldPanelClass}>
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-muted">
+                        {item.label}
+                      </div>
+                      <div className="mt-2 break-all font-mono text-sm text-text">
+                        {item.value}
+                      </div>
                     </div>
-                    <div className="text-sm text-dark-text-secondary mt-2">
-                      {check.detail}
-                    </div>
+                  ))
+                ) : (
+                  <div className={`${fieldPanelClass} text-sm text-muted`}>
+                    No additional integrity fields are stored for this passport.
                   </div>
-                ))}
+                )}
               </CardContent>
             </Card>
           </div>
         </div>
       </section>
 
-      <section className="grid grid-cols-1 xl:grid-cols-[1.1fr_0.9fr] gap-6">
-        <Card className="border border-[#f1ebdf]/10">
+      <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Activity className="w-5 h-5 text-[#f49355]" />
-              Capabilities, Tools, and Permissions
+              <ArrowRight className="h-5 w-5 text-brand" />
+              Schema Fields
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div>
-              <div className="text-[11px] uppercase tracking-[0.2em] text-dark-text-secondary mb-3">
-                Use Cases
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {passport.metadata.useCases.map((useCase) => (
-                  <Badge key={useCase} variant="outline">
-                    {useCase}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <div className="text-[11px] uppercase tracking-[0.2em] text-dark-text-secondary mb-3">
-                Permissions
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {passport.metadata.permissions.map((permission) => (
-                  <Badge key={permission} variant="outline">
-                    {permission}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-
             {passport.trainingData?.length ? (
               <div>
-                <div className="text-[11px] uppercase tracking-[0.2em] text-dark-text-secondary mb-3">
-                  Training Data
+                <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-muted">
+                  Training Data References
                 </div>
                 <div className="space-y-3">
                   {passport.trainingData.map((item) => (
-                    <div
-                      key={item}
-                      className="rounded-2xl bg-[#0B0F19]/60 border border-[#f1ebdf]/10 p-4 text-sm text-[#f1ebdf]"
-                    >
+                    <div key={item} className={`${fieldPanelClass} text-sm text-text`}>
                       {item}
                     </div>
                   ))}
@@ -321,23 +264,39 @@ export function PassportDetailPage() {
               </div>
             ) : null}
 
+            {passport.capabilities ? (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className={fieldPanelClass}>
+                  <div className="text-[11px] uppercase tracking-[0.2em] text-muted">
+                    Modalities
+                  </div>
+                  <div className="mt-2 text-sm text-text">
+                    {passport.capabilities.modalities.join(', ')}
+                  </div>
+                </div>
+                <div className={fieldPanelClass}>
+                  <div className="text-[11px] uppercase tracking-[0.2em] text-muted">
+                    Context Length
+                  </div>
+                  <div className="mt-2 text-sm text-text">
+                    {passport.capabilities.contextLength.toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
             {passport.tools?.length ? (
               <div>
-                <div className="text-[11px] uppercase tracking-[0.2em] text-dark-text-secondary mb-3">
-                  Toolchain
-                </div>
+                <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-muted">Tools</div>
                 <div className="space-y-3">
                   {passport.tools.map((tool) => (
-                    <div
-                      key={tool.name}
-                      className="rounded-2xl bg-[#0B0F19]/60 border border-[#f1ebdf]/10 p-4"
-                    >
-                      <div className="flex items-center gap-2 text-sm font-semibold text-[#f1ebdf]">
-                        <Wrench className="w-4 h-4 text-[#6aa7ab]" />
-                        {tool.name}
+                    <div key={`${tool.name}-${tool.version}`} className={fieldPanelClass}>
+                      <div className="flex items-center gap-2 text-sm font-semibold text-text">
+                        <Wrench className="h-4 w-4 text-accent" />
+                        {tool.name} v{tool.version}
                       </div>
-                      <div className="text-sm text-dark-text-secondary mt-2">
-                        {tool.description}
+                      <div className="mt-2 break-all font-mono text-xs text-muted">
+                        {tool.hash || 'No tool hash stored'}
                       </div>
                     </div>
                   ))}
@@ -347,52 +306,60 @@ export function PassportDetailPage() {
           </CardContent>
         </Card>
 
-        <Card className="border border-[#f1ebdf]/10">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ArrowRight className="w-5 h-5 text-[#6aa7ab]" />
-              Evidence Bundle
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              Verify Checks
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {passport.metadata.evidence.map((item) => (
-              <div
-                key={item}
-                className="rounded-2xl bg-[#0B0F19]/60 border border-[#f1ebdf]/10 p-4 text-sm text-dark-text-secondary"
-              >
-                {item}
+            {passport.verificationChecks.map((check) => (
+              <div key={check.label} className={fieldPanelClass}>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm font-semibold text-text">{check.label}</div>
+                  <Badge
+                    variant={
+                      check.status === 'pass'
+                        ? 'success'
+                        : check.status === 'warn'
+                          ? 'warning'
+                          : 'outline'
+                    }
+                  >
+                    {check.status}
+                  </Badge>
+                </div>
+                <div className="mt-2 text-sm text-muted">{check.detail}</div>
               </div>
             ))}
           </CardContent>
         </Card>
       </section>
 
-      <Card className="border border-[#f1ebdf]/10">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <GitBranch className="w-5 h-5 text-[#6aa7ab]" />
-            Connected Lineage
+            <GitBranch className="h-5 w-5 text-primary" />
+            Lineage
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <LineageGraph passports={family} edges={edges} focusGaid={passport.gaid} />
+          <LineageGraph passports={family} edges={edges} focusId={passport.id} />
         </CardContent>
       </Card>
 
       {relatedPassports.length > 0 ? (
         <section className="space-y-6">
           <div className="flex items-center justify-between gap-4">
-            <h2 className="text-2xl font-bold text-[#f1ebdf]">Connected Passports</h2>
-            <Link
-              to={`/lineage?id=${passport.gaid}`}
-              className="text-[#6aa7ab] font-semibold hover:text-[#f1ebdf] transition-colors"
-            >
-              Full lineage view
+            <h2 className="text-2xl font-bold text-text">Related Passports</h2>
+            <Link to={`/lineage?id=${passport.id}`} className="section-link font-semibold">
+              Open lineage view
             </Link>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {relatedPassports.slice(0, 3).map((related) => (
-              <PassportCard key={related.gaid} passport={related} />
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {relatedPassports.map((related) => (
+              <PassportCard key={related.id} passport={related} />
             ))}
           </div>
         </section>

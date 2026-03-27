@@ -1,118 +1,106 @@
-import { useDeferredValue, useEffect, useState } from 'react'
-import { Filter, Loader2, Search } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Loader2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import PassportCard from '@/components/PassportCard'
 import { fetchApi } from '@/lib/api'
-import type { Passport, PassportType, VerificationStatus } from '@/types'
+import { usePageTitle } from '@/hooks/usePageTitle'
+import type { Passport } from '@/types'
 
 export function PassportListPage() {
+  usePageTitle('Registry')
   const [passports, setPassports] = useState<Passport[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [typeFilter, setTypeFilter] = useState<'all' | PassportType>('all')
-  const [statusFilter, setStatusFilter] = useState<'all' | VerificationStatus>('all')
-  const deferredSearch = useDeferredValue(searchQuery.trim().toLowerCase())
+  const [error, setError] = useState('')
 
   useEffect(() => {
     const load = async () => {
-      const data = await fetchApi<{ passports: Passport[] }>('/v1/passports')
-      setPassports(data.passports ?? [])
-      setLoading(false)
+      try {
+        const data = await fetchApi<{ passports: Passport[] }>('/v1/passports')
+        setPassports(data.passports ?? [])
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load the registry')
+      } finally {
+        setLoading(false)
+      }
     }
 
     void load()
   }, [])
-
-  const filteredPassports = passports.filter((passport) => {
-    const matchesSearch =
-      deferredSearch.length === 0 ||
-      [
-        passport.name,
-        passport.gaid,
-        passport.description,
-        passport.ownerName,
-        passport.organization,
-      ]
-        .join(' ')
-        .toLowerCase()
-        .includes(deferredSearch)
-
-    const matchesType = typeFilter === 'all' || passport.passportType === typeFilter
-    const matchesStatus =
-      statusFilter === 'all' || passport.verificationStatus === statusFilter
-
-    return matchesSearch && matchesType && matchesStatus
-  })
+  const modelCount = passports.filter((passport) => passport.passportType === 'model').length
+  const agentCount = passports.filter((passport) => passport.passportType === 'agent').length
+  const verifiedCount = passports.filter(
+    (passport) => passport.verificationStatus === 'verified',
+  ).length
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 w-full">
-      <div>
-        <h1 className="text-3xl font-bold text-[#f1ebdf] tracking-tight">Passport List</h1>
-        <p className="text-dark-text-secondary mt-1">
-          Filter the mapped registry by passport type, verification state, and search terms.
-        </p>
+    <div className="mx-auto w-full max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+        <div>
+          <h1 className="font-display text-3xl font-bold tracking-tight text-text">Registry</h1>
+          <p className="mt-1 text-muted">
+            Browse every ModelPassport and AgentPassport currently present in the local registry.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-4 text-sm font-semibold">
+          <Link to="/search" className="section-link">
+            Search and filter registry
+          </Link>
+          <Link to="/registry/stats" className="section-link">
+            Open registry stats
+          </Link>
+        </div>
       </div>
 
-      <div className="waterdrop-glass rounded-[2rem] p-6 border border-[#f1ebdf]/10">
-        <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_0.8fr_0.8fr] gap-4">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-dark-text-secondary" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search passports, owners, or GAIDs..."
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              className="block w-full pl-11 pr-4 py-3 border border-[#f1ebdf]/10 rounded-xl leading-5 bg-white/5 backdrop-blur-sm text-[#f1ebdf] placeholder:text-dark-text-secondary focus:outline-none focus:ring-2 focus:ring-[#008190] focus:border-transparent sm:text-sm transition-all shadow-sm"
-            />
+      <div className="rounded-[2rem] border border-border/80 p-6 waterdrop-glass">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className="rounded-[1.5rem] border border-border bg-surface-soft px-5 py-4">
+            <div className="eyebrow">Total</div>
+            <div className="mt-2 text-3xl font-bold text-text">{passports.length}</div>
           </div>
-
-          <select
-            value={typeFilter}
-            onChange={(event) => setTypeFilter(event.target.value as 'all' | PassportType)}
-            className="px-4 py-3 border border-[#f1ebdf]/10 rounded-xl bg-white/5 text-[#f1ebdf] focus:outline-none focus:ring-2 focus:ring-[#008190]"
-          >
-            <option value="all">All types</option>
-            <option value="model">Models</option>
-            <option value="agent">Agents</option>
-          </select>
-
-          <select
-            value={statusFilter}
-            onChange={(event) =>
-              setStatusFilter(event.target.value as 'all' | VerificationStatus)
-            }
-            className="px-4 py-3 border border-[#f1ebdf]/10 rounded-xl bg-white/5 text-[#f1ebdf] focus:outline-none focus:ring-2 focus:ring-[#008190]"
-          >
-            <option value="all">All statuses</option>
-            <option value="verified">Verified</option>
-            <option value="monitoring">Monitoring</option>
-            <option value="draft">Draft</option>
-            <option value="flagged">Flagged</option>
-          </select>
+          <div className="rounded-[1.5rem] border border-border bg-surface-soft px-5 py-4">
+            <div className="eyebrow">Models</div>
+            <div className="mt-2 text-3xl font-bold text-primary">{modelCount}</div>
+          </div>
+          <div className="rounded-[1.5rem] border border-border bg-surface-soft px-5 py-4">
+            <div className="eyebrow">Agents</div>
+            <div className="mt-2 text-3xl font-bold text-text">{agentCount}</div>
+          </div>
+          <div className="rounded-[1.5rem] border border-border bg-surface-soft px-5 py-4">
+            <div className="eyebrow">Verified</div>
+            <div className="mt-2 text-3xl font-bold text-accent">{verifiedCount}</div>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 mt-4 text-sm text-dark-text-secondary">
-          <Filter className="w-4 h-4" />
-          {filteredPassports.length} result{filteredPassports.length === 1 ? '' : 's'}
+        <div className="mt-5 flex flex-col gap-3 border-t border-border/70 pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-sm text-muted">
+            Registry is the browse view for all current passports. Use Search when you need
+            query or filter controls.
+          </div>
+          <Link to="/search" className="section-link text-sm font-semibold">
+            Open Search
+          </Link>
         </div>
       </div>
 
       {loading ? (
-        <div className="waterdrop-glass rounded-[2rem] p-16 flex items-center justify-center border border-[#f1ebdf]/10">
-          <Loader2 className="w-8 h-8 animate-spin text-[#6aa7ab]" />
+        <div className="flex items-center justify-center rounded-[2rem] border border-border/80 p-16 waterdrop-glass">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
-      ) : filteredPassports.length === 0 ? (
-        <div className="waterdrop-glass rounded-[2rem] p-16 text-center border border-[#f1ebdf]/10">
-          <div className="text-xl font-semibold text-[#f1ebdf]">No passports matched the current filters.</div>
-          <div className="text-dark-text-secondary mt-2">
-            Adjust the search or remove one of the filters to broaden the list.
+      ) : error ? (
+        <div className="rounded-[2rem] border border-semantic-danger/20 bg-semantic-danger/8 p-8 text-semantic-danger">
+          {error}
+        </div>
+      ) : passports.length === 0 ? (
+        <div className="rounded-[2rem] border border-border/80 p-16 text-center waterdrop-glass">
+          <div className="text-xl font-semibold text-text">No passports are in the registry yet.</div>
+          <div className="mt-2 text-muted">
+            Register a passport to create the first mock-backed record.
           </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredPassports.map((passport) => (
-            <PassportCard key={passport.gaid} passport={passport} />
+          {passports.map((passport) => (
+            <PassportCard key={passport.id} passport={passport} />
           ))}
         </div>
       )}

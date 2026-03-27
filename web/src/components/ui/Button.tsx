@@ -9,12 +9,12 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "default", size = "default", ...props }, ref) => {
     const variants = {
-      default: "bg-dark-accent-primary text-[#f1ebdf] hover:bg-dark-accent-secondary",
-      destructive: "bg-semantic-danger text-[#f1ebdf] hover:bg-semantic-danger/90",
-      outline: "border border-[#f1ebdf]/10 bg-transparent hover:bg-[#f1ebdf]/5 text-dark-text-primary",
-      secondary: "bg-dark-border text-dark-text-primary hover:bg-dark-border/80",
-      ghost: "hover:bg-[#f1ebdf]/5 text-dark-text-primary",
-      link: "text-dark-accent-primary underline-offset-4 hover:underline",
+      default: "bg-accent text-[#f1ebdf] shadow-[0_14px_26px_rgba(0,129,144,0.18)] hover:bg-accent-dark",
+      destructive: "bg-semantic-danger text-white hover:bg-semantic-danger/90",
+      outline: "border border-border bg-white/78 text-text hover:border-primary/30 hover:bg-primary/5",
+      secondary: "bg-surface-soft text-primary hover:bg-primary/8",
+      ghost: "text-text hover:bg-primary/6 hover:text-primary",
+      link: "text-primary underline-offset-4 hover:text-accent-dark hover:underline",
     }
 
     const sizes = {
@@ -27,7 +27,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         className={cn(
-          "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-dark-bg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dark-accent-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 glass-press",
+          "inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-semibold ring-offset-bg transition-all duration-180 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
           variants[variant],
           sizes[size],
           className

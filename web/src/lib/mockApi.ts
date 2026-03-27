@@ -1,551 +1,381 @@
-import type { Passport, PassportEdge } from '../types'
+import type {
+  Passport,
+  PassportEdge,
+  PassportTool,
+  PassportType,
+  RegistryStats,
+  VerificationCheck,
+  VerificationStatus,
+  VerifyPassportResult,
+} from '../types'
 
 type CreatePassportPayload = {
-  passportType: 'model' | 'agent'
+  passportType: PassportType
   name: string
-  org: string
+  version: string
+  creatorName: string
+  creatorOrganization?: string
+  license: string
   description?: string
-  sourceUrl?: string
-  checksumSha256?: string
-  parentPassportGaid?: string
-  modelPassportGaid?: string
-  deploymentEnvironment?: string
-  heartbeatConfig?: Passport['heartbeatConfig']
+  architecture?: string
+  taskType?: string
+  artifactHash?: string
+  baseModelId?: string
+  modelId?: string
+  systemPromptHash?: string
+  endpointHash?: string
+  trainingData?: string[]
+  tools?: PassportTool[]
 }
 
 const now = Date.now()
 
+const LLAMA_BASE_ID =
+  '77da08f276ff69ebf13848a027722161102a331d3329bed799eb1d1c69a0c8b4'
+const MAMBA_BASE_ID =
+  '7cd0099ea666e7c69ca243703525ea5b07c5db6b7c6c959284477a0932092c88'
+const LLAMA_FT_ID =
+  '34c8088d20e74829f5a6c22c6e539457e062fa32b04ac18ee15c39da98ff9c46'
+const SUPPORT_AGENT_ID =
+  'b36533b819f6c687c5092b6e733ce2486d6bfb6a3f0bb2fd62f1b28781eca861'
+
+const LLAMA_BASE_ARTIFACT =
+  '94f9062fc742503ffe6c2280637b6e787fcb391099ee3d400cb1527a8666e4a0'
+const MAMBA_BASE_ARTIFACT =
+  'fcb0721c216d56114ec71f6562e67c98073fb1173194366fc4810d25ac50e989'
+const LLAMA_FT_ARTIFACT =
+  '78a87239ea2a7d2325cefc4fb35f198e81f53f59290cc2b202d672b15612f018'
+const SUPPORT_AGENT_PROMPT =
+  '5ebade404e2eaf68bd9c6d6ae1920d7604516c2b7fced770929d0ae762b3747b'
+const SUPPORT_AGENT_ENDPOINT =
+  '85581546f40b31a7934a5773087f2625bd0b9954f097851bca2c88db3910a3ce'
+
 const seedPassports: Passport[] = [
   {
-    id: 1,
-    gaid: 'gaid-aurora-foundation-13b',
+    id: LLAMA_BASE_ID,
     passportType: 'model',
-    name: 'Aurora Foundation 13B',
+    name: 'llama-3-8b-base',
+    version: '1.0.0',
     description:
-      'Root Forkit Core model passport used as the anchor for downstream governance, lineage, and compliance derivatives.',
-    ownerName: 'Arpita Sarker',
-    organization: 'Forkit',
+      'Base ModelPassport for a root text generation model registered in the local Forkit registry.',
+    creator: {
+      name: 'Meta',
+      organization: 'Meta AI',
+    },
+    license: 'Llama-3-Community',
     verificationStatus: 'verified',
-    checksumSha256: '90ea6657ed2db16e6ba0830654dc4b38a497c7ea73b211217f12e8afc3c04ab4',
-    artifactHash: '1c4a6c72f51b4ad903688d1b9127d8c05a23e34f9e88af6d7611d47c51f3a2aa',
+    architecture: 'decoder-only',
+    taskType: 'text_generation',
+    artifactHash: LLAMA_BASE_ARTIFACT,
     parentHash: null,
-    parentPassportGaid: null,
-    sourceUrl: 'https://github.com/arpitasarker01/Forkit_Dev',
-    architecture: 'transformer',
-    taskType: 'text-generation',
-    trainingData: ['Public procurement directives', 'Corporate registry extracts', 'Synthetic decision traces'],
+    baseModelId: null,
+    modelId: null,
+    systemPromptHash: null,
+    endpointHash: null,
+    trainingData: ['Common Crawl references', 'Curated instruction data references'],
     capabilities: {
       modalities: ['text'],
-      contextLength: 32768,
-      domains: ['governance', 'audit', 'registry'],
+      contextLength: 8192,
+      benchmarks: ['MMLU', 'GSM8K'],
     },
-    quantisation: { method: 'AWQ', bits: 4 },
-    fineTuningMethod: null,
-    parameterCount: 13000000000,
-    sealedAt: new Date(now - 12 * 24 * 60 * 60 * 1000).toISOString(),
-    systemPromptHash: null,
-    modelPassportGaid: null,
     tools: null,
-    memoryType: null,
-    temperature: null,
-    maxTokens: null,
-    deploymentEnvironment: 'registry://eu/foundation',
-    heartbeatConfig: null,
-    liveness: null,
+    recordPath: `~/.forkit/registry/models/${LLAMA_BASE_ID}.json`,
     verificationChecks: [
       {
-        label: 'Artifact checksum',
+        label: 'Deterministic ID',
         status: 'pass',
-        detail: 'Weight bundle digest matches the sealed artifact.',
+        detail: 'Passport ID is a stable SHA-256 derived from model identity fields.',
       },
       {
-        label: 'Creator signature',
+        label: 'Artifact hash',
         status: 'pass',
-        detail: 'Signature envelope validated against the local keyring.',
+        detail: 'Artifact hash is present and matches the sealed model record.',
       },
       {
-        label: 'Root anchor',
+        label: 'Lineage anchor',
         status: 'pass',
-        detail: 'No parent expected. Root lineage is sealed.',
+        detail: 'No parent model is expected for this root ModelPassport.',
       },
     ],
-    metadata: {
-      license: 'Apache-2.0',
-      region: 'EU-West',
-      useCases: ['Model identity', 'Registry provenance', 'Compliance copilots'],
-      permissions: ['Read registry records', 'Generate provenance manifests'],
-      evidence: [
-        'Artifact hash matched cold-storage bundle AUR-13B-BASE.',
-        'Capability manifest refreshed for the March policy release.',
-      ],
-      integrityScore: 99,
-      governanceScore: 98,
-      lastVerifiedAt: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      riskLevel: 'Low',
-    },
-    createdAt: new Date(now - 42 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date(now - 21 * 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
-    id: 2,
-    gaid: 'gaid-aurora-compliance-13b',
+    id: MAMBA_BASE_ID,
     passportType: 'model',
-    name: 'Aurora Compliance 13B',
+    name: 'mamba-2.8b-base',
+    version: '1.0.0',
     description:
-      'Fine-tuned compliance branch for policy analysis, exception handling, and release-readiness reviews.',
-    ownerName: 'Arpita Sarker',
-    organization: 'Forkit',
-    verificationStatus: 'monitoring',
-    checksumSha256: 'ec8d4e6932db715c47ffdd419abcefae6b45a7df5dfd0c66017c5e51dbb11fe6',
-    artifactHash: 'a8f9eaab52bd944320af4d402ca0c2ce9b1ca0a7fd0cb81f48fa338d2f36db08',
-    parentHash: '1c4a6c72f51b4ad903688d1b9127d8c05a23e34f9e88af6d7611d47c51f3a2aa',
-    parentPassportGaid: 'gaid-aurora-foundation-13b',
-    sourceUrl: 'https://github.com/arpitasarker01/Forkit_Dev/tree/main/examples',
-    architecture: 'transformer',
-    taskType: 'compliance-review',
-    trainingData: ['EU AI Act annotations', 'Internal policy playbooks'],
+      'Independent ModelPassport showing a second model family in the same local registry.',
+    creator: {
+      name: 'State Spaces Inc',
+      organization: 'Research Lab',
+    },
+    license: 'Apache-2.0',
+    verificationStatus: 'verified',
+    architecture: 'mamba',
+    taskType: 'text_generation',
+    artifactHash: MAMBA_BASE_ARTIFACT,
+    parentHash: null,
+    baseModelId: null,
+    modelId: null,
+    systemPromptHash: null,
+    endpointHash: null,
+    trainingData: ['Public web corpus references', 'Code data references'],
     capabilities: {
       modalities: ['text'],
-      contextLength: 32768,
-      domains: ['compliance', 'policy', 'risk'],
+      contextLength: 4096,
+      benchmarks: ['ARC-C'],
     },
-    quantisation: null,
-    fineTuningMethod: 'LoRA',
-    parameterCount: 13000000000,
-    sealedAt: new Date(now - 8 * 24 * 60 * 60 * 1000).toISOString(),
-    systemPromptHash: null,
-    modelPassportGaid: null,
     tools: null,
-    memoryType: null,
-    temperature: null,
-    maxTokens: null,
-    deploymentEnvironment: 'registry://eu/compliance',
-    heartbeatConfig: null,
-    liveness: null,
+    recordPath: `~/.forkit/registry/models/${MAMBA_BASE_ID}.json`,
     verificationChecks: [
       {
-        label: 'Parent lineage',
+        label: 'Deterministic ID',
         status: 'pass',
-        detail: 'Parent model anchor matches Aurora Foundation 13B.',
+        detail: 'Passport ID remains stable for identical identity inputs.',
       },
       {
-        label: 'Artifact checksum',
+        label: 'Artifact hash',
         status: 'pass',
-        detail: 'Weights match the sealed fine-tune release bundle.',
+        detail: 'Model artifact hash is stored in the passport and verified.',
       },
       {
-        label: 'Dataset integrity',
-        status: 'warn',
-        detail: 'One supplemental policy dataset needs checksum resealing.',
+        label: 'Registry record',
+        status: 'pass',
+        detail: 'Passport is available in the local JSON registry and SQLite index.',
       },
     ],
-    metadata: {
-      license: 'Apache-2.0',
-      region: 'EU-Central',
-      useCases: ['Policy review', 'Regulatory gap detection', 'Escalation drafting'],
-      permissions: ['Draft compliance memos', 'Escalate exception cases'],
-      evidence: [
-        'Parent lineage and artifact hash both resolve correctly.',
-        'Dataset checksum drift was recorded after the latest enrichment cycle.',
-      ],
-      integrityScore: 94,
-      governanceScore: 91,
-      lastVerifiedAt: new Date(now - 1 * 24 * 60 * 60 * 1000).toISOString(),
-      riskLevel: 'Medium',
+    createdAt: new Date(now - 18 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(now - 3 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: LLAMA_FT_ID,
+    passportType: 'model',
+    name: 'llama-3-8b-ft',
+    version: '1.0.0',
+    description:
+      'Fine-tuned ModelPassport linked to a base model through `base_model_id` and `parent_hash`.',
+    creator: {
+      name: 'Alice',
+      organization: 'Forkit',
     },
-    createdAt: new Date(now - 31 * 24 * 60 * 60 * 1000).toISOString(),
+    license: 'Apache-2.0',
+    verificationStatus: 'warning',
+    architecture: 'decoder-only',
+    taskType: 'instruction_following',
+    artifactHash: LLAMA_FT_ARTIFACT,
+    parentHash: LLAMA_BASE_ARTIFACT,
+    baseModelId: LLAMA_BASE_ID,
+    modelId: null,
+    systemPromptHash: null,
+    endpointHash: null,
+    trainingData: ['Customer support data references'],
+    capabilities: {
+      modalities: ['text'],
+      contextLength: 8192,
+      benchmarks: ['MT-Bench'],
+    },
+    tools: null,
+    recordPath: `~/.forkit/registry/models/${LLAMA_FT_ID}.json`,
+    verificationChecks: [
+      {
+        label: 'Deterministic ID',
+        status: 'pass',
+        detail: 'Passport ID is stable for the fine-tuned model identity record.',
+      },
+      {
+        label: 'Parent hash chain',
+        status: 'pass',
+        detail: 'Parent hash resolves to the base model artifact hash.',
+      },
+      {
+        label: 'Training data references',
+        status: 'warn',
+        detail: 'Training data references are present but dataset hashes are not stored in this mock.',
+      },
+    ],
+    createdAt: new Date(now - 13 * 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(now - 1 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
-    id: 3,
-    gaid: 'gaid-atlas-vision-risk-6b',
-    passportType: 'model',
-    name: 'Atlas Vision Risk 6B',
-    description:
-      'Multimodal risk model for supplier packet inspection, document anomaly screening, and vendor intake.',
-    ownerName: 'Arpita Sarker',
-    organization: 'Forkit',
-    verificationStatus: 'verified',
-    checksumSha256: 'c5c6e68e995462e327b1c044edfb0e2ac9d5d8445ddca6a82160b1d4f4c7931f',
-    artifactHash: '723630f23206a6e1ba95b73e5fbf4be50163582f1513cfbc9165bf2359ff0e19',
-    parentHash: '1c4a6c72f51b4ad903688d1b9127d8c05a23e34f9e88af6d7611d47c51f3a2aa',
-    parentPassportGaid: 'gaid-aurora-foundation-13b',
-    sourceUrl: 'https://github.com/arpitasarker01/Forkit_Dev/tree/main/docs',
-    architecture: 'vision-transformer',
-    taskType: 'document-risk-analysis',
-    trainingData: ['Invoice image corpus', 'Vendor onboarding samples'],
-    capabilities: {
-      modalities: ['vision', 'text'],
-      contextLength: 16384,
-      domains: ['supplier-risk', 'document-intake'],
-    },
-    quantisation: { method: 'GPTQ', bits: 4 },
-    fineTuningMethod: 'Adapter Tuning',
-    parameterCount: 6000000000,
-    sealedAt: new Date(now - 15 * 24 * 60 * 60 * 1000).toISOString(),
-    systemPromptHash: null,
-    modelPassportGaid: null,
-    tools: null,
-    memoryType: null,
-    temperature: null,
-    maxTokens: null,
-    deploymentEnvironment: 'registry://us/vision-risk',
-    heartbeatConfig: null,
-    liveness: null,
-    verificationChecks: [
-      {
-        label: 'Vision adapter checksum',
-        status: 'pass',
-        detail: 'Visual adapter package matches the passport record.',
-      },
-      {
-        label: 'Parent lineage',
-        status: 'pass',
-        detail: 'Model traces back to Aurora Foundation 13B.',
-      },
-      {
-        label: 'Capability manifest',
-        status: 'pass',
-        detail: 'Declared modalities are present in the runtime bundle.',
-      },
-    ],
-    metadata: {
-      license: 'Apache-2.0',
-      region: 'US-East',
-      useCases: ['Vendor screening', 'Visual anomaly scoring', 'Packet triage'],
-      permissions: ['Inspect vendor attachments', 'Score submission anomalies'],
-      evidence: [
-        'Vision adapter hash matches the sealed deployment artifact.',
-        'Latest deployment artifact sealed with no detected anomalies.',
-      ],
-      integrityScore: 97,
-      governanceScore: 95,
-      lastVerifiedAt: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      riskLevel: 'Low',
-    },
-    createdAt: new Date(now - 35 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 4,
-    gaid: 'gaid-policy-intake-copilot',
+    id: SUPPORT_AGENT_ID,
     passportType: 'agent',
-    name: 'Policy Intake Copilot',
+    name: 'support-agent',
+    version: '1.0.0',
     description:
-      'Agent passport for intake triage, policy diffing, and escalation workflows on top of Aurora Compliance.',
-    ownerName: 'Arpita Sarker',
-    organization: 'Forkit',
+      'AgentPassport linked to the fine-tuned model via `model_id` and stored in the local registry.',
+    creator: {
+      name: 'Alice',
+      organization: 'Forkit',
+    },
+    license: 'Apache-2.0',
     verificationStatus: 'verified',
-    checksumSha256: 'c2931ef28c9eb571556180b83fa4556d2df87c95dd0fd50ae6df9467548a674d',
+    architecture: 'react',
+    taskType: 'customer_support',
     artifactHash: null,
     parentHash: null,
-    parentPassportGaid: null,
-    sourceUrl: 'https://github.com/arpitasarker01/Forkit_Dev/tree/main/forkit',
-    architecture: 'react-agent',
-    taskType: 'policy-intake',
-    trainingData: ['Current policy release notes'],
+    baseModelId: null,
+    modelId: LLAMA_FT_ID,
+    systemPromptHash: SUPPORT_AGENT_PROMPT,
+    endpointHash: SUPPORT_AGENT_ENDPOINT,
+    trainingData: null,
     capabilities: {
       modalities: ['text', 'tools'],
-      contextLength: 128000,
-      domains: ['workflow', 'intake', 'routing'],
+      contextLength: 8192,
+      benchmarks: ['Internal eval set'],
     },
-    quantisation: null,
-    fineTuningMethod: null,
-    parameterCount: null,
-    sealedAt: new Date(now - 6 * 24 * 60 * 60 * 1000).toISOString(),
-    systemPromptHash: '9f2db8258b452004fbbd6d2241d1c099',
-    modelPassportGaid: 'gaid-aurora-compliance-13b',
     tools: [
       {
-        name: 'policy-diff-engine',
-        description: 'Compares revisions and highlights policy drift.',
-        endpointUrl: 'https://policy-intake.mock.forkit.dev/tools/diff',
+        name: 'kb_search',
+        version: '1.2.0',
+        hash: '36a3c053543c90996ea476b7016d039ca250ca1ac631ffe720c8f597b266fa93',
       },
       {
-        name: 'case-routing-webhook',
-        description: 'Dispatches reviewed items to the right queue.',
-        endpointUrl: 'https://policy-intake.mock.forkit.dev/tools/router',
+        name: 'ticketing',
+        version: '0.9.1',
+        hash: '5bad38ff5ad78e645241bff66b12a2f881d63dcac0bc0a9acff56839b4b99c29',
       },
     ],
-    memoryType: 'receipt-log',
-    temperature: 0.2,
-    maxTokens: 4000,
-    deploymentEnvironment: 'production',
-    heartbeatConfig: {
-      intervalDays: 7,
-      statusUrl: 'https://policy-intake.mock.forkit.dev/status',
-    },
-    liveness: {
-      checkinStatus: 'active',
-      lastCheckinAt: new Date(now - 2 * 60 * 60 * 1000).toISOString(),
-      missedAttempts: 0,
-      nextCheckinDue: new Date(now + 5 * 24 * 60 * 60 * 1000).toISOString(),
-    },
+    recordPath: `~/.forkit/registry/agents/${SUPPORT_AGENT_ID}.json`,
     verificationChecks: [
       {
-        label: 'Tool manifest',
+        label: 'Model link',
         status: 'pass',
-        detail: 'Attached tools and versions match the sealed record.',
+        detail: 'Agent `model_id` resolves to a known ModelPassport in the local registry.',
       },
       {
-        label: 'Endpoint pinning',
+        label: 'System prompt hash',
         status: 'pass',
-        detail: 'Runtime endpoint hash still matches the approved release.',
+        detail: 'Prompt hash is stored instead of raw prompt content.',
       },
       {
-        label: 'Underlying model link',
+        label: 'Endpoint hash',
         status: 'pass',
-        detail: 'Agent references Aurora Compliance 13B without mismatch.',
+        detail: 'Endpoint configuration hash is present and verified.',
       },
     ],
-    metadata: {
-      license: 'Apache-2.0',
-      region: 'EU-West',
-      useCases: ['Case triage', 'Policy diffing', 'Escalation routing'],
-      permissions: ['Open intake cases', 'Draft escalation packets'],
-      evidence: [
-        'Tool manifest hash matches the deployed orchestration bundle.',
-        'Morning verification passed with no drift across tools or endpoints.',
-      ],
-      integrityScore: 96,
-      governanceScore: 93,
-      lastVerifiedAt: new Date(now - 10 * 60 * 60 * 1000).toISOString(),
-      riskLevel: 'Low',
-    },
-    createdAt: new Date(now - 20 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(now - 10 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 5,
-    gaid: 'gaid-supplier-guardian',
-    passportType: 'agent',
-    name: 'Supplier Guardian',
-    description:
-      'Vendor risk screening agent that combines visual packet checks with supplier metadata enrichment.',
-    ownerName: 'Arpita Sarker',
-    organization: 'Forkit',
-    verificationStatus: 'flagged',
-    checksumSha256: '77f2d62d09502a4fa9ac7367fe0f143b3119a1ff1f67d3e2a54ac8f6fcf7bb83',
-    artifactHash: null,
-    parentHash: null,
-    parentPassportGaid: null,
-    sourceUrl: 'https://github.com/arpitasarker01/Forkit_Dev/tree/main/tests',
-    architecture: 'react-agent',
-    taskType: 'supplier-risk',
-    trainingData: ['Vendor onboarding samples', 'Risk watchlist feed'],
-    capabilities: {
-      modalities: ['vision', 'text', 'tools'],
-      contextLength: 64000,
-      domains: ['supplier-risk', 'triage'],
-    },
-    quantisation: null,
-    fineTuningMethod: null,
-    parameterCount: null,
-    sealedAt: new Date(now - 4 * 24 * 60 * 60 * 1000).toISOString(),
-    systemPromptHash: 'af78d0fb826f7ef4fd23395176c3ca71',
-    modelPassportGaid: 'gaid-atlas-vision-risk-6b',
-    tools: [
-      {
-        name: 'invoice-classifier',
-        description: 'Screens attachments for invoice anomalies.',
-        endpointUrl: 'https://supplier-guardian.mock.forkit.dev/tools/classifier',
-      },
-      {
-        name: 'vendor-graph-enrich',
-        description: 'Expands linked vendor entities and watchlist edges.',
-        endpointUrl: 'https://supplier-guardian.mock.forkit.dev/tools/graph',
-      },
-    ],
-    memoryType: 'vector-store',
-    temperature: 0.3,
-    maxTokens: 3000,
-    deploymentEnvironment: 'staging',
-    heartbeatConfig: {
-      intervalDays: 7,
-      statusUrl: 'https://supplier-guardian.mock.forkit.dev/status',
-    },
-    liveness: {
-      checkinStatus: 'silent',
-      lastCheckinAt: new Date(now - 28 * 60 * 60 * 1000).toISOString(),
-      missedAttempts: 2,
-      nextCheckinDue: new Date(now + 24 * 60 * 60 * 1000).toISOString(),
-    },
-    verificationChecks: [
-      {
-        label: 'Underlying model link',
-        status: 'pass',
-        detail: 'Atlas Vision Risk 6B link remains intact.',
-      },
-      {
-        label: 'Endpoint pinning',
-        status: 'warn',
-        detail: 'Runtime endpoint no longer matches the sealed configuration.',
-      },
-      {
-        label: 'Watchlist feed seal',
-        status: 'warn',
-        detail: 'Risk watchlist data requires resealing after nightly sync.',
-      },
-    ],
-    metadata: {
-      license: 'Apache-2.0',
-      region: 'US-East',
-      useCases: ['Vendor dossier triage', 'Packet anomaly scoring', 'Review queueing'],
-      permissions: ['Flag supplier records', 'Trigger manual review queues'],
-      evidence: [
-        'Underlying model hash remains valid.',
-        'Endpoint hash diverged after an unsealed configuration patch.',
-      ],
-      integrityScore: 82,
-      governanceScore: 76,
-      lastVerifiedAt: new Date(now - 14 * 60 * 60 * 1000).toISOString(),
-      riskLevel: 'High',
-    },
-    createdAt: new Date(now - 17 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(now - 14 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 6,
-    gaid: 'gaid-provenance-auditor',
-    passportType: 'agent',
-    name: 'Provenance Auditor',
-    description:
-      'Draft agent that packages lineage receipts, evidence bundles, and audit narratives for downstream review.',
-    ownerName: 'Arpita Sarker',
-    organization: 'Forkit',
-    verificationStatus: 'draft',
-    checksumSha256: '6a34ba51d33bc7fdb3f83b4ad54778791da44e7196d4f1bf1ae7ae4a9c00b5b0',
-    artifactHash: null,
-    parentHash: null,
-    parentPassportGaid: 'gaid-policy-intake-copilot',
-    sourceUrl: 'https://github.com/arpitasarker01/Forkit_Dev/tree/main/examples',
-    architecture: 'react-agent',
-    taskType: 'audit-export',
-    trainingData: ['Registry snapshots', 'Verification run history'],
-    capabilities: {
-      modalities: ['text', 'tools'],
-      contextLength: 96000,
-      domains: ['audit', 'lineage', 'evidence'],
-    },
-    quantisation: null,
-    fineTuningMethod: null,
-    parameterCount: null,
-    sealedAt: null,
-    systemPromptHash: '1f4d8fb11c22c0fb11a5c9c0e948c25a',
-    modelPassportGaid: 'gaid-aurora-compliance-13b',
-    tools: [
-      {
-        name: 'lineage-graph-explorer',
-        description: 'Builds ancestry graphs for a selected passport.',
-        endpointUrl: 'staging://provenance-auditor/tools/graph',
-      },
-      {
-        name: 'receipt-bundler',
-        description: 'Packages audit receipts and supporting artifacts.',
-        endpointUrl: 'staging://provenance-auditor/tools/receipts',
-      },
-    ],
-    memoryType: 'receipt-ledger',
-    temperature: 0.1,
-    maxTokens: 5000,
-    deploymentEnvironment: 'staging',
-    heartbeatConfig: {
-      intervalDays: 15,
-      statusUrl: 'https://staging.forkit.dev/provenance-auditor/status',
-    },
-    liveness: {
-      checkinStatus: 'offline',
-      lastCheckinAt: new Date(now - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      missedAttempts: 4,
-      nextCheckinDue: new Date(now + 2 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    verificationChecks: [
-      {
-        label: 'Parent agent lineage',
-        status: 'pass',
-        detail: 'Fork link to Policy Intake Copilot is valid.',
-      },
-      {
-        label: 'Staging endpoint seal',
-        status: 'pending',
-        detail: 'Endpoint configuration has not been sealed for production.',
-      },
-      {
-        label: 'Red-team review',
-        status: 'pending',
-        detail: 'Pre-release verification scenario run has not started yet.',
-      },
-    ],
-    metadata: {
-      license: 'Apache-2.0',
-      region: 'EU-Central',
-      useCases: ['Lineage export', 'Audit receipt bundling', 'Review narrative drafting'],
-      permissions: ['Read lineage graphs', 'Export evidence packages'],
-      evidence: [
-        'Draft build references the correct parent agent and model lineage.',
-        'Red-team review and staging endpoint seal are still pending.',
-      ],
-      integrityScore: 90,
-      governanceScore: 88,
-      lastVerifiedAt: new Date(now - 8 * 60 * 60 * 1000).toISOString(),
-      riskLevel: 'Medium',
-    },
     createdAt: new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(now - 8 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(now - 12 * 60 * 60 * 1000).toISOString(),
   },
 ]
 
 let passportStore = [...seedPassports]
 
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
+function normalizeQuery(value: string) {
+  return value.trim().toLowerCase()
 }
 
-export function getPassports() {
+function getShortText(items?: string[] | null) {
+  if (!items?.length) {
+    return 'No additional references attached.'
+  }
+
+  return items.join(', ')
+}
+
+async function sha256(value: string) {
+  const payload = new TextEncoder().encode(value)
+  const digest = await crypto.subtle.digest('SHA-256', payload)
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+function buildVerificationStatus(checks: VerificationCheck[]): VerificationStatus {
+  if (checks.some((check) => check.status === 'warn')) {
+    return 'warning'
+  }
+
+  if (checks.some((check) => check.status === 'pending')) {
+    return 'pending'
+  }
+
+  return 'verified'
+}
+
+function getPassportStoragePath(passportType: PassportType, id: string) {
+  return `~/.forkit/registry/${passportType === 'model' ? 'models' : 'agents'}/${id}.json`
+}
+
+function getPassportsInternal() {
   return [...passportStore]
 }
 
-export function getPassportByGaid(gaid: string) {
-  return passportStore.find((passport) => passport.gaid === gaid)
+export function getPassports() {
+  return getPassportsInternal()
 }
 
-export function getRegistryStats() {
-  const passports = getPassports()
+export function getPassportById(id: string) {
+  return passportStore.find((passport) => passport.id === id)
+}
+
+export function searchPassports(query: string, type: 'all' | PassportType = 'all') {
+  const normalized = normalizeQuery(query)
+
+  return getPassportsInternal().filter((passport) => {
+    const matchesType = type === 'all' || passport.passportType === type
+
+    if (!normalized) {
+      return matchesType
+    }
+
+    const haystack = [
+      passport.id,
+      passport.name,
+      passport.version,
+      passport.creator.name,
+      passport.creator.organization,
+      passport.description,
+      passport.taskType,
+      getShortText(passport.trainingData),
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+
+    return matchesType && haystack.includes(normalized)
+  })
+}
+
+export function getRegistryStats(): RegistryStats {
+  const passports = getPassportsInternal()
 
   return {
-    total: passports.length,
-    models: passports.filter((passport) => passport.passportType === 'model').length,
-    agents: passports.filter((passport) => passport.passportType === 'agent').length,
-    verified: passports.filter((passport) => passport.verificationStatus === 'verified').length,
-    attention: passports.filter(
-      (passport) =>
-        passport.verificationStatus === 'flagged' ||
-        passport.verificationStatus === 'draft' ||
-        passport.verificationStatus === 'monitoring',
+    totalPassports: passports.length,
+    modelPassports: passports.filter((passport) => passport.passportType === 'model').length,
+    agentPassports: passports.filter((passport) => passport.passportType === 'agent').length,
+    verifiedPassports: passports.filter(
+      (passport) => passport.verificationStatus === 'verified',
     ).length,
+    lineageLinks: getPassportEdges(passports).length,
+    registryPath: '~/.forkit/registry',
+    storage: [
+      'index.db',
+      'lineage.json',
+      'models/<sha256>.json',
+      'agents/<sha256>.json',
+    ],
   }
 }
 
-export function getPassportEdges(passports = getPassports()) {
+export function getPassportEdges(passports = getPassportsInternal()) {
   return passports.flatMap<PassportEdge>((passport) => {
     const edges: PassportEdge[] = []
 
-    if (passport.parentPassportGaid) {
+    if (passport.baseModelId) {
       edges.push({
-        from: passport.parentPassportGaid,
-        to: passport.gaid,
-        relation: 'forked from',
+        from: passport.baseModelId,
+        to: passport.id,
+        relation: 'base-model',
       })
     }
 
-    if (passport.passportType === 'agent' && passport.modelPassportGaid) {
+    if (passport.passportType === 'agent' && passport.modelId) {
       edges.push({
-        from: passport.modelPassportGaid,
-        to: passport.gaid,
-        relation: 'powered by',
+        from: passport.modelId,
+        to: passport.id,
+        relation: 'model-link',
       })
     }
 
@@ -553,8 +383,8 @@ export function getPassportEdges(passports = getPassports()) {
   })
 }
 
-export function getPassportFamily(seedGaid: string) {
-  const queue = [seedGaid]
+export function getPassportFamily(seedId: string) {
+  const queue = [seedId]
   const visited = new Set<string>()
 
   while (queue.length > 0) {
@@ -565,156 +395,178 @@ export function getPassportFamily(seedGaid: string) {
     }
 
     visited.add(current)
-    const focus = getPassportByGaid(current)
+    const focus = getPassportById(current)
 
     passportStore.forEach((passport) => {
       const related =
-        passport.gaid === current ||
-        passport.parentPassportGaid === current ||
-        passport.modelPassportGaid === current ||
-        passport.gaid === focus?.parentPassportGaid ||
-        passport.gaid === focus?.modelPassportGaid
+        passport.id === current ||
+        passport.baseModelId === current ||
+        passport.modelId === current ||
+        passport.id === focus?.baseModelId ||
+        passport.id === focus?.modelId
 
-      if (related && !visited.has(passport.gaid)) {
-        queue.push(passport.gaid)
+      if (related && !visited.has(passport.id)) {
+        queue.push(passport.id)
       }
     })
   }
 
-  return passportStore.filter((passport) => visited.has(passport.gaid))
+  return passportStore.filter((passport) => visited.has(passport.id))
 }
 
-export function getRelatedPassports(gaid: string) {
-  return getPassportFamily(gaid).filter((passport) => passport.gaid !== gaid)
-}
+async function buildPassportFromPayload(payload: CreatePassportPayload) {
+  const creator = {
+    name: payload.creatorName,
+    organization: payload.creatorOrganization || undefined,
+  }
+  const identityMaterial =
+    payload.passportType === 'model'
+      ? payload.artifactHash || ''
+      : payload.systemPromptHash || payload.endpointHash || payload.modelId || ''
+  const deterministicId = await sha256(
+    JSON.stringify({
+      type: payload.passportType,
+      name: payload.name,
+      version: payload.version,
+      creator,
+      identityMaterial,
+    }),
+  )
 
-function buildPassportFromPayload(payload: CreatePassportPayload) {
-  const suffix = Date.now().toString(36)
-  const gaid = `gaid-${slugify(payload.name)}-${suffix}`
-  const isAgent = payload.passportType === 'agent'
-
-  const newPassport: Passport = {
-    id: passportStore.length + 1,
-    gaid,
-    passportType: payload.passportType,
-    name: payload.name,
-    description:
-      payload.description ||
-      'Draft passport created from the Forkit Core frontend prototype.',
-    ownerName: 'Arpita Sarker',
-    organization: payload.org,
-    verificationStatus: 'draft',
-    checksumSha256: payload.checksumSha256 || null,
-    artifactHash: payload.checksumSha256 || null,
-    parentHash: null,
-    parentPassportGaid: payload.parentPassportGaid || null,
-    sourceUrl: payload.sourceUrl || null,
-    architecture: isAgent ? 'react-agent' : 'transformer',
-    taskType: isAgent ? 'agent-orchestration' : 'model-registration',
-    trainingData: isAgent ? ['Operational prompts', 'Release notes'] : ['Curated registry training bundle'],
-    capabilities: {
-      modalities: isAgent ? ['text', 'tools'] : ['text'],
-      contextLength: isAgent ? 64000 : 32768,
-      domains: ['governance', 'provenance'],
-    },
-    quantisation: isAgent ? null : { method: 'AWQ', bits: 4 },
-    fineTuningMethod: isAgent ? null : 'LoRA',
-    parameterCount: isAgent ? null : 7000000000,
-    sealedAt: null,
-    systemPromptHash: isAgent ? `draft-${suffix}` : null,
-    modelPassportGaid: payload.modelPassportGaid || null,
-    tools: isAgent
+  const checks: VerificationCheck[] =
+    payload.passportType === 'model'
       ? [
           {
-            name: 'registry-sync',
-            description: 'Synchronises the draft with registry metadata.',
-            endpointUrl: payload.heartbeatConfig?.statusUrl || 'staging://registry-sync',
+            label: 'Deterministic ID',
+            status: 'pass',
+            detail: 'Passport ID was generated from the submitted model identity fields.',
+          },
+          {
+            label: 'Artifact hash',
+            status: payload.artifactHash ? 'pass' : 'pending',
+            detail: payload.artifactHash
+              ? 'Artifact hash is present in the draft ModelPassport.'
+              : 'Add an artifact hash to match README model passport guidance.',
+          },
+          {
+            label: 'Base model link',
+            status: payload.baseModelId ? 'pass' : 'pending',
+            detail: payload.baseModelId
+              ? 'Base model linkage is attached for lineage tracing.'
+              : 'No base model link was attached to this draft.',
           },
         ]
-      : null,
-    memoryType: isAgent ? 'receipt-ledger' : null,
-    temperature: isAgent ? 0.2 : null,
-    maxTokens: isAgent ? 4000 : null,
-    deploymentEnvironment: payload.deploymentEnvironment || 'staging',
-    heartbeatConfig: isAgent ? payload.heartbeatConfig ?? { intervalDays: 15 } : null,
-    liveness: isAgent
-      ? {
-          checkinStatus: 'offline',
-          lastCheckinAt: new Date().toISOString(),
-          missedAttempts: 0,
-          nextCheckinDue: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-        }
-      : null,
-    verificationChecks: [
-      {
-        label: 'Artifact seal',
-        status: payload.checksumSha256 ? 'pass' : 'pending',
-        detail: payload.checksumSha256
-          ? 'Draft includes a checksum ready for sealing.'
-          : 'Add an artifact checksum before promotion.',
-      },
-      {
-        label: 'Lineage link',
-        status:
-          payload.parentPassportGaid || payload.modelPassportGaid ? 'pass' : 'pending',
-        detail:
-          payload.parentPassportGaid || payload.modelPassportGaid
-            ? 'Draft includes at least one lineage reference.'
-            : 'No lineage reference selected yet.',
-      },
-      {
-        label: 'Release review',
-        status: 'pending',
-        detail: 'Manual release approval has not been completed.',
-      },
-    ],
-    metadata: {
-      license: 'Apache-2.0',
-      region: 'Prototype',
-      useCases: ['Draft registration', 'Preview flow'],
-      permissions: ['Register draft passports'],
-      evidence: [
-        'Draft generated by the Forkit Core frontend prototype.',
-        'Promote only after checksum, lineage, and release approval are sealed.',
-      ],
-      integrityScore: payload.checksumSha256 ? 88 : 72,
-      governanceScore: 78,
-      lastVerifiedAt: new Date().toISOString(),
-      riskLevel: 'Medium',
+      : [
+          {
+            label: 'Model link',
+            status: payload.modelId ? 'pass' : 'pending',
+            detail: payload.modelId
+              ? 'Agent `model_id` references an existing ModelPassport.'
+              : 'Agent passports should link to a model with `model_id`.',
+          },
+          {
+            label: 'System prompt hash',
+            status: payload.systemPromptHash ? 'pass' : 'pending',
+            detail: payload.systemPromptHash
+              ? 'Prompt hash is stored without exposing raw prompt text.'
+              : 'Add a system prompt hash to mirror the README structure.',
+          },
+          {
+            label: 'Endpoint hash',
+            status: payload.endpointHash ? 'pass' : 'pending',
+            detail: payload.endpointHash
+              ? 'Endpoint hash is attached to the agent passport.'
+              : 'Endpoint hash is optional but recommended for agent integrity checks.',
+          },
+        ]
+
+  const passport: Passport = {
+    id: deterministicId,
+    passportType: payload.passportType,
+    name: payload.name,
+    version: payload.version,
+    description:
+      payload.description ||
+      (payload.passportType === 'model'
+        ? 'Draft ModelPassport created from the open source registration form.'
+        : 'Draft AgentPassport created from the open source registration form.'),
+    creator,
+    license: payload.license,
+    verificationStatus: buildVerificationStatus(checks),
+    architecture: payload.architecture || null,
+    taskType: payload.taskType || null,
+    artifactHash: payload.passportType === 'model' ? payload.artifactHash || null : null,
+    parentHash:
+      payload.passportType === 'model' && payload.baseModelId
+        ? getPassportById(payload.baseModelId)?.artifactHash || null
+        : null,
+    baseModelId: payload.passportType === 'model' ? payload.baseModelId || null : null,
+    modelId: payload.passportType === 'agent' ? payload.modelId || null : null,
+    systemPromptHash: payload.passportType === 'agent' ? payload.systemPromptHash || null : null,
+    endpointHash: payload.passportType === 'agent' ? payload.endpointHash || null : null,
+    trainingData: payload.trainingData?.length ? payload.trainingData : null,
+    capabilities: {
+      modalities: payload.passportType === 'agent' ? ['text', 'tools'] : ['text'],
+      contextLength: 8192,
+      benchmarks: [],
     },
+    tools:
+      payload.passportType === 'agent' && payload.tools?.length ? payload.tools : null,
+    recordPath: getPassportStoragePath(payload.passportType, deterministicId),
+    verificationChecks: checks,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   }
 
-  passportStore = [newPassport, ...passportStore]
-  return newPassport
+  passportStore = [passport, ...passportStore]
+  return passport
+}
+
+function buildVerifyResult(passport: Passport): VerifyPassportResult {
+  const failedChecks = passport.verificationChecks.filter((check) => check.status !== 'pass')
+
+  return {
+    passport,
+    verified: failedChecks.length === 0,
+    summary:
+      failedChecks.length === 0
+        ? 'All integrity checks passed for this passport.'
+        : `${failedChecks.length} integrity check${failedChecks.length === 1 ? '' : 's'} returned warnings.`,
+  }
 }
 
 export async function mockFetchApi(endpoint: string, options: RequestInit = {}) {
-  await new Promise((resolve) => setTimeout(resolve, 180))
+  await new Promise((resolve) => setTimeout(resolve, 120))
 
   const method = options.method || 'GET'
+  const url = new URL(endpoint, 'http://mock.local')
 
-  if (endpoint === '/v1/passports' || endpoint === '/v1/passports/mine') {
+  if (url.pathname === '/v1/passports') {
     if (method === 'POST') {
       const payload = JSON.parse((options.body as string) || '{}') as CreatePassportPayload
       return buildPassportFromPayload(payload)
     }
 
-    return { passports: getPassports() }
+    return { passports: getPassportsInternal() }
   }
 
-  if (endpoint.startsWith('/v1/passports/')) {
-    const parts = endpoint.split('/')
-    const gaid = parts[3]
-    const passport = getPassportByGaid(gaid)
+  if (url.pathname === '/v1/passports/search') {
+    const query = url.searchParams.get('q') || ''
+    const type = (url.searchParams.get('type') as 'all' | PassportType | null) || 'all'
+    return { passports: searchPassports(query, type) }
+  }
+
+  if (url.pathname.startsWith('/v1/passports/')) {
+    const parts = url.pathname.split('/')
+    const passportId = parts[3]
+    const passport = getPassportById(passportId)
 
     if (!passport) {
       throw new Error('Passport not found')
     }
 
-    if (endpoint.endsWith('/lineage')) {
-      const family = getPassportFamily(gaid)
+    if (url.pathname.endsWith('/lineage')) {
+      const family = getPassportFamily(passportId)
       return {
         focus: passport,
         family,
@@ -722,23 +574,14 @@ export async function mockFetchApi(endpoint: string, options: RequestInit = {}) 
       }
     }
 
-    if (endpoint.endsWith('/summary')) {
-      const family = getPassportFamily(gaid)
-      return {
-        familyCount: family.length,
-        descendantCount: family.filter(
-          (candidate) =>
-            candidate.parentPassportGaid === gaid ||
-            candidate.modelPassportGaid === gaid,
-        ).length,
-        lastVerifiedAt: passport.metadata.lastVerifiedAt,
-      }
+    if (url.pathname.endsWith('/verify')) {
+      return buildVerifyResult(passport)
     }
 
     return passport
   }
 
-  if (endpoint === '/v1/registry/stats') {
+  if (url.pathname === '/v1/registry/stats') {
     return getRegistryStats()
   }
 

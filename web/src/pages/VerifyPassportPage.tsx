@@ -4,11 +4,9 @@ import {
   ArrowLeft,
   CheckCircle,
   Clock,
-  Database,
   Fingerprint,
   Search,
   Shield,
-  User,
 } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { Badge } from '@/components/ui/Badge'
@@ -16,17 +14,26 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { fetchApi } from '@/lib/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
 import { getPassports } from '@/lib/mockApi'
-import type { Passport } from '@/types'
+import type { VerifyPassportResult } from '@/types'
+
+function getBadgeVariant(verified: boolean) {
+  return verified ? 'success' : 'warning'
+}
+
+const infoRowClass =
+  'flex items-center justify-between rounded-xl border border-border bg-surface-soft px-4 py-3'
 
 export function VerifyPassportPage() {
+  usePageTitle('Verify Passport')
   const location = useLocation()
   const queryParams = new URLSearchParams(location.search)
   const initialId = queryParams.get('id') || ''
 
   const [searchId, setSearchId] = useState(initialId)
   const [isSearching, setIsSearching] = useState(false)
-  const [passport, setPassport] = useState<Passport | null>(null)
+  const [result, setResult] = useState<VerifyPassportResult | null>(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -44,13 +51,13 @@ export function VerifyPassportPage() {
 
     setIsSearching(true)
     setError('')
-    setPassport(null)
+    setResult(null)
 
     try {
-      const data = (await fetchApi(`/v1/passports/${idToSearch.trim()}`)) as Passport
-      setPassport(data)
+      const data = await fetchApi<VerifyPassportResult>(`/v1/passports/${idToSearch.trim()}/verify`)
+      setResult(data)
     } catch {
-      setError('No passport found with that ID.')
+      setError('No passport found with that Passport ID.')
     } finally {
       setIsSearching(false)
     }
@@ -61,46 +68,48 @@ export function VerifyPassportPage() {
     await performSearch(searchId)
   }
 
-  const quickPicks = getPassports().slice(0, 4)
+  const quickPicks = getPassports()
 
   return (
-    <div className="min-h-screen text-[#f1ebdf] flex flex-col items-center py-16 px-4 relative">
-      <Link
-        to="/"
-        className="absolute top-8 left-8 text-dark-text-secondary hover:text-[#f1ebdf] flex items-center gap-2 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Home
-      </Link>
+    <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-12 sm:px-6 lg:px-8">
+      <div className="relative mx-auto mt-6 flex w-full max-w-5xl flex-col gap-8">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 self-start rounded-full border border-border bg-white/80 px-4 py-2 text-sm font-medium text-muted transition-colors hover:border-accent/30 hover:bg-accent/5 hover:text-accent-dark"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Landing
+        </Link>
 
-      <div className="w-full max-w-5xl space-y-8 mt-8">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 bg-dark-accent-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Shield className="w-8 h-8 text-dark-accent-primary" />
+        <div className="space-y-4 text-center">
+          <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-3xl bg-accent text-white shadow-[0_16px_30px_rgba(0,129,144,0.18)]">
+            <Shield className="h-8 w-8" />
           </div>
-          <h1 className="text-4xl font-bold tracking-tight">Passport Verification</h1>
-          <p className="text-dark-text-secondary text-lg max-w-2xl mx-auto">
-            Enter a Forkit Core passport GAID to inspect its cryptographic seal,
-            linked lineage, and operational release posture.
+          <h1 className="font-display text-4xl font-bold tracking-tight text-text">
+            Verify Passport
+          </h1>
+          <p className="mx-auto max-w-2xl text-lg text-muted">
+            Run the open source integrity view for a single Passport ID and inspect the
+            stored verification checks.
           </p>
         </div>
 
-        <Card className="bg-dark-bg-secondary/50 border-[#f1ebdf]/10 backdrop-blur-sm">
+        <Card>
           <CardContent className="pt-6">
-            <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4">
+            <form onSubmit={handleSearch} className="flex flex-col gap-4 md:flex-row">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-text-secondary" />
+                <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
                 <Input
                   value={searchId}
                   onChange={(event) => setSearchId(event.target.value)}
-                  placeholder="Enter Passport ID (e.g., gaid-policy-intake-copilot)"
-                  className="w-full pl-10 bg-dark-bg border-[#f1ebdf]/10 h-12 text-lg focus:ring-dark-accent-primary"
+                  placeholder="Enter a Passport ID"
+                  className="h-12 pl-10 text-base"
                 />
               </div>
               <Button
                 type="submit"
                 disabled={isSearching || !searchId.trim()}
-                className="h-12 px-8 bg-dark-accent-primary hover:bg-dark-accent-primary/90 text-dark-bg font-medium text-lg"
+                className="h-12 px-8 text-base"
               >
                 {isSearching ? 'Verifying...' : 'Verify'}
               </Button>
@@ -108,116 +117,95 @@ export function VerifyPassportPage() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="space-y-6">
             {error ? (
-              <div className="bg-semantic-danger/10 border border-semantic-danger/20 rounded-xl p-6 text-center">
-                <AlertTriangle className="w-8 h-8 text-semantic-danger mx-auto mb-3" />
-                <h3 className="text-lg font-medium text-semantic-danger mb-1">
-                  Verification Failed
+              <div className="rounded-[1.5rem] border border-semantic-danger/20 bg-semantic-danger/8 p-6 text-center">
+                <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-semantic-danger" />
+                <h3 className="mb-1 text-lg font-medium text-semantic-danger">
+                  Verification failed
                 </h3>
                 <p className="text-semantic-danger/80">{error}</p>
               </div>
             ) : null}
 
-            {passport ? (
-              <Card className="bg-dark-bg border-[#f1ebdf]/10 overflow-hidden relative">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-dark-accent-primary/5 blur-[100px] rounded-full pointer-events-none" />
-                <CardHeader className="border-b border-[#f1ebdf]/5 pb-6">
+            {result ? (
+              <Card className="relative overflow-hidden">
+                <div className="pointer-events-none absolute right-0 top-0 h-56 w-56 rounded-full bg-primary/7 blur-[100px]" />
+                <CardHeader className="border-b border-border/70 pb-6">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <div className="flex items-center gap-3 mb-2 flex-wrap">
-                        <CardTitle className="text-2xl">{passport.name}</CardTitle>
-                        <Badge
-                          variant={
-                            passport.verificationStatus === 'verified'
-                              ? 'success'
-                              : passport.verificationStatus === 'monitoring'
-                                ? 'warning'
-                                : passport.verificationStatus === 'draft'
-                                  ? 'outline'
-                                  : 'danger'
-                          }
-                        >
-                          {passport.verificationStatus}
+                      <div className="mb-2 flex flex-wrap items-center gap-3">
+                        <CardTitle className="text-2xl">{result.passport.name}</CardTitle>
+                        <Badge variant={getBadgeVariant(result.verified)}>
+                          {result.verified ? 'verified' : 'warnings present'}
                         </Badge>
                       </div>
-                      <p className="text-dark-text-secondary">{passport.description}</p>
+                      <p className="text-muted">{result.summary}</p>
                     </div>
-                    <div className="w-12 h-12 rounded-xl bg-dark-bg-secondary flex items-center justify-center shrink-0 border border-[#f1ebdf]/5">
-                      <Fingerprint className="w-6 h-6 text-dark-accent-primary" />
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border bg-surface-soft">
+                      <Fingerprint className="h-6 w-6 text-primary" />
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="pt-6 space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <CardContent className="space-y-6 pt-6">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div className="space-y-4">
-                      <h4 className="text-sm font-medium text-[#f1ebdf]/80 uppercase tracking-wider">
-                        Identity Details
+                      <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">
+                        Passport Identity
                       </h4>
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between p-3 bg-dark-bg-secondary/50 rounded-lg border border-[#f1ebdf]/5">
-                          <span className="text-sm text-dark-text-secondary flex items-center gap-2">
-                            <Fingerprint className="w-4 h-4" /> Passport ID
+                        <div className={infoRowClass}>
+                          <span className="flex items-center gap-2 text-sm text-muted">
+                            <Fingerprint className="h-4 w-4" />
+                            Passport ID
                           </span>
-                          <span className="text-sm font-mono text-[#f1ebdf]">
-                            {passport.gaid}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-dark-bg-secondary/50 rounded-lg border border-[#f1ebdf]/5">
-                          <span className="text-sm text-dark-text-secondary flex items-center gap-2">
-                            <Database className="w-4 h-4" /> Region
-                          </span>
-                          <span className="text-sm text-[#f1ebdf] capitalize">
-                            {passport.metadata.region}
+                          <span className="break-all text-right font-mono text-sm text-text">
+                            {result.passport.id}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between p-3 bg-dark-bg-secondary/50 rounded-lg border border-[#f1ebdf]/5">
-                          <span className="text-sm text-dark-text-secondary flex items-center gap-2">
-                            <User className="w-4 h-4" /> Owner
+                        <div className={infoRowClass}>
+                          <span className="text-sm text-muted">Type</span>
+                          <span className="text-sm text-text">
+                            {result.passport.passportType === 'model'
+                              ? 'ModelPassport'
+                              : 'AgentPassport'}
                           </span>
-                          <span className="text-sm text-[#f1ebdf]">
-                            {passport.ownerName}
-                          </span>
+                        </div>
+                        <div className={infoRowClass}>
+                          <span className="text-sm text-muted">Version</span>
+                          <span className="text-sm text-text">{result.passport.version}</span>
                         </div>
                       </div>
                     </div>
 
                     <div className="space-y-4">
-                      <h4 className="text-sm font-medium text-[#f1ebdf]/80 uppercase tracking-wider">
-                        Status & Compliance
+                      <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">
+                        Verification Summary
                       </h4>
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between p-3 bg-dark-bg-secondary/50 rounded-lg border border-[#f1ebdf]/5">
-                          <span className="text-sm text-dark-text-secondary flex items-center gap-2">
-                            <Shield className="w-4 h-4" /> Risk Level
+                        <div className={infoRowClass}>
+                          <span className="flex items-center gap-2 text-sm text-muted">
+                            <CheckCircle className="h-4 w-4" />
+                            Status
                           </span>
-                          <Badge
-                            variant={
-                              passport.metadata.riskLevel === 'High'
-                                ? 'danger'
-                                : passport.metadata.riskLevel === 'Medium'
-                                  ? 'warning'
-                                  : 'success'
-                            }
-                          >
-                            {passport.metadata.riskLevel}
+                          <Badge variant={getBadgeVariant(result.verified)}>
+                            {result.passport.verificationStatus}
                           </Badge>
                         </div>
-                        <div className="flex items-center justify-between p-3 bg-dark-bg-secondary/50 rounded-lg border border-[#f1ebdf]/5">
-                          <span className="text-sm text-dark-text-secondary flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4" /> Governance
+                        <div className={infoRowClass}>
+                          <span className="flex items-center gap-2 text-sm text-muted">
+                            <Clock className="h-4 w-4" />
+                            Last Updated
                           </span>
-                          <span className="text-sm text-[#f1ebdf]">
-                            {passport.metadata.governanceScore}
+                          <span className="text-sm text-text">
+                            {new Date(result.passport.updatedAt).toLocaleDateString()}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between p-3 bg-dark-bg-secondary/50 rounded-lg border border-[#f1ebdf]/5">
-                          <span className="text-sm text-dark-text-secondary flex items-center gap-2">
-                            <Clock className="w-4 h-4" /> Last Updated
-                          </span>
-                          <span className="text-sm text-[#f1ebdf]">
-                            {new Date(passport.updatedAt).toLocaleDateString()}
+                        <div className={infoRowClass}>
+                          <span className="text-sm text-muted">Registry Record</span>
+                          <span className="text-sm text-text">
+                            {result.passport.recordPath.includes('/agents/') ? 'agents/' : 'models/'}
                           </span>
                         </div>
                       </div>
@@ -225,18 +213,16 @@ export function VerifyPassportPage() {
                   </div>
 
                   <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-[#f1ebdf]/80 uppercase tracking-wider">
+                    <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">
                       Verification Checks
                     </h4>
-                    {passport.verificationChecks.map((check) => (
+                    {result.passport.verificationChecks.map((check) => (
                       <div
                         key={check.label}
-                        className="p-3 bg-dark-bg-secondary/50 rounded-lg border border-[#f1ebdf]/5"
+                        className="rounded-xl border border-border bg-surface-soft p-4"
                       >
                         <div className="flex items-center justify-between gap-3">
-                          <div className="text-sm font-semibold text-[#f1ebdf]">
-                            {check.label}
-                          </div>
+                          <div className="text-sm font-semibold text-text">{check.label}</div>
                           <Badge
                             variant={
                               check.status === 'pass'
@@ -249,9 +235,7 @@ export function VerifyPassportPage() {
                             {check.status}
                           </Badge>
                         </div>
-                        <div className="text-sm text-dark-text-secondary mt-2">
-                          {check.detail}
-                        </div>
+                        <div className="mt-2 text-sm text-muted">{check.detail}</div>
                       </div>
                     ))}
                   </div>
@@ -261,42 +245,46 @@ export function VerifyPassportPage() {
           </div>
 
           <div className="space-y-6">
-            <Card className="bg-dark-bg-secondary/50 border-[#f1ebdf]/10 backdrop-blur-sm">
+            <Card>
               <CardHeader>
-                <CardTitle>Quick Picks</CardTitle>
+                <CardTitle>Example passports</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {quickPicks.map((item) => (
                   <button
-                    key={item.gaid}
+                    key={item.id}
                     type="button"
                     onClick={() => {
-                      setSearchId(item.gaid)
-                      void performSearch(item.gaid)
+                      setSearchId(item.id)
+                      void performSearch(item.id)
                     }}
-                    className="w-full text-left p-3 rounded-xl border border-[#f1ebdf]/10 hover:border-[#6aa7ab]/30 bg-dark-bg-secondary/50 transition-colors"
+                    className="w-full rounded-xl border border-border bg-surface-soft p-3 text-left transition-all hover:border-accent/25 hover:bg-accent/5 hover:shadow-[0_14px_28px_rgba(0,129,144,0.08)]"
                   >
-                    <div className="text-sm font-semibold text-[#f1ebdf]">{item.name}</div>
-                    <div className="text-xs text-dark-text-secondary mt-1">{item.gaid}</div>
+                    <div className="text-sm font-semibold text-text">{item.name}</div>
+                    <div className="mt-1 break-all font-mono text-xs text-muted">{item.id}</div>
                   </button>
                 ))}
               </CardContent>
             </Card>
 
-            {passport ? (
-              <Card className="bg-dark-bg-secondary/50 border-[#f1ebdf]/10 backdrop-blur-sm">
+            {result ? (
+              <Card>
                 <CardHeader>
-                  <CardTitle>Evidence Bundle</CardTitle>
+                  <CardTitle>Related actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {passport.metadata.evidence.map((item) => (
-                    <div
-                      key={item}
-                      className="p-3 rounded-xl border border-[#f1ebdf]/10 bg-dark-bg-secondary/50 text-sm text-dark-text-secondary"
-                    >
-                      {item}
-                    </div>
-                  ))}
+                  <Link
+                    to={`/passports/${result.passport.id}`}
+                    className="block rounded-xl border border-border bg-surface-soft p-3 transition-all hover:border-accent/25 hover:bg-accent/5 hover:shadow-[0_14px_28px_rgba(0,129,144,0.08)]"
+                  >
+                    Inspect passport
+                  </Link>
+                  <Link
+                    to={`/lineage?id=${result.passport.id}`}
+                    className="block rounded-xl border border-border bg-surface-soft p-3 transition-all hover:border-accent/25 hover:bg-accent/5 hover:shadow-[0_14px_28px_rgba(0,129,144,0.08)]"
+                  >
+                    View lineage
+                  </Link>
                 </CardContent>
               </Card>
             ) : null}

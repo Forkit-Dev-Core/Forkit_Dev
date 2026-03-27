@@ -7,18 +7,18 @@ export interface BadgeProps extends React.ComponentProps<"div"> {
 
 function Badge({ className, variant = "default", ...props }: BadgeProps) {
   const variants = {
-    default: "bg-dark-border text-dark-text-primary",
-    success: "bg-semantic-success/20 text-semantic-success",
-    warning: "bg-semantic-warning/20 text-semantic-warning",
-    danger: "bg-semantic-danger/20 text-semantic-danger",
-    info: "bg-semantic-info/20 text-semantic-info",
-    outline: "text-dark-text-primary border border-[#f1ebdf]/10",
+    default: "border border-border bg-surface-soft text-primary",
+    success: "border border-accent/18 bg-accent/10 text-accent",
+    warning: "border border-brand/20 bg-highlight/26 text-brand",
+    danger: "border border-semantic-danger/20 bg-semantic-danger/10 text-semantic-danger",
+    info: "border border-accent-soft/28 bg-accent-soft/14 text-primary",
+    outline: "border border-border bg-white/60 text-text",
   }
 
   return (
     <div
       className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-dark-accent-primary focus:ring-offset-2",
+        "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2",
         variants[variant],
         className
       )}

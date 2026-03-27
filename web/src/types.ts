@@ -1,7 +1,11 @@
 export type PassportType = 'model' | 'agent'
-export type VerificationStatus = 'verified' | 'monitoring' | 'draft' | 'flagged'
+export type VerificationStatus = 'verified' | 'warning' | 'pending'
 export type VerificationCheckStatus = 'pass' | 'warn' | 'pending'
-export type RiskLevel = 'Low' | 'Medium' | 'High'
+
+export interface Creator {
+  name: string
+  organization?: string
+}
 
 export interface VerificationCheck {
   label: string
@@ -11,70 +15,38 @@ export interface VerificationCheck {
 
 export interface PassportTool {
   name: string
-  description: string
-  endpointUrl: string
+  version: string
+  hash?: string | null
 }
 
-export interface PassportMetadata {
-  license: string
-  region: string
-  useCases: string[]
-  permissions: string[]
-  evidence: string[]
-  integrityScore: number
-  governanceScore: number
-  lastVerifiedAt: string
-  riskLevel: RiskLevel
+export interface PassportCapabilities {
+  modalities: string[]
+  contextLength: number
+  benchmarks?: string[]
 }
 
 export interface Passport {
-  id: number
-  gaid: string
+  id: string
   passportType: PassportType
   name: string
+  version: string
   description: string
-  ownerName: string
-  organization: string
+  creator: Creator
+  license: string
   verificationStatus: VerificationStatus
-  checksumSha256?: string | null
-  artifactHash?: string | null
-  parentHash?: string | null
-  parentPassportGaid?: string | null
-  sourceUrl?: string | null
   architecture?: string | null
   taskType?: string | null
-  trainingData?: string[] | null
-  capabilities?: {
-    modalities: string[]
-    contextLength: number
-    domains: string[]
-  } | null
-  quantisation?: {
-    method: string
-    bits: number
-  } | null
-  fineTuningMethod?: string | null
-  parameterCount?: number | null
-  sealedAt?: string | null
+  artifactHash?: string | null
+  parentHash?: string | null
+  baseModelId?: string | null
+  modelId?: string | null
   systemPromptHash?: string | null
-  modelPassportGaid?: string | null
+  endpointHash?: string | null
+  trainingData?: string[] | null
+  capabilities?: PassportCapabilities | null
   tools?: PassportTool[] | null
-  memoryType?: string | null
-  temperature?: number | null
-  maxTokens?: number | null
-  deploymentEnvironment?: string | null
-  heartbeatConfig?: {
-    intervalDays: 7 | 15 | 30 | 90
-    statusUrl?: string
-  } | null
-  liveness?: {
-    checkinStatus: 'active' | 'silent' | 'offline'
-    lastCheckinAt: string
-    missedAttempts: number
-    nextCheckinDue: string
-  } | null
+  recordPath: string
   verificationChecks: VerificationCheck[]
-  metadata: PassportMetadata
   createdAt: string
   updatedAt: string
 }
@@ -82,5 +54,21 @@ export interface Passport {
 export interface PassportEdge {
   from: string
   to: string
-  relation: 'forked from' | 'powered by'
+  relation: 'base-model' | 'model-link'
+}
+
+export interface RegistryStats {
+  totalPassports: number
+  modelPassports: number
+  agentPassports: number
+  verifiedPassports: number
+  lineageLinks: number
+  registryPath: string
+  storage: string[]
+}
+
+export interface VerifyPassportResult {
+  passport: Passport
+  verified: boolean
+  summary: string
 }

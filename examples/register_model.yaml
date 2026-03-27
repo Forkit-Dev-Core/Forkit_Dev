@@ -1,21 +1,21 @@
 # Example ModelPassport config — use with:
 #   forkit register model register_model.yaml
 
-name: llama-3-8b-instruct-forkit
+name: demo-instruct-model
 version: 1.0.0
-description: LLaMA 3 8B fine-tuned on internal support data
+description: Demo instruction-tuned model for public Forkit Core examples
 architecture: transformer
 parameter_count: 8000000000
 quantization: fp16
-license: llama3
+license: Apache-2.0
 fine_tuning_method: LoRA
 
 base_model_id: ""  # fill with parent model passport ID if known
 
 creator:
-  name: Hamza
+  name: Forkit Team
   organization: ForkIt
-  email: sa.hamza@forkit.dev
+  email: info@forkit.dev
   url: https://forkit.dev
 
 capabilities:
@@ -29,14 +29,14 @@ capabilities:
     HumanEval: 0.52
 
 training_data:
-  - name: internal-support-corpus-v3
+  - name: public-demo-corpus-v1
     hash: ""  # fill with SHA-256 of dataset
-    size_tokens: 50000000
-    cutoff_date: "2024-12-01"
+    size_tokens: 12000000
+    cutoff_date: "2024-06-01"
 
-tags: [llm, support, fine-tuned, arabic]
+tags: [llm, demo, instruction-tuned, public-example]
 status: active
 
 metadata:
-  team: platform-ai
-  project: support-automation
+  team: oss-examples
+  project: public-demo

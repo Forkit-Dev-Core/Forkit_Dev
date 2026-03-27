@@ -1,16 +1,18 @@
 import { Link } from 'react-router-dom'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 export function NotFoundPage() {
+  usePageTitle('Not Found')
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 w-full">
-      <div className="waterdrop-glass rounded-[2rem] p-12 border border-[#f1ebdf]/10 text-center">
-        <h1 className="text-4xl font-bold text-[#f1ebdf]">Route not found</h1>
-        <p className="text-dark-text-secondary mt-4">
-          This screen is not part of the mapped Forkit Core console.
+    <div className="mx-auto w-full max-w-4xl px-4 py-20 sm:px-6 lg:px-8">
+      <div className="rounded-[2rem] border border-border/80 p-12 text-center waterdrop-glass">
+        <h1 className="font-display text-4xl font-bold text-text">Route not found</h1>
+        <p className="mt-4 text-muted">
+          This route is outside the README-defined open source frontend scope.
         </p>
         <Link
           to="/"
-          className="inline-flex items-center gap-2 mt-8 px-6 py-3 bg-gradient-to-r from-[#008190] to-[#2a1f55] text-[#f1ebdf] rounded-xl font-semibold"
+          className="mt-8 inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3 font-semibold text-[#f1ebdf] shadow-[0_14px_28px_rgba(0,129,144,0.18)] transition-all hover:bg-accent-dark hover:shadow-[0_18px_30px_rgba(0,129,144,0.22)]"
         >
           Return to Landing
         </Link>

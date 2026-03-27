@@ -10,7 +10,7 @@ readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
 authors = [
-  { name = "ForkIt", email = "sa.hamza@forkit.dev" },
+  { name = "ForkIt", email = "info@forkit.dev" },
 ]
 keywords = ["ai", "governance", "provenance", "lineage", "model-passport", "agent-passport"]
 classifiers = [

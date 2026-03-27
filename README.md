@@ -48,7 +48,9 @@ pip install -e ".[dev]"
 
 ### Frontend prototype
 
-A React + TypeScript + Vite frontend lives under [`web/`](./web) and currently uses mock passport data to demonstrate the Forkit Core registry experience without changing the Python package folders.
+A React + TypeScript + Vite frontend lives under [`web/`](./web) and is intentionally limited to the open source Forkit Core scope defined in this README.
+
+For this open source release, the web UI is included for exploration and demonstration. It runs on mock in-memory data; the persistent core already ships in the schemas, local registry, SDK, CLI, and examples, so no backend API is required to explore the current release.
 
 Frontend setup:
 
@@ -69,11 +71,15 @@ The frontend includes these screens:
 
 - Landing
 - Dashboard
-- Passport List
-- Passport Detail
-- Create Passport
+- Registry
+- Search
+- Passport Detail / Inspect
+- Register Passport
 - Verify Passport
 - Lineage
+- Registry Stats
+
+Registry is the browse view, Search is for filtering existing passports, and Register Passport creates a new mock-backed record for demonstration.
 
 ---
 

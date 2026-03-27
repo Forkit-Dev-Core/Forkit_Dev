@@ -1,18 +1,18 @@
 # Example AgentPassport config — use with:
 #   forkit register agent register_agent.yaml
 
-name: support-agent-v2
+name: demo-support-agent
 version: 2.0.0
-description: Customer support agent for ForkIt platform, Arabic + English
+description: Demo multilingual support assistant for public Forkit Core examples
 role: assistant
 
 # Must match a registered ModelPassport ID
 model_id: ""  # paste model passport ID here
 
 creator:
-  name: Hamza
+  name: Forkit Team
   organization: ForkIt
-  email: sa.hamza@forkit.dev
+  email: info@forkit.dev
 
 capabilities:
   roles: [assistant]
@@ -26,25 +26,25 @@ temperature: 0.3
 max_tokens: 2048
 memory_type: vector_store
 memory_config:
-  provider: qdrant
-  collection: support-v2
+  provider: local-demo-store
+  collection: public-docs-demo
 
 tools:
   - name: knowledge_base_search
     version: 1.2.0
-    description: Semantic search over product documentation
-  - name: ticket_creator
+    description: Semantic search over public documentation
+  - name: faq_lookup
     version: 1.0.0
-    description: Create support tickets in the CRM
-  - name: order_lookup
-    version: 2.1.0
-    description: Retrieve order status by order ID
+    description: Retrieve answers from a public FAQ set
+  - name: note_writer
+    version: 1.1.0
+    description: Draft structured support summaries for a human reviewer
 
-deployment_env: production
+deployment_env: demo
 
-tags: [support, bilingual, production]
+tags: [support, demo, multilingual]
 status: active
 
 metadata:
-  team: platform-ai
-  sla_tier: standard
+  team: oss-examples
+  sla_tier: demo

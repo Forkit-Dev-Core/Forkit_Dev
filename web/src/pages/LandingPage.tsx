@@ -1,159 +1,152 @@
-import {
-  ArrowRight,
-  Fingerprint,
-  GitBranch,
-  Search,
-  Shield,
-  Upload,
-} from 'lucide-react'
+import { ArrowRight, Fingerprint, GitBranch, Search, ShieldCheck } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { LineageGraph } from '@/components/LineageGraph'
 import PassportCard from '@/components/PassportCard'
+import { usePageTitle } from '@/hooks/usePageTitle'
 import {
-  getPassportByGaid,
+  getPassportById,
   getPassportEdges,
   getPassportFamily,
   getPassports,
   getRegistryStats,
 } from '@/lib/mockApi'
 
-const featureCards = [
+const moduleCards = [
   {
-    icon: Shield,
-    title: 'Identity you can verify',
-    description:
-      'Every model or agent carries a deterministic passport with checksums, ownership, and release evidence.',
+    title: 'forkit.domain',
+    description: 'Identity derivation, SHA-256 hashing, lineage tracing, and integrity verification.',
   },
   {
-    icon: Search,
-    title: 'Operational verification',
-    description:
-      'Review checksum drift, runtime mismatch, and release gates before anything moves into production.',
+    title: 'forkit.schemas',
+    description: 'ModelPassport and AgentPassport structures used by the SDK and CLI.',
   },
   {
-    icon: GitBranch,
-    title: 'Lineage with receipts',
-    description:
-      'Trace from a root model into every derivative model and downstream agent without losing provenance.',
+    title: 'forkit.registry',
+    description: 'Local filesystem registry with JSON passport records and a rebuildable SQLite index.',
   },
 ]
 
 export function LandingPage() {
+  usePageTitle('Landing')
   const stats = getRegistryStats()
   const featuredPassports = getPassports().slice(0, 3)
-  const focusPassport = getPassportByGaid('gaid-policy-intake-copilot') ?? featuredPassports[0]
-  const family = getPassportFamily(focusPassport.gaid)
+  const focusPassport =
+    getPassportById('b36533b819f6c687c5092b6e733ce2486d6bfb6a3f0bb2fd62f1b28781eca861') ??
+    featuredPassports[0]
+  const family = getPassportFamily(focusPassport.id)
   const edges = getPassportEdges(family)
+  const statCards = [
+    { label: 'Passports', value: stats.totalPassports, tone: 'text-primary' },
+    { label: 'Verified', value: stats.verifiedPassports, tone: 'text-semantic-success' },
+    { label: 'Models', value: stats.modelPassports, tone: 'text-text' },
+    { label: 'Agents', value: stats.agentPassports, tone: 'text-text' },
+  ]
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12 lg:pt-24 space-y-14 w-full">
-      <section className="grid grid-cols-1 xl:grid-cols-[1.25fr_0.9fr] gap-8 items-center">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-16 px-4 pb-14 pt-16 sm:px-6 lg:px-8 lg:pt-24">
+      <section className="grid grid-cols-1 items-center gap-10 xl:grid-cols-[1.16fr_0.94fr]">
         <div className="space-y-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#2a1f55]/30 backdrop-blur-md border border-[#f1ebdf]/10 shadow-sm">
-            <span className="flex h-2 w-2 rounded-full bg-[#008190] animate-pulse" />
-            <span className="text-sm font-medium text-[#f1ebdf]">
-              Mapping Forkit Core to the provided frontend system
-            </span>
+          <div className="inline-flex items-center gap-3 rounded-full border border-border/85 bg-surface px-4 py-2.5 shadow-[0_10px_24px_rgba(42,31,85,0.06)]">
+            <div className="brand-panel rounded-full px-2.5 py-1.5">
+              <img
+                src="/forkit-dev-logo.svg"
+                alt="Forkit Dev"
+                className="h-3.5 w-auto object-contain"
+              />
+            </div>
+            <span className="text-sm font-semibold text-primary">README-aligned open source scope</span>
           </div>
 
-          <div className="space-y-6">
-            <h1 className="text-5xl md:text-7xl font-extrabold text-[#f1ebdf] tracking-tight leading-[1.05]">
-              Give Forkit Core a{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008190] via-[#6aa7ab] to-[#f49355]">
-                production-grade passport console.
-              </span>
+          <div className="space-y-5">
+            <h1 className="font-display text-5xl font-extrabold leading-[1.01] tracking-tight text-text md:text-7xl">
+              Inspect and register{' '}
+              <span className="bg-gradient-to-r from-primary via-accent to-brand bg-clip-text text-transparent">
+                AI passports
+              </span>{' '}
+              in a local Forkit registry.
             </h1>
-            <p className="text-xl text-dark-text-secondary max-w-3xl leading-relaxed">
-              This `/web` app now follows the visual language of the provided
-              `forkit_dev_open_source` frontend while focusing it on the Forkit Core
-              registry: landing, dashboard, passport list, detail, create, verify,
-              and lineage.
+            <p className="max-w-3xl text-[1.08rem] leading-relaxed text-muted md:text-xl">
+              Explore the current Forkit Core release in the browser. The web UI is mock-backed for demonstration, while the real open source value already ships in the schemas, local registry, SDK, CLI, and examples.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-4">
             <Link
               to="/dashboard"
-              className="inline-flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-[#008190] to-[#2a1f55] text-[#f1ebdf] font-bold rounded-xl shadow-lg hover:from-[#008190]/90 hover:to-[#2a1f55]/90 transition-all transform hover:scale-[1.02]"
+              className="inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3.5 font-bold text-[#f1ebdf] shadow-[0_16px_28px_rgba(0,129,144,0.18)] transition-all hover:bg-accent-dark"
             >
               Open Dashboard
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
-              to="/passports/create"
-              className="inline-flex items-center gap-2 px-6 py-3.5 border border-[#f1ebdf]/10 rounded-xl text-[#f1ebdf] hover:bg-[#f1ebdf]/5 transition-colors"
+              to="/search"
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-white/82 px-6 py-3.5 font-semibold text-text transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
             >
-              <Upload className="w-4 h-4" />
-              Create Passport
+              <Search className="w-4 h-4" />
+              Search Registry
+            </Link>
+            <Link
+              to="/passports/create?type=model"
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-white/82 px-6 py-3.5 font-semibold text-text transition-colors hover:border-accent/30 hover:bg-accent/5 hover:text-accent-dark"
+            >
+              Register ModelPassport
             </Link>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="waterdrop-glass rounded-2xl p-5 border border-[#f1ebdf]/10">
-              <div className="text-xs uppercase tracking-[0.2em] text-dark-text-secondary">
-                Passports
+            {statCards.map((item) => (
+              <div key={item.label} className="waterdrop-glass rounded-[1.5rem] border border-border/80 p-5">
+                <div className="eyebrow">{item.label}</div>
+                <div className={`mt-2 text-3xl font-extrabold ${item.tone}`}>{item.value}</div>
               </div>
-              <div className="mt-2 text-3xl font-bold text-[#f1ebdf]">{stats.total}</div>
-            </div>
-            <div className="waterdrop-glass rounded-2xl p-5 border border-[#f1ebdf]/10">
-              <div className="text-xs uppercase tracking-[0.2em] text-dark-text-secondary">
-                Verified
-              </div>
-              <div className="mt-2 text-3xl font-bold text-emerald-400">{stats.verified}</div>
-            </div>
-            <div className="waterdrop-glass rounded-2xl p-5 border border-[#f1ebdf]/10">
-              <div className="text-xs uppercase tracking-[0.2em] text-dark-text-secondary">
-                Models
-              </div>
-              <div className="mt-2 text-3xl font-bold text-[#f1ebdf]">{stats.models}</div>
-            </div>
-            <div className="waterdrop-glass rounded-2xl p-5 border border-[#f1ebdf]/10">
-              <div className="text-xs uppercase tracking-[0.2em] text-dark-text-secondary">
-                Attention
-              </div>
-              <div className="mt-2 text-3xl font-bold text-amber-300">{stats.attention}</div>
-            </div>
+            ))}
           </div>
         </div>
 
         <div className="relative">
-          <div className="absolute -inset-4 bg-gradient-to-r from-[#008190]/20 via-[#2a1f55]/30 to-[#f49355]/20 rounded-[2rem] blur-2xl" />
-          <div className="relative waterdrop-glass rounded-[2rem] p-8 border border-[#f1ebdf]/10 overflow-hidden">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#008190] to-[#2a1f55] flex items-center justify-center shadow-sm">
-                <Fingerprint className="w-6 h-6 text-[#f1ebdf]" />
-              </div>
-              <div>
-                <div className="text-lg font-semibold text-[#f1ebdf]">Registry Snapshot</div>
-                <div className="text-sm text-dark-text-secondary">
-                  Current focus: {focusPassport.name}
+          <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-r from-primary/14 via-accent/10 to-highlight/16 blur-2xl" />
+          <div className="relative overflow-hidden rounded-[2rem] border border-border/80 waterdrop-glass p-8">
+            <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-r from-primary/12 via-transparent to-accent-soft/12" />
+            <div className="relative mb-8 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-sm">
+                  <Fingerprint className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-lg font-semibold text-text">Registry Snapshot</div>
+                  <div className="text-sm text-muted">Current focus: {focusPassport.name}</div>
                 </div>
               </div>
+              <img
+                src="/forkit-dev-logo.svg"
+                alt="Forkit Dev"
+                className="brand-panel hidden h-12 w-auto rounded-2xl px-2.5 py-2 sm:block"
+              />
             </div>
 
             <div className="space-y-4">
               {[
                 {
-                  label: 'Focus Passport',
-                  value: focusPassport.gaid,
+                  label: 'Passport ID',
+                  value: focusPassport.id,
                 },
                 {
-                  label: 'Lineage Nodes',
-                  value: `${family.length} connected passports`,
+                  label: 'Registry Path',
+                  value: focusPassport.recordPath,
                 },
                 {
-                  label: 'Latest Evidence',
-                  value: focusPassport.metadata.evidence[0],
+                  label: 'Verification',
+                  value: focusPassport.verificationChecks[0]?.detail ?? 'No verification checks stored.',
                 },
               ].map((item) => (
                 <div
                   key={item.label}
-                  className="p-4 rounded-2xl bg-[#0B0F19]/60 border border-[#f1ebdf]/10"
+                  className="surface-muted rounded-2xl p-4"
                 >
-                  <div className="text-[11px] uppercase tracking-[0.2em] text-dark-text-secondary">
+                  <div className="text-[11px] uppercase tracking-[0.2em] text-muted">
                     {item.label}
                   </div>
-                  <div className="mt-2 text-sm text-[#f1ebdf] break-words">{item.value}</div>
+                  <div className="mt-2 break-all text-sm text-text">{item.value}</div>
                 </div>
               ))}
             </div>
@@ -162,64 +155,66 @@ export function LandingPage() {
       </section>
 
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {featureCards.map((feature) => (
+        {moduleCards.map((moduleCard) => (
           <div
-            key={feature.title}
-            className="waterdrop-glass rounded-[2rem] p-6 border border-[#f1ebdf]/10"
+            key={moduleCard.title}
+            className="waterdrop-glass rounded-[2rem] border border-border/80 p-6"
           >
-            <div className="w-12 h-12 rounded-2xl bg-[#f1ebdf]/5 border border-[#f1ebdf]/10 flex items-center justify-center mb-5">
-              <feature.icon className="w-6 h-6 text-[#6aa7ab]" />
+            <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-border/70 bg-surface-soft">
+              {moduleCard.title === 'forkit.domain' ? (
+                <ShieldCheck className="w-6 h-6 text-primary" />
+              ) : moduleCard.title === 'forkit.schemas' ? (
+                <Fingerprint className="w-6 h-6 text-accent" />
+              ) : (
+                <GitBranch className="w-6 h-6 text-brand" />
+              )}
             </div>
-            <h2 className="text-xl font-semibold text-[#f1ebdf] mb-3">{feature.title}</h2>
-            <p className="text-dark-text-secondary leading-relaxed">{feature.description}</p>
+            <h2 className="mb-3 text-xl font-semibold text-text">{moduleCard.title}</h2>
+            <p className="leading-relaxed text-muted">{moduleCard.description}</p>
           </div>
         ))}
       </section>
 
-      <section className="waterdrop-glass rounded-[2rem] p-6 md:p-8 border border-[#f1ebdf]/10">
+      <section className="waterdrop-glass rounded-[2rem] border border-border/80 p-6 md:p-8">
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-8">
           <div>
-            <div className="text-xs uppercase tracking-[0.2em] text-dark-text-secondary">
-              Lineage Preview
-            </div>
-            <h2 className="text-3xl font-bold text-[#f1ebdf] mt-2">
-              Forkit Core lineage mapped into the provided UI system
+            <div className="eyebrow">Lineage Preview</div>
+            <h2 className="mt-2 text-3xl font-bold text-text">
+              Lineage is limited to README-supported passport links
             </h2>
-            <p className="text-dark-text-secondary mt-3 max-w-3xl">
-              The graph below uses the mock Forkit Core passports but presents them in
-              the same glass-panel, dark-console language as the provided reference app.
+            <p className="mt-3 max-w-3xl text-muted">
+              The graph shows one fine-tuned model derived from a base model and one
+              agent linked to a model with `model_id`.
             </p>
           </div>
           <Link
-            to={`/lineage?id=${focusPassport.gaid}`}
-            className="text-[#6aa7ab] font-semibold hover:text-[#f1ebdf] transition-colors"
+            to={`/lineage?id=${focusPassport.id}`}
+            className="section-link font-semibold"
           >
-            Open full lineage
+            Open lineage view
           </Link>
         </div>
-        <LineageGraph passports={family} edges={edges} focusGaid={focusPassport.gaid} />
+        <LineageGraph passports={family} edges={edges} focusId={focusPassport.id} />
       </section>
 
       <section className="space-y-6">
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
           <div>
-            <div className="text-xs uppercase tracking-[0.2em] text-dark-text-secondary">
-              Featured Passports
-            </div>
-            <h2 className="text-3xl font-bold text-[#f1ebdf] mt-2">
-              Core registry entries ready for review
+            <div className="eyebrow">Registry Records</div>
+            <h2 className="mt-2 text-3xl font-bold text-text">
+              Example passports in the current mock registry
             </h2>
           </div>
           <Link
-            to="/passports"
-            className="text-[#6aa7ab] font-semibold hover:text-[#f1ebdf] transition-colors"
+            to="/registry"
+            className="section-link font-semibold"
           >
-            Browse all passports
+            Open registry
           </Link>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {featuredPassports.map((passport) => (
-            <PassportCard key={passport.gaid} passport={passport} />
+            <PassportCard key={passport.id} passport={passport} />
           ))}
         </div>
       </section>
