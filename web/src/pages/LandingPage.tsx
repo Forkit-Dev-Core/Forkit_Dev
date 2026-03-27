@@ -76,6 +76,10 @@ export function LandingPage() {
               <FileText className="h-4 w-4 text-accent-dark" />
               <span className="font-medium text-text">Hugging Face model card export</span>
             </div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-border/75 bg-white/78 px-3.5 py-2 shadow-[0_10px_22px_rgba(42,31,85,0.05)]">
+              <GitBranch className="h-4 w-4 text-brand" />
+              <span className="font-medium text-text">LangChain and LangGraph adapters</span>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-4">
@@ -98,6 +102,12 @@ export function LandingPage() {
               className="inline-flex items-center gap-2 rounded-xl border border-border bg-white/82 px-6 py-3.5 font-semibold text-text transition-colors hover:border-accent/30 hover:bg-accent/5 hover:text-accent-dark"
             >
               Register ModelPassport
+            </Link>
+            <Link
+              to="/ecosystems"
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-white/82 px-6 py-3.5 font-semibold text-text transition-colors hover:border-brand/30 hover:bg-brand/5 hover:text-brand"
+            >
+              Explore Ecosystems
             </Link>
           </div>
 

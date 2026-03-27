@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
 import { CreatePassportPage } from './pages/CreatePassportPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { EcosystemsPage } from './pages/EcosystemsPage'
 import { LandingPage } from './pages/LandingPage'
 import { LineagePage } from './pages/LineagePage'
 import { NotFoundPage } from './pages/NotFoundPage'
@@ -17,6 +18,7 @@ function App() {
       <Route element={<AppShell />}>
         <Route index element={<LandingPage />} />
         <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="ecosystems" element={<EcosystemsPage />} />
         <Route path="registry" element={<PassportListPage />} />
         <Route path="passports" element={<Navigate to="/registry" replace />} />
         <Route path="passports/create" element={<CreatePassportPage />} />

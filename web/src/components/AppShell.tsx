@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils'
 
 const navItems = [
   { label: 'Home', path: '/' },
+  { label: 'Ecosystems', path: '/ecosystems' },
   { label: 'Dashboard', path: '/dashboard' },
   { label: 'Registry', path: '/registry' },
   { label: 'Search', path: '/search' },
