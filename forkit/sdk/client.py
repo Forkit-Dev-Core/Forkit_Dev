@@ -207,6 +207,29 @@ class SyncClient:
             headers=headers,
         )
 
+    def pull(
+        self,
+        endpoint: str,
+        *,
+        source: str | None = None,
+        after: int | None = None,
+        limit: int = 100,
+        passport_type: str | None = None,
+        timeout: float = 30.0,
+        token: str | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
+        return self._bridge.pull(
+            endpoint,
+            source=source,
+            after=after,
+            limit=limit,
+            passport_type=passport_type,
+            timeout=timeout,
+            token=token,
+            headers=headers,
+        )
+
     def cursor(self, target: str) -> int:
         return self._registry.get_sync_cursor(target)
 

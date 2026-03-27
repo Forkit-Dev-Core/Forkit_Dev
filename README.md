@@ -266,6 +266,7 @@ forkit verify <passport-id>
 # Sync local outbox changes to a remote API
 forkit sync status
 forkit sync push https://example.com/sync/passports --target main-server
+forkit sync pull https://example.com/export --source remote-dev
 
 # Registry stats
 forkit stats
@@ -334,6 +335,7 @@ CLI:
 ```bash
 forkit sync status
 forkit sync push https://example.com/sync/passports --target main-server
+forkit sync pull https://example.com/export --source remote-dev
 ```
 
 Remote contract:
@@ -349,7 +351,11 @@ Remote contract:
   - `items` — exported passport change records
 
 Local sync state is stored in `sync_state.json` and only tracks acknowledged
-cursors per target. It does not affect `passport_id`.
+cursors per target or pulled source. It does not affect `passport_id`.
+
+`forkit sync pull` reads a generic `GET /export` endpoint, validates the
+returned passport documents, and applies them into the local registry without
+re-emitting them into the local outbox.
 
 The local service also ships a reference receiver for the same contract at
 `POST /sync/passports`. In `local` mode, incoming envelopes are stored

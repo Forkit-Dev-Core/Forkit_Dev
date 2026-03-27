@@ -74,7 +74,7 @@ class LocalRegistry:
 
     # ── Model CRUD ─────────────────────────────────────────────────────────────
 
-    def register_model(self, passport: ModelPassport) -> str:
+    def register_model(self, passport: ModelPassport, *, record_change: bool = True) -> str:
         """Persist a ModelPassport. Returns its ID."""
         self.init()
         data = passport.to_dict()
@@ -85,13 +85,14 @@ class LocalRegistry:
             db.upsert(data, relative_path)
         self.lineage.register_model(data)
         self.lineage.save(self.lineage_path)
-        self._append_change(
-            operation="upsert",
-            passport_id=passport.id,
-            passport_type=data.get("passport_type", "model"),
-            json_path=relative_path,
-            document=data,
-        )
+        if record_change:
+            self._append_change(
+                operation="upsert",
+                passport_id=passport.id,
+                passport_type=data.get("passport_type", "model"),
+                json_path=relative_path,
+                document=data,
+            )
         return passport.id
 
     def get_model(self, passport_id: str) -> ModelPassport | None:
@@ -102,7 +103,7 @@ class LocalRegistry:
 
     # ── Agent CRUD ─────────────────────────────────────────────────────────────
 
-    def register_agent(self, passport: AgentPassport) -> str:
+    def register_agent(self, passport: AgentPassport, *, record_change: bool = True) -> str:
         """Persist an AgentPassport. Returns its ID."""
         self.init()
         data = passport.to_dict()
@@ -113,13 +114,14 @@ class LocalRegistry:
             db.upsert(data, relative_path)
         self.lineage.register_agent(data)
         self.lineage.save(self.lineage_path)
-        self._append_change(
-            operation="upsert",
-            passport_id=passport.id,
-            passport_type=data.get("passport_type", "agent"),
-            json_path=relative_path,
-            document=data,
-        )
+        if record_change:
+            self._append_change(
+                operation="upsert",
+                passport_id=passport.id,
+                passport_type=data.get("passport_type", "agent"),
+                json_path=relative_path,
+                document=data,
+            )
         return passport.id
 
     def get_agent(self, passport_id: str) -> AgentPassport | None:
@@ -133,7 +135,7 @@ class LocalRegistry:
     def get(self, passport_id: str) -> ModelPassport | AgentPassport | None:
         return self.get_model(passport_id) or self.get_agent(passport_id)
 
-    def delete(self, passport_id: str) -> bool:
+    def delete(self, passport_id: str, *, record_change: bool = True) -> bool:
         deleted = False
         deleted_type: str | None = None
         for deleted_type, directory in (("model", self.models_dir), ("agent", self.agents_dir)):
@@ -145,13 +147,82 @@ class LocalRegistry:
         if deleted:
             with self._db() as db:
                 db.delete(passport_id)
-            if deleted_type is not None:
+            if deleted_type is not None and record_change:
                 self._append_change(
                     operation="delete",
                     passport_id=passport_id,
                     passport_type=deleted_type,
                 )
         return deleted
+
+    def apply_changes(
+        self,
+        items: list[dict[str, Any]],
+        *,
+        record_change: bool = False,
+    ) -> dict[str, int]:
+        """Apply exported change records into the local registry."""
+        self.init()
+        applied = 0
+        upserts = 0
+        deletes = 0
+
+        for index, item in enumerate(items):
+            if not isinstance(item, dict):
+                raise ValueError(f"'items[{index}]' must be an object.")
+
+            operation = item.get("operation")
+            passport_id = item.get("passport_id")
+            if not isinstance(passport_id, str) or not passport_id:
+                raise ValueError(f"'items[{index}].passport_id' must be a non-empty string.")
+
+            if operation == "upsert":
+                document = item.get("document")
+                if not isinstance(document, dict):
+                    raise ValueError(f"'items[{index}].document' must be an object for upserts.")
+                if document.get("id") != passport_id:
+                    raise ValueError(
+                        f"'items[{index}].document.id' must match 'items[{index}].passport_id'."
+                    )
+
+                passport_type = document.get("passport_type") or item.get("passport_type")
+                if passport_type == "model":
+                    passport = ModelPassport.from_dict(document)
+                    verification = verify_passport_id(passport.to_dict())
+                    if not verification.get("valid"):
+                        raise ValueError(
+                            f"'items[{index}]' contains a model passport with an invalid identity."
+                        )
+                    self.register_model(passport, record_change=record_change)
+                elif passport_type == "agent":
+                    passport = AgentPassport.from_dict(document)
+                    verification = verify_passport_id(passport.to_dict())
+                    if not verification.get("valid"):
+                        raise ValueError(
+                            f"'items[{index}]' contains an agent passport with an invalid identity."
+                        )
+                    self.register_agent(passport, record_change=record_change)
+                else:
+                    raise ValueError(
+                        f"'items[{index}].passport_type' must be 'model' or 'agent' for upserts."
+                    )
+                applied += 1
+                upserts += 1
+                continue
+
+            if operation == "delete":
+                if self.delete(passport_id, record_change=record_change):
+                    applied += 1
+                    deletes += 1
+                continue
+
+            raise ValueError(f"'items[{index}].operation' must be 'upsert' or 'delete'.")
+
+        return {
+            "applied": applied,
+            "upserts": upserts,
+            "deletes": deletes,
+        }
 
     # ── Queries ────────────────────────────────────────────────────────────────
 

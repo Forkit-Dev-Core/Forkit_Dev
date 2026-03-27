@@ -6,6 +6,7 @@ import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from threading import Thread
 from typing import Any
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 
@@ -54,6 +55,44 @@ def _stop_sync_server(server: ThreadingHTTPServer, thread: Thread) -> None:
     server.shutdown()
     server.server_close()
     thread.join(timeout=5)
+
+
+def _start_export_server(client: ForkitClient) -> tuple[str, list[dict[str, Any]], ThreadingHTTPServer, Thread]:
+    requests: list[dict[str, Any]] = []
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:  # noqa: N802
+            parsed = urlparse(self.path)
+            query = parse_qs(parsed.query)
+            after = int(query.get("after", ["0"])[0])
+            limit = int(query.get("limit", ["100"])[0])
+            passport_type = query.get("passport_type", [None])[0]
+            requests.append(
+                {
+                    "path": parsed.path,
+                    "query": query,
+                    "headers": dict(self.headers.items()),
+                }
+            )
+            payload = client.sync.export(
+                after=after,
+                limit=limit,
+                passport_type=passport_type,
+            )
+
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(payload).encode("utf-8"))
+
+        def log_message(self, format: str, *args: Any) -> None:  # noqa: A003
+            return
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    url = f"http://127.0.0.1:{server.server_port}/export"
+    return url, requests, server, thread
 
 
 class TestSyncBridge:
@@ -124,3 +163,51 @@ class TestSyncBridge:
         assert len(requests) == 1
         assert client.sync.cursor("main-server") == 0
         assert client.sync.status() == {}
+
+    def test_sync_pull_imports_remote_changes_without_reemitting_outbox(self, tmp_path):
+        remote = ForkitClient(registry_root=tmp_path / "remote")
+        model_id = remote.models.register(
+            name="remote-model",
+            version="1.0.0",
+            task_type=TaskType.TEXT_GENERATION,
+            architecture="transformer",
+            creator=CREATOR,
+        )
+        agent_id = remote.agents.register(
+            name="remote-agent",
+            version="1.0.0",
+            model_id=model_id,
+            task_type=AgentTaskType.CUSTOMER_SUPPORT,
+            architecture=AgentArchitecture.REACT,
+            creator=CREATOR,
+            system_prompt="Handle imported tasks.",
+        )
+
+        local = ForkitClient(registry_root=tmp_path / "local")
+        url, requests, server, thread = _start_export_server(remote)
+        try:
+            result = local.sync.pull(url, source="remote-dev", limit=1, token="secret-token")
+        finally:
+            _stop_sync_server(server, thread)
+
+        assert result["status"] == "synced"
+        assert result["cursor"] == 2
+        assert result["batches"] == 2
+        assert result["items_pulled"] == 2
+        assert result["items_applied"] == 2
+        assert result["state_key"] == "pull:remote-dev"
+
+        assert local.get_model(model_id) is not None
+        assert local.get_agent(agent_id) is not None
+        assert local.sync.export()["items"] == []
+
+        assert len(requests) == 2
+        assert requests[0]["path"] == "/export"
+        assert requests[0]["headers"]["Authorization"] == "Bearer secret-token"
+        assert requests[0]["query"]["after"] == ["0"]
+        assert requests[0]["query"]["limit"] == ["1"]
+        assert requests[1]["query"]["after"] == ["1"]
+
+        status = local.sync.status()
+        assert status["pull:remote-dev"]["cursor"] == 2
+        assert status["pull:remote-dev"]["metadata"]["direction"] == "pull"

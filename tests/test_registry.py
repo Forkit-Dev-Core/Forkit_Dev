@@ -162,3 +162,23 @@ class TestLocalRegistry:
         assert result["items"][0]["document"]["id"] == model.id
         assert result["items"][1]["passport_id"] == model.id
         assert result["items"][1]["document"] is None
+
+    def test_apply_changes_imports_passports_without_reemitting_outbox(self, tmp_path):
+        source = LocalRegistry(root=tmp_path / "source")
+        source.init()
+        model = make_model()
+        source.register_model(model)
+        agent = make_agent(model_id=model.id)
+        source.register_agent(agent)
+
+        target = LocalRegistry(root=tmp_path / "target")
+        target.init()
+
+        applied = target.apply_changes(source.export_changes()["items"])
+        exported = target.export_changes()
+
+        assert applied == {"applied": 2, "upserts": 2, "deletes": 0}
+        assert target.get_model(model.id) is not None
+        assert target.get_agent(agent.id) is not None
+        assert exported["cursor"] == 0
+        assert exported["items"] == []
