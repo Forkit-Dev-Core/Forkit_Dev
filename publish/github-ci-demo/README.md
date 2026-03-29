@@ -27,4 +27,10 @@ From a Forkit Core checkout:
 python scripts/validate_passport.py --path publish/github-ci-demo/forkit-passport.json
 ```
 
-If you are copying this into another repository, keep the same local target path and update the workflow input only if you rename `forkit-passport.json`.
+Expected output:
+
+```text
+Forkit passport is valid
+```
+
+If you are copying this into another repository, keep the same local target path and update the workflow input only if you rename `forkit-passport.json`. After the first tagged release exists, prefer pinning the reusable action to a release tag instead of `@main`.

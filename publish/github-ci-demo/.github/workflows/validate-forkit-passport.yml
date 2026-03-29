@@ -18,6 +18,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: arpitasarker01/Forkit_Dev/.github/actions/validate-passport@v0.1.0
+      - uses: arpitasarker01/Forkit_Dev/.github/actions/validate-passport@main
         with:
           passport-path: forkit-passport.json

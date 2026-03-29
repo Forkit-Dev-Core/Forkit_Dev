@@ -13,6 +13,78 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 class TestExamples:
+    def test_minimal_local_passport_runs(self, capsys):
+        runpy.run_path(
+            str(REPO_ROOT / "examples" / "minimal_local_passport.py"),
+            run_name="__main__",
+        )
+
+        output = capsys.readouterr().out
+        payload = json.loads(output)
+
+        assert payload["name"] == "hello-local-model"
+        assert payload["passport_type"] == "model"
+        assert payload["valid"] is True
+        assert payload["models"] == 1
+        assert payload["agents"] == 0
+
+    def test_cli_quickstart_runs(self, capsys):
+        pytest.importorskip("typer.testing")
+        runpy.run_path(
+            str(REPO_ROOT / "examples" / "cli_quickstart.py"),
+            run_name="__main__",
+        )
+
+        output = capsys.readouterr().out
+        payload = json.loads(output)
+
+        assert payload["list_contains_model"] is True
+        assert payload["verify_valid"] is True
+        assert payload["stats"] == {"models": 1, "agents": 0}
+
+    def test_github_ci_quickstart_runs(self, capsys):
+        runpy.run_path(
+            str(REPO_ROOT / "examples" / "github_ci_quickstart.py"),
+            run_name="__main__",
+        )
+
+        output = capsys.readouterr().out
+        payload = json.loads(output)
+
+        assert payload["generated"] is True
+        assert payload["validated"] is True
+        assert payload["passport_path"] == "forkit-passport.json"
+        assert payload["validator_summary"] == "Forkit passport is valid"
+
+    def test_mcp_quickstart_runs(self, capsys):
+        runpy.run_path(
+            str(REPO_ROOT / "examples" / "mcp_quickstart.py"),
+            run_name="__main__",
+        )
+
+        output = capsys.readouterr().out
+        payload = json.loads(output)
+
+        assert payload["search_results"] == 2
+        assert payload["passport_name"] == "mcp-demo-model"
+        assert payload["verify_valid"] is True
+        assert payload["ancestor_count"] == 1
+        assert len(payload["draft_passport_id"]) == 64
+
+    def test_tamper_detection_demo_runs(self, capsys):
+        runpy.run_path(
+            str(REPO_ROOT / "examples" / "tamper_detection_demo.py"),
+            run_name="__main__",
+        )
+
+        output = capsys.readouterr().out
+        payload = json.loads(output)
+
+        assert payload["valid_before"] is True
+        assert payload["valid_after"] is False
+        assert payload["reason_after"] == "id_mismatch"
+        assert payload["stored_id"] != payload["derived_after"]
+
     def test_self_host_sync_quickstart_runs(self, capsys):
         runpy.run_path(
             str(REPO_ROOT / "examples" / "self_host_sync_quickstart.py"),

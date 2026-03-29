@@ -9,6 +9,7 @@ Commands
   forkit register agent <yaml-file>
   forkit sync push <endpoint>
   forkit sync pull <endpoint>
+  forkit mcp serve
   forkit serve
   forkit inspect <id>
   forkit list [--type model|agent] [--status active|draft|deprecated|revoked]
@@ -32,8 +33,8 @@ try:
     import yaml
 except ImportError:
     print(
-        "CLI requires 'typer' and 'pyyaml'.  Install with:\n"
-        "  pip install typer pyyaml",
+        "CLI requires the optional 'cli' dependencies. Install with:\n"
+        "  pip install 'forkit-core[cli]'",
         file=sys.stderr,
     )
     sys.exit(1)
@@ -45,42 +46,53 @@ from ..sync import RemoteSyncBridge
 app     = typer.Typer(name="forkit", help="forkit-core — AI model/agent identity CLI")
 reg_app = typer.Typer(help="Register a passport from a YAML file")
 sync_app = typer.Typer(help="Push and pull generic sync batches")
+mcp_app = typer.Typer(help="Serve the local MCP server over stdio")
 app.add_typer(reg_app, name="register")
 app.add_typer(sync_app, name="sync")
+app.add_typer(mcp_app, name="mcp")
 
 _REGISTRY_ROOT = Path.home() / ".forkit" / "registry"
 
 
-def _registry() -> LocalRegistry:
-    return LocalRegistry(root=_REGISTRY_ROOT)
+def _registry(registry_root: Path | None = None) -> LocalRegistry:
+    return LocalRegistry(root=registry_root or _REGISTRY_ROOT)
 
 
 # ── register ──────────────────────────────────────────────────────────────────
 
 @reg_app.command("model")
-def register_model(yaml_file: Path = typer.Argument(..., help="YAML file with ModelPassport fields")):
+def register_model(
+    yaml_file: Path = typer.Argument(..., help="YAML file with ModelPassport fields"),
+    registry_root: Path = typer.Option(_REGISTRY_ROOT, "--registry-root", help="Registry root path"),
+):
     """Register a model passport from a YAML file."""
     data = yaml.safe_load(yaml_file.read_text())
     passport = ModelPassport.from_dict(data)
-    pid = _registry().register_model(passport)
+    pid = _registry(registry_root).register_model(passport)
     typer.echo(f"Registered model: {pid}")
 
 
 @reg_app.command("agent")
-def register_agent(yaml_file: Path = typer.Argument(..., help="YAML file with AgentPassport fields")):
+def register_agent(
+    yaml_file: Path = typer.Argument(..., help="YAML file with AgentPassport fields"),
+    registry_root: Path = typer.Option(_REGISTRY_ROOT, "--registry-root", help="Registry root path"),
+):
     """Register an agent passport from a YAML file."""
     data = yaml.safe_load(yaml_file.read_text())
     passport = AgentPassport.from_dict(data)
-    pid = _registry().register_agent(passport)
+    pid = _registry(registry_root).register_agent(passport)
     typer.echo(f"Registered agent: {pid}")
 
 
 # ── inspect ───────────────────────────────────────────────────────────────────
 
 @app.command()
-def inspect(passport_id: str = typer.Argument(..., help="Full or partial passport ID")):
+def inspect(
+    passport_id: str = typer.Argument(..., help="Full or partial passport ID"),
+    registry_root: Path = typer.Option(_REGISTRY_ROOT, "--registry-root", help="Registry root path"),
+):
     """Print a passport as formatted JSON."""
-    reg = _registry()
+    reg = _registry(registry_root)
     p = reg.get(passport_id)
     if p is None:
         typer.echo(f"Not found: {passport_id}", err=True)
@@ -94,9 +106,10 @@ def inspect(passport_id: str = typer.Argument(..., help="Full or partial passpor
 def list_passports(
     type:   Optional[str] = typer.Option(None, "--type",   "-t", help="model | agent"),
     status: Optional[str] = typer.Option(None, "--status", "-s", help="active | draft | deprecated | revoked"),
+    registry_root: Path = typer.Option(_REGISTRY_ROOT, "--registry-root", help="Registry root path"),
 ):
     """List passports in the registry."""
-    rows = _registry().list(passport_type=type, status=status)
+    rows = _registry(registry_root).list(passport_type=type, status=status)
     if not rows:
         typer.echo("No passports found.")
         return
@@ -107,9 +120,12 @@ def list_passports(
 # ── search ────────────────────────────────────────────────────────────────────
 
 @app.command()
-def search(query: str = typer.Argument(..., help="Search term (name / creator)")):
+def search(
+    query: str = typer.Argument(..., help="Search term (name / creator)"),
+    registry_root: Path = typer.Option(_REGISTRY_ROOT, "--registry-root", help="Registry root path"),
+):
     """Search passports by name or creator."""
-    rows = _registry().search(query)
+    rows = _registry(registry_root).search(query)
     if not rows:
         typer.echo("No results.")
         return
@@ -120,9 +136,12 @@ def search(query: str = typer.Argument(..., help="Search term (name / creator)")
 # ── lineage ───────────────────────────────────────────────────────────────────
 
 @app.command()
-def lineage(passport_id: str = typer.Argument(..., help="Passport ID")):
+def lineage(
+    passport_id: str = typer.Argument(..., help="Passport ID"),
+    registry_root: Path = typer.Option(_REGISTRY_ROOT, "--registry-root", help="Registry root path"),
+):
     """Show ancestors and descendants for a passport."""
-    reg  = _registry()
+    reg  = _registry(registry_root)
     anc  = reg.lineage.ancestors(passport_id)
     desc = reg.lineage.descendants(passport_id)
     typer.echo(f"\nAncestors of {passport_id[:16]}...:")
@@ -136,9 +155,12 @@ def lineage(passport_id: str = typer.Argument(..., help="Passport ID")):
 # ── verify ────────────────────────────────────────────────────────────────────
 
 @app.command()
-def verify(passport_id: str = typer.Argument(..., help="Passport ID to verify")):
+def verify(
+    passport_id: str = typer.Argument(..., help="Passport ID to verify"),
+    registry_root: Path = typer.Option(_REGISTRY_ROOT, "--registry-root", help="Registry root path"),
+):
     """Re-derive a passport ID and check it matches the stored value."""
-    result = _registry().verify_passport(passport_id)
+    result = _registry(registry_root).verify_passport(passport_id)
     typer.echo(json.dumps(result, indent=2))
     if not result.get("valid"):
         raise typer.Exit(1)
@@ -147,18 +169,22 @@ def verify(passport_id: str = typer.Argument(..., help="Passport ID to verify"))
 # ── stats ─────────────────────────────────────────────────────────────────────
 
 @app.command()
-def stats():
+def stats(
+    registry_root: Path = typer.Option(_REGISTRY_ROOT, "--registry-root", help="Registry root path"),
+):
     """Print registry statistics."""
-    s = _registry().stats()
+    s = _registry(registry_root).stats()
     typer.echo(json.dumps(s, indent=2))
 
 
 # ── sync ──────────────────────────────────────────────────────────────────────
 
 @sync_app.command("status")
-def sync_status():
+def sync_status(
+    registry_root: Path = typer.Option(_REGISTRY_ROOT, "--registry-root", help="Registry root path"),
+):
     """Print saved sync cursors keyed by target."""
-    typer.echo(json.dumps(_registry().get_sync_state(), indent=2))
+    typer.echo(json.dumps(_registry(registry_root).get_sync_state(), indent=2))
 
 
 @sync_app.command("push")
@@ -170,9 +196,10 @@ def sync_push(
     passport_type: Optional[str] = typer.Option(None, "--type", "-t", help="model | agent"),
     timeout: float = typer.Option(30.0, "--timeout", min=1.0, help="HTTP timeout in seconds"),
     token: Optional[str] = typer.Option(None, "--token", envvar="FORKIT_SYNC_TOKEN", help="Optional bearer token"),
+    registry_root: Path = typer.Option(_REGISTRY_ROOT, "--registry-root", help="Registry root path"),
 ):
     """Push local outbox changes to a remote endpoint and persist the acknowledged cursor."""
-    bridge = RemoteSyncBridge(_registry())
+    bridge = RemoteSyncBridge(_registry(registry_root))
     result = bridge.push(
         endpoint,
         target=target,
@@ -194,9 +221,10 @@ def sync_pull(
     passport_type: Optional[str] = typer.Option(None, "--type", "-t", help="model | agent"),
     timeout: float = typer.Option(30.0, "--timeout", min=1.0, help="HTTP timeout in seconds"),
     token: Optional[str] = typer.Option(None, "--token", envvar="FORKIT_SYNC_TOKEN", help="Optional bearer token"),
+    registry_root: Path = typer.Option(_REGISTRY_ROOT, "--registry-root", help="Registry root path"),
 ):
     """Pull remote export batches into the local registry without re-appending them to the outbox."""
-    bridge = RemoteSyncBridge(_registry())
+    bridge = RemoteSyncBridge(_registry(registry_root))
     result = bridge.pull(
         endpoint,
         source=source,
@@ -207,6 +235,27 @@ def sync_pull(
         token=token,
     )
     typer.echo(json.dumps(result, indent=2))
+
+
+# ── mcp ───────────────────────────────────────────────────────────────────────
+
+@mcp_app.command("serve")
+def mcp_serve(
+    registry_root: Path = typer.Option(_REGISTRY_ROOT, "--registry-root", help="Registry root path"),
+):
+    """Run the local MCP server over stdio."""
+    from ..mcp.server import serve_stdio
+
+    try:
+        serve_stdio(registry_root=registry_root.expanduser().resolve())
+    except ImportError:
+        typer.echo(
+            "MCP support requires the official MCP Python SDK.\n"
+            "Install with:\n"
+            "  pip install 'forkit-core[mcp]'",
+            err=True,
+        )
+        raise typer.Exit(1)
 
 
 # ── serve ─────────────────────────────────────────────────────────────────────

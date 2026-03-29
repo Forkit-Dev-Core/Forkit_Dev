@@ -1,0 +1,36 @@
+name: Feature request
+description: Suggest an OSS-appropriate improvement for Forkit Dev Core.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please keep requests in scope for the open source core:
+        portable passports, local verification, lineage, sync contracts, adapters, CLI, SDK, server, MCP, and developer tooling.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: What is hard today, and for whom?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach
+      description: Describe the smallest local-first change that would help.
+    validations:
+      required: true
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: Scope and boundaries
+      description: Explain how this avoids hosted dependencies, SaaS workflows, or enterprise-only controls.
+      placeholder: This should stay file-based and local. No hosted auth, dashboards, or approval chains.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What have you tried already?

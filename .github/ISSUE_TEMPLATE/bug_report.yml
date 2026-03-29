@@ -1,0 +1,48 @@
+name: Bug report
+description: Report a reproducible problem in Forkit Dev Core OSS.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please keep reports focused on the open source core:
+        local passports, verification, lineage, sync contracts, adapters, CLI, SDK, server, or MCP.
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Python version, OS, and the command you ran.
+      placeholder: macOS 14, Python 3.11, `python examples/minimal_local_passport.py`
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Give the smallest local reproduction you can.
+      placeholder: |
+        1. Install with `pip install -e ".[dev]"`
+        2. Run `pytest tests/test_mcp.py -q`
+        3. Observe...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope notes
+      description: Mention whether deterministic identity, offline/local-first behavior, or compatibility shims are affected.
+      placeholder: The bug changes `passport_id` derivation for an existing model passport.
