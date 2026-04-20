@@ -1,261 +1,169 @@
 # Forkit Dev Core
 
-> Open source passport infrastructure for AI models and agents.
+**Open-source passport infrastructure for AI models and agents.**
 
-[![Python](https://img.shields.io/badge/python-3.10%2B-2f2a62.svg)](#install)
-[![Dependencies](https://img.shields.io/badge/dependencies-zero-008190.svg)](#install)
-[![Mode](https://img.shields.io/badge/mode-offline--first-6aa7ab.svg)](#install)
+AI models and agents often move across repos, tools, teams, and runtimes without stable identity, lineage, or verification. Forkit Dev gives them portable passports: deterministic IDs, provenance links, artifact hashes, lineage records, and CI-friendly validation.
+
+Create a passport locally. Verify it in GitHub CI. Share or govern it through Forkit Dev when you need hosted visibility.
+
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.10%2B-2f2a62.svg)](#install)
+[![Status](https://img.shields.io/badge/status-alpha-f49355.svg)](#current-status)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-008190.svg)](#contributing)
 
-Forkit Dev is building open source and commercial infrastructure for trustworthy AI.
-This repository contains the open source, local-first core: deterministic
-passports for models and agents, artifact hashing, integrity verification,
-lineage, a filesystem registry, sync primitives, and integration adapters.
+![Forkit Dev passport flow](./docs/assets/forkit-passport-flow.png)
 
-The [Forkit Dev website](https://forkit.dev) is the best place for broader
-product context. The
-[GitHub repository](https://github.com/arpitasarker01/Forkit_Dev) is the
-authoritative home for the open source code, examples, issues, and pull
-requests.
+## Try it in 60 seconds
 
-- Website: [forkit.dev](https://forkit.dev)
-- Open source repository: [github.com/arpitasarker01/Forkit_Dev](https://github.com/arpitasarker01/Forkit_Dev)
-- Discord: [discord.gg/yJ4cdpt7c](https://discord.gg/yJ4cdpt7c)
-- Slack: [Forkit Dev workspace](https://join.slack.com/t/forkitdevworkspace/shared_invite/zt-3tgrdgk5v-83aev6ZwE7qQHe_M4q9HIw)
+```bash
+git clone https://github.com/Forkit-Dev-Core/Forkit_Dev.git
+cd Forkit_Dev
+pip install -e ".[cli]"
 
-## Overview
+python scripts/generate_passport_template.py --passport-type model --output forkit-passport.json
+python scripts/validate_passport.py --path forkit-passport.json
+```
 
-Forkit Dev Core gives AI systems a portable, verifiable passport: a structured
-document with stable identity, provenance links, and integrity-ready hashes. It
-is designed for teams that want AI identity and traceability they can keep
-local, review in Git, validate in CI, and move across environments without
-depending on a hosted control plane.
+That flow creates a starter `ModelPassport`, writes a deterministic `id` into `forkit-passport.json`, and verifies that the stored `id` still matches the schema-derived identity. No hosted service is required.
 
-Current status:
+## Why Forkit Dev Core
 
-- alpha open source core
-- real Python package, CLI, examples, and local service
-- optional adapters for LangChain, LangGraph, and OpenClaw
-- web UI included as a prototype for exploration and currently mock-backed
+Forkit Dev Core makes the passport itself the durable boundary for AI identity.
+Instead of depending on one registry, one dashboard, or one runtime, you keep a
+portable document that can be created locally, reviewed in Git, validated in
+CI, synced across environments, and re-verified later without changing its
+identity.
 
-## Why Forkit Dev
+This repository is for teams that want:
 
-Passport data is only useful if it survives across tools, environments, and
-organizations. Forkit Dev focuses on a durable boundary: the passport itself
-should be portable, deterministic, and independently verifiable.
+- deterministic `passport_id` derivation for models and agents
+- provenance links and artifact hashes that stay attached to the passport
+- lineage across base models, fine-tunes, and agents
+- local-first workflows that do not require a hosted control plane
+- a verification path that fits normal repository and CI practices
 
-Why that matters:
+## What You Can Do Today
 
-- developers can diff passports like source files and validate them in normal repo workflows
-- self-hosted adopters can keep identity, registry, and sync flows local-first
-- governance and platform teams can attach operational metadata outside the identity boundary
-- contributors can work against open schemas, tests, and HTTP contracts instead of opaque hosted behavior
+- Create `ModelPassport` and `AgentPassport` records with deterministic IDs.
+- Attach `artifact_hash`, `parent_hash`, `base_model_id`, `model_id`, and `parent_agent_id`.
+- Store passports locally in JSON with a rebuildable SQLite index.
+- Register, inspect, verify, search, list, and sync passports through the Python SDK and CLI.
+- Validate committed passport files in GitHub Actions.
+- Export a `ModelPassport` JSON file into a Hugging Face-style model card markdown file.
+- Try adapter-assisted registration flows for LangGraph, LangChain, and OpenClaw.
+- Explore a React + TypeScript frontend prototype under [`web/`](./web) that is currently mock-backed.
 
-## Key Features
+## Current Status
 
-- deterministic `passport_id` derivation for `ModelPassport` and `AgentPassport`
-- artifact hashing and integrity verification for files, directories, and metadata
-- lineage tracking for base models, fine-tunes, and agents linked to models
-- local JSON registry with a rebuildable SQLite index
-- Python SDK and CLI for registration, inspection, verification, stats, and sync
-- optional FastAPI service for local registration, lookup, export, and sync endpoints
-- adapter packages for LangGraph, LangChain, and OpenClaw
-- GitHub CI validation and Hugging Face model card export helpers
+- Alpha open-source core. `pyproject.toml` declares `Development Status :: 3 - Alpha`.
+- Real Python package, CLI, examples, scripts, and local HTTP service live in this repo today.
+- Optional extras add LangChain, LangGraph, FastAPI/Uvicorn server, and Postgres-backed sync receiver support.
+- The frontend is a prototype for exploration and demonstration, not a production-backed control plane.
+- PyPI publication is not live yet. Install from this GitHub checkout.
 
-## Open Source Scope
+## What To Try Next
 
-This repository is the open source, local-first core of Forkit Dev.
+| Goal | Entry point |
+|---|---|
+| Smallest end-to-end local registration flow | `python examples/sdk_quickstart.py` |
+| Register from YAML through the CLI | `forkit register model examples/register_model.yaml` |
+| Validate a committed passport in CI | [`publish/github-ci-demo/`](./publish/github-ci-demo/) |
+| Run the local HTTP service | `pip install -e ".[server]" && forkit serve --host 127.0.0.1 --port 8000` |
+| Try self-host sync between two local registries | `python examples/self_host_sync_quickstart.py` |
+| Try the LangGraph adapter | `python examples/langgraph_sync_quickstart.py` |
+| Try the LangChain adapter | `python examples/langchain_sync_quickstart.py` |
+| Try the OpenClaw adapter | `python examples/openclaw_quickstart.py` |
+| Explore the browser UI prototype | `cd web && npm install && npm run dev` |
 
-Included in OSS:
+## Open Source Core Vs Hosted Direction
 
-- passport schemas and deterministic `passport_id` derivation
-- artifact hashing, integrity verification, and lineage
-- local JSON + SQLite registry
-- local HTTP service for registration, lookup, verification, lineage, and export
-- generic sync built on `GET /export`, `POST /sync/passports`, `sync push`, and `sync pull`
-- LangGraph, LangChain, and OpenClaw adapters
-- self-host and local development examples
-- a prototype web UI for exploring the current OSS scope
+`Forkit Dev Core` is the local-first open-source foundation in this repository:
+schemas, deterministic IDs, artifact hashing, lineage, local registry, SDK,
+CLI, sync primitives, optional local service, adapters, and the prototype web
+UI.
 
-Not included in the OSS core today:
-
-- hosted SaaS workflows
-- proprietary commercial product surfaces
-- shared-database coupling between systems
-
-Design guardrails for contributors:
-
-- keep `passport_id` deterministic and local
-- keep systems connected through documents and HTTP contracts, not shared databases
-- keep OSS useful offline and without any hosted dependency
-- keep remote metadata separate from passport identity
-
-## Core Concepts
-
-- `passport_id`: deterministic SHA-256 identity derived from stable passport fields
-- `artifact_hash`: content fingerprint used for integrity checks
-- lineage links: `base_model_id`, `model_id`, `parent_hash`, and `parent_agent_id`
-- local registry: JSON source of truth with a rebuildable SQLite index and append-only sync records
-- sync bridge: generic HTTP export/import contract that does not change passport identity
+`Forkit Dev` is the broader hosted direction around that core for teams that
+prefer browser-based passport creation, dashboards, private workspaces,
+telemetry, collaboration, approvals, and governance workflows. Those hosted
+workflows are not implemented in this repository today.
 
 ## Install
 
-Python 3.10+ is required. Node.js is only needed if you want to run the web
-prototype.
+Python 3.10+ is required. Node.js is only needed if you want to run the
+frontend prototype.
 
-PyPI publication is not live yet. Install from the current GitHub checkout:
+Install from this repository:
 
 ```bash
-git clone https://github.com/arpitasarker01/Forkit_Dev.git
+git clone https://github.com/Forkit-Dev-Core/Forkit_Dev.git
 cd Forkit_Dev
 pip install -e .
 ```
 
-Python imports should use `forkit.*`. The legacy `forkit_core.*` namespace is
-kept as a compatibility shim in v0.1.x.
-
-With optional extras:
+Optional extras:
 
 ```bash
 pip install -e ".[pydantic]"   # Pydantic v2 backend + JSON Schema
-pip install -e ".[cli]"        # Typer CLI
+pip install -e ".[cli]"        # Typer CLI + YAML input
 pip install -e ".[langchain]"  # LangChain adapter helpers
 pip install -e ".[langgraph]"  # LangGraph adapter helpers
-pip install -e ".[server]"     # local FastAPI service
+pip install -e ".[server]"     # FastAPI + Uvicorn local service
 pip install -e ".[postgres]"   # Postgres-backed sync receiver
-pip install -e ".[all]"        # everything
+pip install -e ".[all]"        # all optional extras
+pip install -e ".[dev]"        # tests, linting, and development tooling
 ```
 
-For development:
+Python imports should use `forkit.*`. The legacy `forkit_core.*` namespace is
+kept as a compatibility shim in `v0.1.x`.
 
-```bash
-git clone https://github.com/arpitasarker01/Forkit_Dev.git
-cd Forkit_Dev
-pip install -e ".[dev]"
-```
+## Core Concepts
 
-## Quickstart
+- `passport_id`: deterministic SHA-256 identity derived from stable passport fields
+- `artifact_hash`: content fingerprint for a model artifact, agent bundle, or config material
+- `parent_hash`: hash-chain link to the parent artifact in a lineage
+- `base_model_id` and `parent_agent_id`: passport-ID lineage links for fine-tunes and forks
+- local registry: JSON source of truth with a rebuildable SQLite index
+- sync bridge: generic `GET /export` and `POST /sync/passports` contract that does not rewrite identity
 
-Recommended first runs:
+For the full identity contract, hash rules, regression anchors, and
+serialization guarantees, see [`docs/identity-spec.md`](./docs/identity-spec.md).
 
-- SDK core flow: [`examples/sdk_quickstart.py`](./examples/sdk_quickstart.py)
-- LangGraph registration + sync: [`examples/langgraph_sync_quickstart.py`](./examples/langgraph_sync_quickstart.py)
-- LangChain registration + sync: [`examples/langchain_sync_quickstart.py`](./examples/langchain_sync_quickstart.py)
-- OpenClaw config + plugin registration: [`examples/openclaw_quickstart.py`](./examples/openclaw_quickstart.py)
-- generic self-host sync: [`examples/self_host_sync_quickstart.py`](./examples/self_host_sync_quickstart.py)
+## What's Inside
 
-If you are evaluating Forkit Dev for framework adoption, start with LangGraph
-or LangChain first. They show the deepest current adapter pattern. OpenClaw is
-available as a thin local adapter for gateway config, plugin manifests, tool
-registration, and hooks.
-
-Fast adoption paths:
-
-| Goal | Entry point |
+| Module | Purpose |
 |---|---|
-| Understand the core registration flow | `python examples/sdk_quickstart.py` |
-| Try framework-backed registration | `python examples/langgraph_sync_quickstart.py` or `python examples/langchain_sync_quickstart.py` |
-| Explore the browser UI | `cd web && npm install && npm run dev` |
-| Run the local HTTP service | `forkit serve --host 127.0.0.1 --port 8000` |
-| Validate passports in CI | [`publish/github-ci-demo/`](./publish/github-ci-demo/) |
+| `forkit/` | Core package: domain logic, schemas, registry, SDK, server, and sync |
+| `forkit_core/` | Compatibility namespace kept during the `v0.1.x` transition |
+| `forkit_langgraph/` | LangGraph adapter helpers |
+| `forkit_langchain/` | LangChain adapter helpers |
+| `forkit_openclaw/` | OpenClaw adapter |
+| `examples/` | Runnable quickstarts and sample passports |
+| `publish/` | Copyable GitHub CI and publishing demos |
+| `scripts/` | Validation, export, and template utilities |
+| `web/` | React + TypeScript + Vite prototype UI |
+| `docs/` | Identity specification and image assets |
+| `tests/` | Regression coverage for schemas, registry, server, sync, and adapters |
 
-### GitHub CI Demo In 5 Minutes
+## GitHub CI Validation
 
-If you want the smallest adoption path, start with the copyable GitHub CI demo
-payload in [`publish/github-ci-demo/`](./publish/github-ci-demo/).
+Forkit Dev Core includes a lightweight GitHub-native validation path for a
+committed passport file. It checks that the file exists, validates the JSON
+against the current `ModelPassport` or `AgentPassport` schema, and verifies
+that the stored deterministic `id` matches the file content.
 
-1. Copy [`publish/github-ci-demo/forkit-passport.json`](./publish/github-ci-demo/forkit-passport.json) into your own repository root.
-2. Copy [`publish/github-ci-demo/.github/workflows/validate-forkit-passport.yml`](./publish/github-ci-demo/.github/workflows/validate-forkit-passport.yml) into `.github/workflows/`.
-3. Push or open a pull request. GitHub Actions will fail on missing files, invalid JSON, schema errors, or deterministic `id` mismatches.
-4. Run the same check locally with `python scripts/validate_passport.py --path forkit-passport.json`.
+Start with [`publish/github-ci-demo/`](./publish/github-ci-demo/):
 
-## Frontend Prototype
+1. Copy [`publish/github-ci-demo/forkit-passport.json`](./publish/github-ci-demo/forkit-passport.json) into your repository root.
+2. Copy the sample workflow from [`publish/github-ci-demo/README.md`](./publish/github-ci-demo/README.md) or the local reusable action shown below.
+3. Push or open a pull request.
+4. GitHub Actions will fail on missing files, invalid JSON, schema errors, or deterministic `id` mismatches.
 
-A React + TypeScript + Vite frontend lives under [`web/`](./web) and is
-intentionally limited to the open source Forkit Core scope defined in this
-README.
-
-For this open source release, the web UI is included for exploration and
-demonstration. It runs on mock in-memory data; the persistent core already
-ships in the schemas, local registry, SDK, CLI, and examples, so no backend API
-is required to explore the current release.
-
-Frontend setup:
-
-```bash
-cd web
-npm install
-npm run dev
-```
-
-Additional frontend commands:
-
-```bash
-npm run build
-npm run preview
-```
-
-The frontend includes these screens:
-
-- Home
-- Dashboard
-- Registry
-- Search
-- Passport Detail / Inspect
-- Register Passport
-- Verify Passport
-- Lineage
-- Registry Stats
-
-Registry is the browse view, Search is for filtering existing passports, and
-Register Passport creates a new mock-backed record for demonstration.
-
-### Demo Screenshots
-
-The included web demo is mock-backed and intended for exploration of the open
-source Forkit Core concepts that already ship in the schemas, local registry,
-SDK, CLI, and examples.
-
-| Home | Registry | Inspect |
-|---|---|---|
-| ![Forkit Core Home demo](docs/images/home.png) | ![Forkit Core Registry demo](docs/images/registry.png) | ![Forkit Core Inspect demo](docs/images/inspect.png) |
-
-## Tooling and Integrations
-
-### GitHub Passport Validation
-
-Forkit Core includes a lightweight GitHub-native CI integration for validating
-a committed passport file. It checks that the file exists, validates the JSON
-against the current open source `ModelPassport` or `AgentPassport` schema, and
-verifies that the stored deterministic `id` matches the file content.
-
-Included files:
-
-- [`.github/actions/validate-passport/action.yml`](./.github/actions/validate-passport/action.yml) for reusable CI validation
-- [`.github/workflows/validate-passport.yml`](./.github/workflows/validate-passport.yml) as a sample workflow
-- [`publish/github-ci-demo/README.md`](./publish/github-ci-demo/README.md) as the smallest copyable demo payload
-- [`scripts/validate_passport.py`](./scripts/validate_passport.py) for local and CI validation
-- [`scripts/generate_passport_template.py`](./scripts/generate_passport_template.py) for a starter `forkit-passport.json`
-
-Generate a starter passport:
-
-```bash
-python scripts/generate_passport_template.py --passport-type model --output forkit-passport.json
-```
-
-Validate a passport locally:
-
-```bash
-python scripts/validate_passport.py --path forkit-passport.json
-```
-
-Use the action from another repository:
+Minimal workflow:
 
 ```yaml
 name: Validate Forkit passport
 
 on:
-  workflow_dispatch:
   pull_request:
     paths:
       - "forkit-passport.json"
@@ -272,30 +180,165 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: arpitasarker01/Forkit_Dev/.github/actions/validate-passport@main
+      - uses: Forkit-Dev-Core/Forkit_Dev/.github/actions/validate-passport@main
         with:
           passport-path: forkit-passport.json
 ```
 
-This repo's sample workflow validates
+Run the same check locally:
+
+```bash
+python scripts/validate_passport.py --path forkit-passport.json
+```
+
+This repository's own workflow validates
 [`examples/forkit-passport.model.json`](./examples/forkit-passport.model.json).
-In your own repo, point `passport-path` to the file you want to enforce in CI.
 
-### Hugging Face Model Card Export
+## Python SDK
 
-Hugging Face model cards describe models for distribution and discovery. Forkit
-passports add deterministic identity, integrity-ready hashes, and lineage
-fields on top of that. This repo includes a small file-based exporter that
-turns a `ModelPassport` JSON file into a Hugging Face-friendly markdown card
-with YAML front matter.
+```python
+from forkit.sdk import ForkitClient
+
+client = ForkitClient()  # defaults to ~/.forkit/registry
+
+model_id = client.models.register(
+    name="my-model",
+    version="1.0.0",
+    task_type="text-generation",
+    architecture="transformer",
+    creator={"name": "Your Team", "organization": "Open Source"},
+)
+
+agent_id = client.agents.register(
+    name="support-agent",
+    version="1.0.0",
+    model_id=model_id,
+    task_type="customer-support",
+    architecture="ReAct",
+    creator={"name": "Your Team", "organization": "Open Source"},
+    system_prompt="Answer concisely.",
+)
+
+print(client.lineage.ancestors(agent_id))
+print(client.verify(model_id))
+```
+
+Runnable entry point:
+
+```bash
+python examples/sdk_quickstart.py
+```
+
+## CLI
+
+Install the CLI extra first:
+
+```bash
+pip install -e ".[cli]"
+```
+
+If `forkit` is not on your `PATH`, use `python -m forkit.cli.main ...` with
+the same arguments.
+
+Common commands:
+
+```bash
+forkit register model examples/register_model.yaml
+forkit register agent examples/register_agent.yaml
+
+forkit inspect <passport-id>
+forkit list --type model --status active
+forkit search "llama"
+forkit lineage <passport-id>
+forkit verify <passport-id>
+forkit stats
+
+forkit sync status
+forkit sync push https://example.com/sync/passports --target main-server
+forkit sync pull https://example.com/export --source remote-dev
+```
+
+## Local Service and Sync
+
+Install the server extra and run the local HTTP service over the same
+filesystem-backed registry:
+
+```bash
+pip install -e ".[server]"
+forkit serve --host 127.0.0.1 --port 8000
+```
+
+Relevant routes:
+
+- `GET /` for service info and registry paths
+- `GET /healthz` and `GET /readyz` for liveness/readiness checks
+- `POST /models` and `POST /agents` for passport registration
+- `GET /passports/{id}` and `POST /verify/{id}` for fetch and verification
+- `GET /lineage/{id}` for ancestry and descendants
+- `GET /export` and `POST /sync/passports` for generic sync
+
+The repository also includes a runnable self-host demo:
+
+```bash
+python examples/self_host_sync_quickstart.py
+```
+
+That example starts two local registries, pushes one registry's outbox into the
+other's inbox, then pulls exported passports into the mirror registry.
+
+If you need the Postgres-backed receiver, install `.[postgres]` and set:
+
+- `FORKIT_SYNC_BACKEND=postgres`
+- `FORKIT_SYNC_POSTGRES_DSN=postgresql://...`
+- `FORKIT_SYNC_POSTGRES_SCHEMA=public`
+- `FORKIT_SYNC_BEARER_TOKEN=...`
+
+## Framework Adapters
+
+Forkit Dev Core ships thin adapters that preserve the same passport contract
+while helping you register framework-specific runtime surfaces.
+
+### LangGraph
+
+- Package: [`forkit_langgraph/`](./forkit_langgraph)
+- Example: [`examples/langgraph_sync_quickstart.py`](./examples/langgraph_sync_quickstart.py)
+- Install: `pip install -e ".[langgraph]"`
+
+The current adapter supports spec-based registration and runtime-oriented
+helpers around builder or compiled graph objects.
+
+### LangChain
+
+- Package: [`forkit_langchain/`](./forkit_langchain)
+- Examples: [`examples/langchain_quickstart.py`](./examples/langchain_quickstart.py) and [`examples/langchain_sync_quickstart.py`](./examples/langchain_sync_quickstart.py)
+- Install: `pip install -e ".[langchain]"`
+
+The current adapter captures tool metadata and lightweight runtime summaries
+without turning the core package into a hard LangChain dependency.
+
+### OpenClaw
+
+- Package: [`forkit_openclaw/`](./forkit_openclaw)
+- Example: [`examples/openclaw_quickstart.py`](./examples/openclaw_quickstart.py)
+
+The OpenClaw adapter derives a standard `AgentPassport` from local gateway and
+plugin configuration material such as `openclaw.json`, plugin manifests,
+extension entrypoints, and hook metadata.
+
+## Hugging Face Model Card Export
+
+Forkit passports add deterministic identity, integrity-ready hashes, and
+lineage fields on top of a normal model card workflow. This repo includes a
+small compatibility exporter that converts a `ModelPassport` JSON file into a
+Hugging Face-style markdown card with YAML front matter.
 
 Included files:
 
-- [`scripts/export_hf_model_card.py`](./scripts/export_hf_model_card.py) to export a model passport into markdown
-- [`examples/forkit-passport.model.json`](./examples/forkit-passport.model.json) as the source example
-- [`examples/huggingface-model-card.md`](./examples/huggingface-model-card.md) as generated output
+- [`scripts/export_hf_model_card.py`](./scripts/export_hf_model_card.py)
+- [`examples/forkit-passport.model.json`](./examples/forkit-passport.model.json)
+- [`examples/huggingface-model-card.md`](./examples/huggingface-model-card.md)
 
-Export a model card locally:
+Run it locally:
 
 ```bash
 python scripts/export_hf_model_card.py \
@@ -303,622 +346,61 @@ python scripts/export_hf_model_card.py \
   --output examples/huggingface-model-card.md
 ```
 
-The exporter is intentionally compatibility-only for now: it stays local, does
-not call the Hugging Face API, and simply helps developers reuse Forkit
-provenance metadata in a repository-friendly model card format.
+This exporter is file-based only. It does not call the Hugging Face API.
 
-### OpenClaw Adapter
+## Frontend Prototype
 
-Forkit Core also includes a thin OpenClaw adapter for local gateway and plugin
-surfaces. It reads a local `openclaw.json`, `openclaw.plugin.json`,
-`package.json`, extension entrypoints, and `HOOK.md` files, then derives a
-standard Forkit `AgentPassport` from that material.
+A React + TypeScript + Vite frontend lives under [`web/`](./web). It is
+included for exploration of the current open-source scope, not as proof of a
+hosted control plane.
 
-Included files:
+Current behavior:
 
-- [`forkit_openclaw/adapter.py`](./forkit_openclaw/adapter.py) to build and register OpenClaw-derived passports
-- [`examples/openclaw_quickstart.py`](./examples/openclaw_quickstart.py) as the smallest runnable example
-- [`tests/test_openclaw_adapter.py`](./tests/test_openclaw_adapter.py) for adapter coverage
+- mock-backed in-memory data, not persistent API-backed state
+- screens for home, dashboard, registry, search, passport detail, create, verify, lineage, and stats
+- useful for demos and product exploration while the durable OSS value stays in the schemas, local registry, SDK, CLI, and examples
 
-Expected outcome:
-
-- one deterministic passport for a local OpenClaw gateway or plugin surface
-- preserved tool and hook metadata inside standard Forkit passport fields
-- no hosted dependency required
-
-## Repository Structure
-
-| Path | Purpose |
-|---|---|
-| `forkit/` | Core package: domain logic, schemas, registry, SDK, server, and sync |
-| `forkit_core/` | Compatibility namespace kept for the v0.1.x transition |
-| `forkit_langgraph/` | LangGraph adapter helpers |
-| `forkit_langchain/` | LangChain adapter helpers |
-| `forkit_openclaw/` | OpenClaw adapter |
-| `examples/` | Runnable quickstarts and sample passports |
-| `publish/` | Copyable GitHub CI and publishing demos |
-| `scripts/` | Validation, export, and template utilities |
-| `web/` | React + TypeScript + Vite prototype UI |
-| `docs/` | Identity specification and visual reference assets |
-| `tests/` | Regression coverage for schema, registry, server, sync, and adapters |
-
----
-
-## Quickstart — SDK
-
-```python
-from forkit.sdk import ForkitClient
-
-client = ForkitClient()  # defaults to ~/.forkit/registry
-
-# Register a model
-model_id = client.models.register(
-    name="my-fine-tuned-llm",
-    version="1.0.0",
-    architecture="transformer",
-    creator={"name": "Tony Stark", "organization": "Stark Industries"},
-    license="Apache-2.0",
-)
-
-# Register an agent on top of that model
-agent_id = client.agents.register(
-    name="support-agent",
-    version="1.0.0",
-    model_id=model_id,
-    creator={"name": "J.A.R.V.I.S", "organization": "Stark Industries"},
-    system_prompt="You are a helpful support assistant.",
-)
-
-# Trace lineage
-for node in client.lineage.ancestors(agent_id):
-    print(node)
-
-# Verify integrity
-print(client.verify(model_id))
-```
-
----
-
-## Quickstart — CLI
+Run it locally:
 
 ```bash
-# Register from YAML
-forkit register model examples/register_model.yaml
-forkit register agent examples/register_agent.yaml
-
-# Inspect
-forkit inspect <passport-id>
-
-# List and search
-forkit list --type model --status active
-forkit search "llama"
-
-# Trace lineage
-forkit lineage <passport-id>
-
-# Verify integrity
-forkit verify <passport-id>
-
-# Sync local outbox changes to a remote API
-forkit sync status
-forkit sync push https://example.com/sync/passports --target main-server
-forkit sync pull https://example.com/export --source remote-dev
-
-# Registry stats
-forkit stats
+cd web
+npm install
+npm run dev
 ```
 
----
-
-## Local Service
-
-Install the server extra and run the local HTTP service on top of the same
-filesystem-backed registry:
+Additional commands:
 
 ```bash
-forkit serve --host 127.0.0.1 --port 8000
+npm run build
+npm run preview
 ```
 
-Optional receiver configuration:
-
-- `FORKIT_SYNC_BACKEND=local|postgres`
-- `FORKIT_SYNC_POSTGRES_DSN=postgresql://...`
-- `FORKIT_SYNC_POSTGRES_SCHEMA=public`
-- `FORKIT_SYNC_BEARER_TOKEN=...`
-
-Use `forkit-core[postgres]` when `FORKIT_SYNC_BACKEND=postgres`.
-
-Bootstrap routes:
-
-- `GET /`       — service info and registry paths
-- `GET /healthz` — liveness check
-- `GET /readyz`  — readiness check
-- `POST /models` — register a model passport
-- `POST /agents` — register an agent passport
-- `GET /passports/{id}` — fetch a stored passport
-- `POST /verify/{id}` — verify stored content against the passport ID
-- `GET /lineage/{id}` — fetch ancestor/descendant lineage
-- `GET /export` — export cursor-based change records for sync
-- `POST /sync/passports` — receive generic remote sync batches for later processing
-
-The local service now covers both sides of the generic sync contract:
-`GET /export` for outgoing batches and `POST /sync/passports` for incoming
-reference ingestion.
-
----
-
-## Sync Bridge
-
-The OSS package now includes a generic remote sync bridge on top of the local
-outbox. It only pushes versioned passport change batches to a remote HTTP
-endpoint and keeps the local passport contract unchanged.
-
-Python SDK:
-
-```python
-from forkit.sdk import ForkitClient
-
-client = ForkitClient()
-result = client.sync.push(
-    "https://example.com/sync/passports",
-    target="main-server",
-)
-print(result["cursor"])
-```
-
-CLI:
-
-```bash
-forkit sync status
-forkit sync push https://example.com/sync/passports --target main-server
-forkit sync pull https://example.com/export --source remote-dev
-```
-
-Runnable self-host demo:
-
-```bash
-python examples/self_host_sync_quickstart.py
-```
-
-That example spins up two local registries, pushes one registry's outbox into
-the other's inbox, then pulls the source registry's exported passports into the
-mirror registry.
-
-Remote contract:
-
-- Method: `POST`
-- Content type: `application/json`
-- Body fields:
-  - `source` — local registry identifier/path
-  - `target` — stable local target name
-  - `after` — previous local cursor
-  - `cursor` — current batch cursor
-  - `has_more` — whether more local changes remain
-  - `items` — exported passport change records
-
-Local sync state is stored in `sync_state.json` and only tracks acknowledged
-cursors per target or pulled source. It does not affect `passport_id`.
-
-`forkit sync pull` reads a generic `GET /export` endpoint, validates the
-returned passport documents, and applies them into the local registry without
-re-emitting them into the local outbox.
-
-The local service also ships a reference receiver for the same contract at
-`POST /sync/passports`. In `local` mode, incoming envelopes are stored
-append-only under:
-
-- `sync_inbox.jsonl` — raw received batch envelopes
-- `sync_inbox/<target>/<passport_id>.jsonl` — received records keyed by passport ID
-
-In `postgres` mode, the same envelopes are stored idempotently by
-`target + cursor` in `forkit_sync_batches`, `forkit_sync_items`, and
-`forkit_sync_passports`.
-
----
-
-## LangGraph Adapter
-
-The repo now includes a minimal LangGraph-facing adapter in
-`forkit_langgraph`. It still avoids a hard LangGraph dependency in the core
-package, but it now supports both spec-based registration and runtime-oriented
-hooks for builder/compiled graph objects.
-
-```python
-from forkit.sdk import ForkitClient
-from forkit_langgraph import LangGraphAdapter
-
-client = ForkitClient()
-adapter = LangGraphAdapter(client=client)
-
-agent_id = adapter.register_agent(
-    name="triage-graph",
-    version="1.0.0",
-    model_id="<model-passport-id>",
-    creator={"name": "Hamza", "organization": "ForkIt"},
-    graph_spec={"entrypoint": "router", "nodes": ["router", "support"]},
-)
-```
-
-For real builder flows, the adapter also exposes:
-
-```python
-compiled, passport_id = adapter.compile_and_register(
-    builder,
-    compile_kwargs={"name": "triage-runtime", "debug": True},
-    name="triage-graph",
-    version="1.0.0",
-    model_id="<model-passport-id>",
-    creator={"name": "Hamza", "organization": "ForkIt"},
-)
-
-bound = adapter.compile_and_bind(
-    builder,
-    name="triage-graph",
-    version="1.0.0",
-    model_id="<model-passport-id>",
-    creator={"name": "Hamza", "organization": "ForkIt"},
-)
-result = bound.invoke({"question": "hello"})
-```
-
-This is the minimal runtime integration layer for future direct LangGraph hooks.
-
-Runnable LangGraph sync demo:
-
-```bash
-python examples/langgraph_sync_quickstart.py
-```
-
-That example compiles a real LangGraph `StateGraph`, registers its passport,
-and pulls the resulting model + graph passports into a second local registry.
-
----
-
-## LangChain Adapter
-
-The repo also ships a thin LangChain-facing adapter in `forkit_langchain`.
-It keeps the same passport registration path as the core SDK, but adds:
-
-- runnable and agent registration based on LangChain graph shape
-- lazy registration wrappers for `invoke` and `stream` style usage
-- `create_and_register(...)` and `create_and_bind(...)` helpers for `create_agent()`
-- tool metadata capture for tool-calling agents
-- a lightweight callback handler that captures runtime event summaries
-
-```python
-from langchain_core.language_models.fake_chat_models import FakeListChatModel
-
-from forkit.sdk import ForkitClient
-from forkit_langchain import LangChainAdapter
-
-client = ForkitClient()
-adapter = LangChainAdapter(client=client)
-
-bound = adapter.create_and_bind(
-    model=FakeListChatModel(responses=["hello there"]),
-    create_kwargs={"name": "demo-agent"},
-    system_prompt="Be concise.",
-    version="1.0.0",
-    model_id="<model-passport-id>",
-    creator={"name": "Hamza", "organization": "ForkIt"},
-)
-
-result = bound.invoke({"messages": [{"role": "user", "content": "say hi"}]})
-print(bound.passport_id)
-print(bound.runtime_summary()["counts"])
-```
-
-If you already have an agent from `langchain.agents.create_agent(...)`, you can
-still call `adapter.bind_runnable(agent, tools=[...], ...)` to preserve tool
-metadata in the passport.
-
-Use [`examples/langchain_quickstart.py`](./examples/langchain_quickstart.py) for
-an end-to-end runnable example.
-
-Runnable LangChain sync demo:
-
-```bash
-python examples/langchain_sync_quickstart.py
-```
-
-That example creates a tool-calling LangChain agent, registers its passport,
-and pulls the resulting model + agent passports into a second local registry.
-
----
-
-## Passport Structure
-
-### ModelPassport
-
-| Field | Description |
-|---|---|
-| `id` | Deterministic SHA-256 of `(type, name, version, creator, artifact_hash)` |
-| `architecture` | e.g. `transformer`, `diffusion`, `mamba` |
-| `artifact_hash` | SHA-256 of model weight files |
-| `parent_hash` | SHA-256 of parent artifact (fine-tune chain) |
-| `base_model_id` | Passport ID of the parent model (lineage link) |
-| `training_data` | Dataset references with optional hashes |
-| `capabilities` | Modalities, context length, benchmarks |
-
-### AgentPassport
-
-| Field | Description |
-|---|---|
-| `id` | Deterministic SHA-256 of `(type, name, version, creator, artifact_hash)` |
-| `model_id` | Required — full passport ID of the underlying `ModelPassport` |
-| `system_prompt` | Stored as a hash record (content + hash, not raw text) |
-| `tools` | List of `ToolRef` with name, version, optional hash |
-| `parent_agent_id` | Passport ID of the parent agent (fork lineage) |
-| `endpoint_hash` | SHA-256 of deployment endpoint configuration |
-
----
-
-## Identity Boundary
-
-`passport_id` is the stable join key for a passport across tools and systems.
-
-- Identity fields are limited to `passport_type`, `name`, `version`,
-  `creator`, and optional `artifact_hash`.
-- Extra application metadata such as sync state, labels, review notes, or
-  runtime configuration must not affect the passport ID.
-- If you need those fields, attach them alongside the passport, keyed by
-  `passport_id`, either in your own database or in a separate sync layer.
-- Do not overload `creator.organization` with later ownership or routing data.
-  It records the originating creator and does participate in identity derivation.
-
----
-
-## Registry Layout
-
-```
-~/.forkit/registry/
-  index.db          ← SQLite index (always rebuildable)
-  lineage.json      ← Lineage graph snapshot
-  outbox.jsonl      ← Append-only local change log for export/sync
-  sync_state.json   ← Last acknowledged sync cursor per remote target
-  sync_inbox.jsonl  ← Append-only received sync batch envelopes
-  sync_inbox/
-    <target>/
-      <passport-id>.jsonl  ← Received sync records keyed by passport ID
-  models/
-    <sha256>.json   ← One file per ModelPassport
-  agents/
-    <sha256>.json   ← One file per AgentPassport
-```
-
----
-
-## Schema use cases
-
-All 10 use cases are validated by `tests/test_use_cases.py` and demonstrated interactively:
-
-```bash
-python3 examples/use_cases.py
-```
-
----
-
-### Use case 1 — Register a base model passport
-
-`id` is derived deterministically from name, version, creator, and (optionally) artifact hash. No server needed.
-
-```python
-from forkit.schemas import ModelPassport, TaskType, Architecture, PassportStatus
-
-passport = ModelPassport(
-    name            = "llama-3-8b-base",
-    version         = "1.0.0",
-    task_type       = TaskType.TEXT_GENERATION,
-    architecture    = Architecture.DECODER_ONLY,
-    creator         = {"name": "Meta", "organization": "Meta AI"},
-    parameter_count = 8_000_000_000,
-    status          = PassportStatus.ACTIVE,
-)
-print(passport.id)          # deterministic 64-char SHA-256
-print(passport.short_id())  # first 12 chars
-```
-
-**Invariant:** same inputs → same `id`, always.
-
----
-
-### Use case 2 — Fine-tuned model with artifact_hash and parent_hash
-
-Attach the hash of the model weights as `artifact_hash`. Point `parent_hash` at the base model weights to create a verifiable hash chain without a registry.
-
-```python
-from forkit.domain import HashEngine
-
-H = HashEngine()
-weights_hash = H.hash_file("/models/ft/model.safetensors")
-
-ft = ModelPassport(
-    name               = "llama-3-8b-ft",
-    version            = "1.0.0",
-    task_type          = TaskType.INSTRUCTION_FOLLOWING,
-    architecture       = Architecture.DECODER_ONLY,
-    creator            = {"name": "Alice"},
-    artifact_hash      = weights_hash,
-    parent_hash        = H.hash_string("base-llama-3-8b-weights-v1"),
-    fine_tuning_method = "LoRA",
-)
-```
-
-**Invariant:** `artifact_hash` is mixed into `id`, so two passports with identical metadata but different weights always have different IDs.
-
----
-
-### Use case 3 — Agent passport linked to a model
-
-`model_id` holds the full 64-char passport ID of the underlying `ModelPassport`. This is a hard cryptographic link — no lookup required to verify it.
-
-```python
-from forkit.schemas import AgentPassport, AgentTaskType, AgentArchitecture
-
-agent = AgentPassport(
-    name         = "support-agent",
-    version      = "1.0.0",
-    model_id     = ft.id,          # full 64-char passport ID
-    task_type    = AgentTaskType.CUSTOMER_SUPPORT,
-    architecture = AgentArchitecture.REACT,
-    creator      = {"name": "Alice"},
-    tools        = [{"name": "kb_search", "version": "1.2.0"}],
-)
-assert agent.model_id == ft.id
-```
-
----
-
-### Use case 4 — artifact_hash drives the passport ID
-
-```python
-base = dict(name="model", version="1.0.0", task_type=..., architecture=..., creator=...)
-
-m_a = ModelPassport(**base, artifact_hash="a" * 64)
-m_b = ModelPassport(**base, artifact_hash="b" * 64)
-
-assert m_a.id != m_b.id                                          # different artifacts → different IDs
-assert m_a.id == ModelPassport(**base, artifact_hash="a" * 64).id  # deterministic
-```
-
----
-
-### Use case 5 — Hash a real artifact → tamper detection
-
-```python
-artifact_hash = H.hash_artifact("/models/llama-3-8b-ft/")
-passport = ModelPassport(**base, artifact_hash=artifact_hash)
-
-# Verify later — True if weights unchanged
-assert H.verify_artifact("/models/llama-3-8b-ft/", passport.artifact_hash)
-
-# After any file change, verification fails
-assert not H.verify_artifact("/path/to/modified/", passport.artifact_hash)
-```
-
----
-
-### Use case 6 — Fork an agent (parent_agent_id + parent_hash chain)
-
-```python
-parent_hash = H.hash_config({"prompt": "...", "tools": [...], "temperature": 0.3})
-parent = AgentPassport(..., artifact_hash=parent_hash)
-
-forked = AgentPassport(
-    ...,
-    artifact_hash     = H.hash_config({...}),    # new config
-    parent_hash       = parent_hash,              # == parent.artifact_hash
-    parent_agent_id   = parent.id,               # passport ID for lineage graph
-    parent_agent_name = parent.name,
-    fork_reason       = "Added Arabic support",
-)
-assert forked.parent_hash == parent.artifact_hash
-assert forked.parent_agent_id == parent.id
-```
-
----
-
-### Use case 7 — Trace lineage: ancestors and descendants
-
-```python
-from forkit.domain import LineageGraph, LineageNode, LineageEdge, NodeType, EdgeType
-
-g = LineageGraph()
-g.add_node(LineageNode(base.id,  NodeType.MODEL, base.name,  base.version))
-g.add_node(LineageNode(ft.id,    NodeType.MODEL, ft.name,    ft.version))
-g.add_node(LineageNode(agent.id, NodeType.AGENT, agent.name, agent.version))
-g.add_edge(LineageEdge(ft.id,    base.id, EdgeType.DERIVED_FROM, "LoRA"))
-g.add_edge(LineageEdge(agent.id, ft.id,   EdgeType.BUILT_ON))
-
-g.ancestors(agent.id)    # [ft, base]
-g.descendants(base.id)   # [ft, agent]
-g.save("/registry/lineage.json")
-```
-
-**Invariant:** `add_edge` raises `ValueError` on cycle detection.
-
----
-
-### Use case 8 — Verify passport integrity
-
-```python
-from forkit.domain import verify_passport_id
-
-result = verify_passport_id(passport.to_dict())
-# {"valid": True, "reason": "ok", "stored_id": "...", "derived_id": "..."}
-
-# Strip id → force re-derivation
-d = {k: v for k, v in passport.to_dict().items() if k != "id"}
-restored = ModelPassport.from_dict(d)
-assert restored.id == passport.id
-```
-
----
-
-### Use case 9 — Serialise → dict → deserialise roundtrip
-
-```python
-import json
-
-d = passport.to_dict()               # enums → strings, nested objects → dicts
-s = json.dumps(d, indent=2)
-
-restored = ModelPassport.from_dict(json.loads(s))
-assert restored.id            == passport.id
-assert restored.artifact_hash == passport.artifact_hash
-```
-
----
-
-### Use case 10 — Reject invalid hash values
-
-```python
-from forkit.domain.identity import validate_hash
-
-validate_hash("A" * 64)   # → "a"*64  (normalised to lowercase, accepted)
-validate_hash("abc123")   # → ValueError (too short)
-validate_hash("z" * 64)   # → ValueError (non-hex)
-
-# is_valid_hash is STRICT — no normalisation
-from forkit.domain import HashEngine
-HashEngine.is_valid_hash("a" * 64)   # True
-HashEngine.is_valid_hash("A" * 64)   # False (uppercase rejected)
-
-# Raises on construction
-ModelPassport(..., artifact_hash="NOT-VALID")  # ValueError
-```
-
----
+Demo screenshots:
+
+| Home | Registry | Inspect |
+|---|---|---|
+| ![Forkit Core Home demo](docs/images/home.png) | ![Forkit Core Registry demo](docs/images/registry.png) | ![Forkit Core Inspect demo](docs/images/inspect.png) |
 
 ## Design Principles
 
-**Offline-first.** All identity and integrity operations work without a network connection or a running server.
+- Offline first. Identity and integrity operations do not require a running service.
+- Deterministic identity. The same stable inputs always produce the same `passport_id`.
+- Hash-chain provenance. `artifact_hash` and `parent_hash` give you verifiable lineage without central coordination.
+- Local JSON as source of truth. SQLite is an index, not the identity authority.
+- Keep application metadata outside the identity boundary. Extra UI or sync state should join on `passport_id`, not rewrite it.
 
-**Hash-chain provenance.** `artifact_hash` (content fingerprint) and `parent_hash` (lineage link) form a verifiable chain without PKI or a central authority.
-
-**Two backends, one interface.** The dataclass backend has zero external dependencies and runs on any Python 3.10+ installation. Install `pydantic>=2` for JSON Schema generation and `.model_validate()` / `.model_dump()` support.
-
-**SQLite as a rebuildable index.** JSON files are the source of truth. SQLite is always rebuildable from JSON via `LocalRegistry.rebuild_index()`.
-
-For a full specification of the identity contract, hash rules, and serialisation guarantees, see [`docs/identity-spec.md`](docs/identity-spec.md).
-
----
+For deeper details, read [`docs/identity-spec.md`](./docs/identity-spec.md) and
+run [`examples/use_cases.py`](./examples/use_cases.py).
 
 ## Community
 
-Forkit Dev community is a place to discuss ideas, contribute to the open
-source core, and help shape trustworthy AI infrastructure.
-
 - Website: [forkit.dev](https://forkit.dev)
-- Open source repository: [github.com/arpitasarker01/Forkit_Dev](https://github.com/arpitasarker01/Forkit_Dev)
+- Open-source repository: [github.com/Forkit-Dev-Core/Forkit_Dev](https://github.com/Forkit-Dev-Core/Forkit_Dev)
 - Discord: [discord.gg/yJ4cdpt7c](https://discord.gg/yJ4cdpt7c)
 - Slack: [Forkit Dev workspace](https://join.slack.com/t/forkitdevworkspace/shared_invite/zt-3tgrdgk5v-83aev6ZwE7qQHe_M4q9HIw)
 
-Use GitHub issues and pull requests for actionable bugs, fixes, and proposals.
-Use Discord or Slack for earlier discussion, onboarding questions, and broader
-community conversation.
-
----
+Use GitHub issues and pull requests for concrete bugs, fixes, and proposals.
+Use Discord or Slack for earlier discussion and onboarding questions.
 
 ## Contributing
 
@@ -930,27 +412,20 @@ Before opening a pull request:
 
 - run `ruff check .`
 - run `pytest`
-- run `python -m build` if you changed packaging, release artifacts, or install-facing docs
+- run `python -m build` if you changed packaging or install-facing docs
 - run `npm run build` and `npm run lint` in `web/` if you changed the frontend
-- update [`docs/identity-spec.md`](docs/identity-spec.md), examples, and regression tests when you change identity or verification behavior
-- do not change `compute_id` without updating the spec and the regression anchors
-
-When in doubt, keep the core local-first, portable, and honest about what is
-implemented in the open source release today.
-
----
+- update [`docs/identity-spec.md`](./docs/identity-spec.md), examples, and regression tests when you change identity or verification behavior
+- do not change `compute_id` without updating the spec and regression anchors
 
 ## Roadmap
 
-Near-term open source priorities:
+Near-term open-source priorities:
 
 - strengthen self-hosted registry and sync workflows
 - connect more of the web prototype to real local registry and service flows
 - deepen framework adapters while keeping the core dependency-light
 - improve contributor documentation and adoption examples for serious teams
 
----
-
 ## License
 
-Apache 2.0 — see [LICENSE](LICENSE)
+Apache 2.0. See [LICENSE](./LICENSE).
