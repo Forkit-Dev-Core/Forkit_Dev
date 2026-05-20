@@ -22,7 +22,17 @@ python scripts/generate_passport_template.py --passport-type model --output fork
 python scripts/validate_passport.py --path forkit-passport.json
 ```
 
-The open-source core works fully locally. [Forkit Connect](https://www.forkit.dev) is free to try through the hosted Forkit Dev platform when you want runtime evidence, connected activity, and governed visibility.
+The open-source core works fully locally. If you want hosted runtime evidence later, try Forkit Connect:
+
+```bash
+npx forkit-connect init
+```
+
+Or install it globally:
+
+```bash
+npm install -g forkit-connect
+```
 
 Create a passport locally. Verify it in GitHub CI. Keep the identity portable. Connect it to Forkit.dev later when you need hosted visibility or governance workflows.
 
