@@ -2,9 +2,29 @@
 
 **Open-source AI passports with deterministic IDs and lineage.**
 
-AI models and agents often move across repos, tools, teams, and runtimes without stable identity, lineage, or verification. `forkit-core` gives them portable passports: deterministic IDs, provenance links, artifact hashes, lineage records, and CI-friendly validation.
+Portable passports for AI models and agents: deterministic IDs, provenance links, artifact hashes, lineage records, and CI-friendly validation.
+
+## Try it in 30 seconds
+
+```bash
+git clone https://github.com/Forkit-Dev-Core/Forkit_Dev.git
+cd Forkit_Dev
+pip install -e .
+
+python examples/deterministic_identity_demo.py
+```
+
+Want the CLI flow instead?
+
+```bash
+pip install -e ".[cli]"
+python scripts/generate_passport_template.py --passport-type model --output forkit-passport.json
+python scripts/validate_passport.py --path forkit-passport.json
+```
 
 Create a passport locally. Verify it in GitHub CI. Keep the identity portable. Connect it to Forkit.dev later when you need hosted visibility or governance workflows.
+
+AI models and agents often move across repos, tools, teams, and runtimes without stable identity, lineage, or verification. `forkit-core` gives them a local-first identity layer you can create, validate, and keep portable.
 
 Questions, launch feedback, or contributor interest: open a GitHub issue or join the Discord / Slack links in the [Community](#community) section.
 
@@ -15,17 +35,7 @@ Questions, launch feedback, or contributor interest: open a GitHub issue or join
 
 ![forkit-core passport flow](./docs/assets/forkit-passport-flow.png)
 
-## Quick Start
-
-```bash
-git clone https://github.com/Forkit-Dev-Core/Forkit_Dev.git
-cd Forkit_Dev
-pip install -e .
-
-python examples/deterministic_identity_demo.py
-```
-
-That demo shows the core property:
+That quick start shows the core property:
 
 - same stable passport inputs => same deterministic `passport_id`
 - changed artifact or creator => different `passport_id`
@@ -41,16 +51,7 @@ changed artifact         e271004e8f9e83d9e81f8f5d3d35736c4e4bf841d46d821d74b59e4
 changed creator          f78fb6bf1d7feee0fb2020753904b50a550f194a5f5664dff91b70601e31f0ac
 ```
 
-If you want the CLI flow instead:
-
-```bash
-pip install -e ".[cli]"
-
-python scripts/generate_passport_template.py --passport-type model --output forkit-passport.json
-python scripts/validate_passport.py --path forkit-passport.json
-```
-
-That flow creates a starter `ModelPassport`, writes a deterministic `id` into `forkit-passport.json`, and verifies that the stored `id` still matches the schema-derived identity. No hosted service is required.
+The CLI flow above creates a starter `ModelPassport`, writes a deterministic `id` into `forkit-passport.json`, and verifies that the stored `id` still matches the schema-derived identity. No hosted service is required.
 
 ## Why This Exists
 
