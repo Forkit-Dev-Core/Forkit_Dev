@@ -22,6 +22,8 @@ python scripts/generate_passport_template.py --passport-type model --output fork
 python scripts/validate_passport.py --path forkit-passport.json
 ```
 
+The open-source core works fully locally. [Forkit Connect](https://www.forkit.dev) is free to try through the hosted Forkit Dev platform when you want runtime evidence, connected activity, and governed visibility.
+
 Create a passport locally. Verify it in GitHub CI. Keep the identity portable. Connect it to Forkit.dev later when you need hosted visibility or governance workflows.
 
 AI models and agents often move across repos, tools, teams, and runtimes without stable identity, lineage, or verification. `forkit-core` gives them a local-first identity layer you can create, validate, and keep portable.
