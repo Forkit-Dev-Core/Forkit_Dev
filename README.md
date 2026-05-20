@@ -22,7 +22,7 @@ python scripts/generate_passport_template.py --passport-type model --output fork
 python scripts/validate_passport.py --path forkit-passport.json
 ```
 
-The open-source core works fully locally. If you want hosted runtime evidence later, try Forkit Connect:
+The open-source core works fully locally. If you want to attach hosted runtime evidence later, Forkit Connect is free to try:
 
 ```bash
 npx forkit-connect init
