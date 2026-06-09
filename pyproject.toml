@@ -77,7 +77,7 @@ dev = [
 forkit = "forkit.cli.main:main"
 
 [project.urls]
-Homepage   = "https://github.com/Forkit-Dev-Core/Forkit_Dev"
+Homepage   = "https://www.forkit.dev"
 Repository = "https://github.com/Forkit-Dev-Core/Forkit_Dev"
 Issues     = "https://github.com/Forkit-Dev-Core/Forkit_Dev/issues"
 

@@ -34,7 +34,7 @@ Or install it globally:
 npm install -g forkit-connect
 ```
 
-Create a passport locally. Verify it in GitHub CI. Keep the identity portable. Connect it to Forkit.dev later when you need hosted visibility or governance workflows.
+Create a passport locally. Verify it in GitHub CI. Keep the identity portable. Connect it to hosted Forkit later when you need browser visibility, runtime evidence, or governance workflows.
 
 AI models and agents often move across repos, tools, teams, and runtimes without stable identity, lineage, or verification. `forkit-core` gives them a local-first identity layer you can create, validate, and keep portable.
 
@@ -126,6 +126,7 @@ source proof, review, or hosted governance workflows.
 - Python SDK, CLI, validation scripts, and local HTTP service
 - GitHub CI validation for committed passport files
 - Framework adapters for LangGraph, LangChain, and OpenClaw
+- Runtime-oriented metadata capture through the framework adapters
 - File-based Hugging Face model card export
 - A prototype browser UI under [`web/`](./web), clearly separate from any hosted control plane
 
@@ -156,17 +157,30 @@ pip install "forkit-core @ git+https://github.com/Forkit-Dev-Core/Forkit_Dev.git
 | Try the OpenClaw adapter | Advanced | `python examples/openclaw_quickstart.py` |
 | Explore the browser UI prototype | Early | `cd web && npm install && npm run dev` |
 
-## `forkit-core` and Forkit.dev
+## `forkit-core` and Hosted Forkit
 
 `forkit-core` is the local-first open-source foundation in this repository:
 schemas, deterministic IDs, artifact hashing, lineage, local registry, SDK,
 CLI, sync primitives, optional local service, adapters, and the prototype web
 UI.
 
-`Forkit.dev` is the broader hosted direction around that core for teams that
-prefer browser-based passport creation, dashboards, private workspaces,
-telemetry, collaboration, approvals, and governance workflows. Those hosted
-workflows are not implemented in this repository today.
+Hosted Forkit at [`www.forkit.dev`](https://www.forkit.dev) is the browser and
+team layer around that core for teams that prefer passport dashboards, Runtime
+C2, private workspaces, collaboration, approvals, and governance workflows.
+Those hosted workflows are not implemented in this repository today.
+
+## Hosted Handoff
+
+The public handoff is intentionally simple:
+
+1. Create or validate the passport locally with `forkit-core`.
+2. Keep the passport file in Git or another source-controlled location.
+3. Use `forkit hosted-proof <passport-id>` when you want to prove the source location.
+4. Use Forkit Connect when you want local runtime metadata to appear in hosted runtime review.
+5. Open [`www.forkit.dev`](https://www.forkit.dev) when you need workspace, runtime, or review workflows.
+
+Hosted layers may add accounts, workspaces, runtime views, approvals, and
+collaboration. They must preserve the OSS `passport_id` instead of rewriting it.
 
 ## Identity Boundary
 
@@ -513,7 +527,7 @@ run [`examples/use_cases.py`](./examples/use_cases.py).
 ## Community
 
 - GitHub issues and pull requests: use the repository for bugs, proposals, and contribution review
-- Website: [forkit.dev](https://forkit.dev)
+- Website: [www.forkit.dev](https://www.forkit.dev)
 - Open-source repository: [github.com/Forkit-Dev-Core/Forkit_Dev](https://github.com/Forkit-Dev-Core/Forkit_Dev)
 - Discord: [discord.gg/yJ4cdpt7c](https://discord.gg/yJ4cdpt7c)
 - Slack: [Forkit Dev workspace](https://join.slack.com/t/forkitdevworkspace/shared_invite/zt-3tgrdgk5v-83aev6ZwE7qQHe_M4q9HIw)

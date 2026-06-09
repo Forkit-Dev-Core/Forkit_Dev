@@ -17,7 +17,7 @@ creator:
   name: Forkit Team
   organization: ForkIt
   email: info@forkit.dev
-  url: https://forkit.dev
+  url: https://www.forkit.dev
 
 capabilities:
   modalities: [text]
