@@ -28,15 +28,17 @@ jobs:
         run: |
           python -m pip install --require-hashes -r requirements/radar-dev.lock
           python -m pip download --only-binary=:all: --require-hashes -r requirements/radar-runtime.lock --dest output/wheelhouse
+      - name: Build and install the reviewed local packages
+        run: |
+          python -m build --wheel --no-isolation --outdir output/dist .
+          python -m build --wheel --no-isolation --outdir output/dist packages/radar
+          python -m pip install --no-deps output/dist/*.whl
       - name: Core and Radar tests
         env:
           PYTHONPATH: src:packages/radar/src
         run: python -m pytest --import-mode=importlib tests packages/radar/tests scripts/tests -q
-      - name: Build both local wheels and offline bundle
-        run: |
-          python -m build --wheel --no-isolation --outdir output/dist .
-          python -m build --wheel --no-isolation --outdir output/dist packages/radar
-          python scripts/build_radar_bundle.py --project-wheels output/dist --wheelhouse output/wheelhouse --output output/forkit-session-receipt-0.1.0b3-${{ matrix.target }}.zip
+      - name: Build the offline bundle
+        run: python scripts/build_radar_bundle.py --project-wheels output/dist --wheelhouse output/wheelhouse --output output/forkit-session-receipt-0.1.0b3-${{ matrix.target }}.zip
       - name: Install and try without a Forkit account
         run: |
           python scripts/check_radar_public_bundle.py output/forkit-session-receipt-0.1.0b3-${{ matrix.target }}.zip --output output/install-check.json
