@@ -20,10 +20,10 @@ def welcome():
     return """FORKIT SESSION RECEIPT
 You vibe code. Forkit remembers what changed.
 
-From the root of your Git project:
-  forkit-radar doctor
-  forkit-radar hooks setup --agent codex
-  # Restart Codex and review /hooks; then code as usual.
+Install once. Setup configures detected coding tools across local Git projects.
+  forkit-radar setup
+  # Restart Codex and review Forkit in /hooks once; then code as usual.
+  forkit-radar open
   forkit-radar receipt
   forkit-radar history
   forkit-radar card --output receipt.html
@@ -33,6 +33,7 @@ Manual fallback: forkit-radar start --tool cursor, then forkit-radar stop
 Claude Code / Cursor hook adapters are experimental.
 Choose claude-code, cursor, codex or other with --tool.
 Use the same command path and --store, if selected, for every step.
+Pause automatic capture: forkit-radar setup --disable
 Local receipts need no Forkit account. Reporting is off until explicit consent.
 Tool selection describes your session; AI authorship is unverified.
 Signed identity continuity is not implemented yet. Full commands: --help"""
@@ -95,7 +96,7 @@ def doctor_command(args):
             print("Forkit local setup: " + ("ready" if result["ready"] else "needs attention"))
             for check in result["checks"]:
                 print(f"{check['check']}: {check['state']} — {check['action']}")
-            print("Nothing changed or uploaded. Next: forkit-radar start --tool " + args.tool)
+            print("Nothing changed or uploaded. Next: forkit-radar setup --status, then forkit-radar open")
         return 0 if result["ready"] else 1
     except (ValueError, OSError):
         print("Local setup could not be checked. Select an accessible Git root and private store.", file=sys.stderr)

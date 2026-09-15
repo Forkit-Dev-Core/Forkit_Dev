@@ -1,6 +1,6 @@
 # Forkit Radar — local Session Receipt
 
-Automatic capture: see [CAPTURE.md](CAPTURE.md) for official project hooks, wrapper fallback and manual recovery. Local features require no Forkit account.
+Automatic capture: see [CAPTURE.md](CAPTURE.md) for install-once user hooks, wrapper fallback and manual recovery. Local features require no Forkit account.
 
 **You vibe code. Forkit remembers what changed during the session.**
 
@@ -12,19 +12,33 @@ Logging into a cloud service does not by itself verify a public Passport.
 
 ## Install and get your first receipt
 
-Download the matching ZIP from the [Session Receipt 0.1.0b3 release](https://github.com/Forkit-Dev-Core/Forkit_Dev/releases/tag/radar-v0.1.0b3), extract it, and run:
+**Local beta candidate 0.1.0b5: immediate receipts, Today by default, branded cards and recorded-change highlights.**
+Read the [short beta guide](beta-kit/BETA.md) for the Mac/Linux paths and remaining distribution gates.
+The native Apple Silicon app bundles Python and Git; the separate CLI ZIP still needs them.
+The existing public b3 download is an older release with a hook-ended card bug. It does not provide this candidate.
+Unlimited free local history means no time-based account gate; the 64 MiB store cap still applies.
+No new candidate has been uploaded. Read [macOS release limitations](MACOS.md).
+
+The prepared files for this version are:
+
+| Platform | File | Install |
+| --- | --- | --- |
+| macOS Apple Silicon | `Forkit-Session-Receipt-0.1.0b5-macos-arm64.zip` | Unzip, open the app; Python/Git included |
+| macOS Apple Silicon CLI | `forkit-session-receipt-0.1.0b5-macos-arm64-py311.zip` | Python 3.11 + Git; extract and run `sh install.sh` |
+| Ubuntu 24.04 ARM64 CLI | `forkit-session-receipt-0.1.0b5-linux-arm64-py312.zip` | Python 3.12 + Git; extract and run `sh install.sh` |
+
+These are local release candidates until the matching GitHub release is published.
+Use [the releases page](https://github.com/Forkit-Dev-Core/Forkit_Dev/releases)
+and check the version and SHA256SUMS. Do not substitute b3. CLI installs work
+offline after download and require venv/pip. Existing installations are preserved;
+select a separate `--prefix` and `--bin-dir` to try the CLI alongside one.
+
+For this candidate, installation sets up detected tools across local Git projects. No repository connection:
 
 ```sh
-sh install.sh
-```
-
-macOS Apple Silicon needs Python 3.11; Linux x86_64 (Ubuntu 24.04) needs Python 3.12. Both need Git and Python venv/pip. After downloading, installation and local use work offline. Windows and a native signed app are not supported yet. Existing installations are preserved; select a separate `--prefix` and `--bin-dir` to try this release alongside one.
-
-Inside your Git project:
-
-```sh
-~/.local/bin/forkit-radar hooks setup --agent codex
-# Restart Codex; review/trust the exact hooks with /hooks. Then code as usual.
+~/.local/bin/forkit-radar setup --status
+# Restart Codex; review/trust Forkit in /hooks once. Then start sessions normally.
+~/.local/bin/forkit-radar open
 ~/.local/bin/forkit-radar receipt
 ~/.local/bin/forkit-radar history
 ~/.local/bin/forkit-radar summary --period today
@@ -33,14 +47,16 @@ Inside your Git project:
 
 [Capture details and limitations](CAPTURE.md): official Codex lifecycle hooks first; separate experimental Claude Code and Cursor adapters; wrapper and manual fallbacks. This is an observed interval, not proof of AI authorship. Model/runtime claims are limited to detectable declarations; prompts and transcripts are never read by capture hooks.
 
+[Build from source](BUILD.md) · [Mac limitations](MACOS.md)
+
 ## Optional usage counts
 
 Reporting stays off until new explicit consent after the first useful receipt.
 `forkit-radar usage policy` explains the count-only snapshot. `usage enable`
-requires a deliberately chosen HTTPS endpoint and `--consent usage-v2`; it sends
+requires a deliberately chosen HTTPS endpoint and `--consent usage-v3`; it sends
 nothing itself. Later normal use may report at most once per 24 hours through a
 bounded short-lived worker. No signup, daemon or historical import is required.
-Use `usage preview`, `usage disable` and `usage withdraw` to inspect or stop it.
+Use `usage preview`, `usage disable` and `usage withdraw` to inspect or stop it. The Mac app also has Optional usage counts in its menu. The new policy includes intentional view-days and successful card exports; older usage-v2 consent never upgrades automatically. Read [the exact definitions](beta-kit/USAGE.md).
 See [the usage notice](beta-kit/USAGE.md) and
 [the operator runbook](collector/USAGE_OPERATOR.md). No public collector is deployed
 or enabled by this candidate. Incoming reports are pseudonymous; public totals
@@ -210,8 +226,9 @@ requires a new store or a future explicit archival policy, not silent deletion.
 
 ## Private beta kit and easier installation
 
-**Version 0.1.0b3 is a private beta candidate for user validation.** It is not a
-published PyPI/npm release and outside-user results are still pending. The complete
+**Version 0.1.0b4 is the local automatic-setup candidate for user validation.**
+The public GitHub download still provides b3. Neither is a published PyPI/npm
+release, and outside-user results are still pending. The complete
 matching kit contains `START_HERE.html`, `USAGE.md`, an offline installer and locked wheels. Local operation needs no Forkit account.
 
 Open `START_HERE.html` after extracting the kit. In that folder:
@@ -222,8 +239,10 @@ sh install.sh
 ```
 
 The shell bootstrap selects an already installed Python matching the kit's exact
-minor version. Initial kits target macOS Apple silicon/Python 3.11 and Ubuntu
-ARM64/Python 3.12. Python with venv/pip and Git remain prerequisites; the kit does
+minor version. This b4 kit was checked on macOS Apple Silicon/Python 3.11;
+changed b4 behavior still needs Linux validation. The published b3 kits support
+macOS Apple Silicon/Python 3.11 and Ubuntu x86_64/Python 3.12.
+Python with venv/pip and Git remain prerequisites; the kit does
 not include those runtimes. The offline installer downloads nothing. On macOS,
 `Install.command` is a convenience Terminal launcher, not a signed/notarized app.
 Do not disable operating-system security settings; the guide provides the explicit
@@ -247,15 +266,17 @@ Python environment, shell profile or existing command is replaced. Existing path
 are refused; failed fresh installs remove their own incomplete application only.
 For a parallel candidate installation choose new `--prefix` and `--bin-dir`
 locations, and use the full command path printed by the installer. Keep
-`~/.forkit-radar` and your Core registry. There is no automatic update, uninstall,
-hook installation or reporting opt-in.
+`~/.forkit-radar` and your Core registry. Installation configures detected tools
+once; use `--no-capture` to skip it. On macOS it creates a Finder launcher; use
+`--no-app` to skip that. Run `setup --disable` before manually removing Forkit.
+There is no automatic updater, uninstaller or reporting opt-in.
 
 Application virtual environments must stay at their installation path; their
 [Python runtime and location matter](https://docs.python.org/3/library/venv.html).
 Windows and browser-only coding services are outside this kit. Broader architecture
 validation and public package/website publication remain separate release work.
 
-## First-use checks and editor shortcuts
+## Manual fallback and editor shortcuts
 
 From the root of your existing Git project:
 
@@ -300,7 +321,7 @@ privacy, retention and measurement limits. The collector implementation and
 operator runbook live in `collector/`. Old Prompt 12 questionnaire evidence is
 historical; its sample numbers are not adoption.
 
-## First local session
+## Wrapper fallback
 
 After installing, run this from the root of a selected
 Git project (or provide `--project /absolute/project`):
@@ -321,7 +342,8 @@ No prompts, arguments, terminal output or chat transcripts are recorded. With
 `--json`, command stdout goes directly to stderr so receipt stdout remains JSON.
 The wrapper preserves the command's exit status and records failures/interruption.
 The tool name is your selection, not authenticated software identity or proof
-that it authored every edit. No global editor hooks are installed automatically.
+that it authored every edit. The wrapper command does not install hooks. The b4
+installer's separate setup configures detected tools unless `--no-capture` is used.
 
 For Cursor, a GUI editor, or any workflow you want to delimit manually:
 

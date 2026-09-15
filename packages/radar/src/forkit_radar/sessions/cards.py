@@ -13,6 +13,7 @@ from typing import Annotated, Literal
 
 from pydantic import Field, model_validator
 
+from ..branding import card_logo
 from ..contracts import Contract, Counter
 from ..identity.storage import canonical
 from .details import ReceiptV2
@@ -182,7 +183,7 @@ def svg(card: SessionCard) -> str:
         )
 
     text(65, 73, "FORKIT SESSION RECEIPT", 22, "#5AD8D2", 700)
-    text(954, 73, "LOCAL OSS", 18, "#C2BAD8")
+    parts.append(card_logo())
     elapsed = (
         "duration unknown" if card.elapsed_minutes is None
         else "under 1 min" if card.elapsed_minutes == 0
@@ -224,6 +225,7 @@ def svg(card: SessionCard) -> str:
         text(675, 455, f"Passport change: {card.passport_change}", 16, "#FFCB75")
     outcome = {
         "manual_stop": "Manually stopped", "command_exited": "Command exited successfully",
+        "hook_end": "Session ended · reported by tool hook",
         "command_failed": "Command failed", "launch_failed": "Command could not launch",
         "interrupted": "Session interrupted", "recovered": "Recovered · end time unknown",
     }[card.outcome]

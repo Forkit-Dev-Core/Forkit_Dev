@@ -1,6 +1,6 @@
 """Codex official SessionStart/SessionEnd (main thread, not per turn)."""
-from .common import envelope
 from ..jsonio import ContractError
+from .common import envelope
 
 
 def parse(raw, project):

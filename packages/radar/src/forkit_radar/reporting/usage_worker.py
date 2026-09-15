@@ -8,7 +8,7 @@ import sys
 import time
 
 from .client import request
-from .usage_contracts import UsageContribution
+from .usage_contracts import read_usage
 from .usage_storage import UsageStore, root
 
 INTERVAL = 86_400
@@ -39,9 +39,9 @@ def deliver(store, *, now=None, transport=request):
         p = store._profile(db)
         if p["state"] != "enabled" or p["pending"] is None or p["sequence"] != reserved:
             return False
-        packet = UsageContribution.model_validate(p["pending"])
+        packet = read_usage(p["pending"])
         try:
-            transport(p, "PUT", packet, route="installations", timeout=3, schema_version="2.0")
+            transport(p, "PUT", packet, route="installations", timeout=3, schema_version=packet.schema_version)
         except (OSError, ValueError):
             p["last_result"] = "unconfirmed"
         else:

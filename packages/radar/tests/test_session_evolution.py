@@ -1,4 +1,5 @@
 """Real Git/Core/SQLite evidence, tampering and account-free private summaries."""
+
 from __future__ import annotations
 
 import hashlib
@@ -17,10 +18,21 @@ from forkit.schemas import AgentPassport, ModelPassport
 from forkit_radar.identity.storage import canonical
 from forkit_radar.jsonio import ContractError
 from forkit_radar.sessions.details import DetailedSnapshot, Selection
-from forkit_radar.sessions.evolution import SCHEMA, digest, normalized, unpack, verify
+from forkit_radar.sessions.evolution import (
+    SCHEMA,
+    Revision,
+    _canonical_file,
+    _canonical_revision,
+    digest,
+    is_normalized,
+    normalized,
+    unpack,
+    verify,
+)
 from forkit_radar.sessions.maintenance import backup, compact
+from forkit_radar.sessions.models import MAX_FILES
 from forkit_radar.sessions.private_view import render
-from forkit_radar.sessions.storage import SessionStore, read_snapshot
+from forkit_radar.sessions.storage import SessionStore, read, read_snapshot
 from forkit_radar.sessions.summary import build, zone
 from forkit_radar.sessions.summary_cards import SummaryCard, encode
 from forkit_radar.sessions.summary_cards import project as card
@@ -34,11 +46,31 @@ def setup(tmp_path):
     (project / "main.py").write_text("print('before')\n")
     registry_path = tmp_path / "registry"
     registry = LocalRegistry(registry_path)
-    model = ModelPassport(name="fixture-model", version="1.0", creator={"name": "Fixture"}, task_type="text-generation", architecture="transformer")
-    agent = AgentPassport(name="support-agent", version="1.0", creator={"name": "Fixture"}, model_id=model.id, task_type="customer-support", architecture="ReAct")
+    model = ModelPassport(
+        name="fixture-model",
+        version="1.0",
+        creator={"name": "Fixture"},
+        task_type="text-generation",
+        architecture="transformer",
+    )
+    agent = AgentPassport(
+        name="support-agent",
+        version="1.0",
+        creator={"name": "Fixture"},
+        model_id=model.id,
+        task_type="customer-support",
+        architecture="ReAct",
+    )
     registry.register_model(model)
     registry.register_agent(agent)
-    return project, SessionStore(tmp_path / "private"), Selection(registry=str(registry_path), passport_id=agent.id), registry, model, agent
+    return (
+        project,
+        SessionStore(tmp_path / "private"),
+        Selection(registry=str(registry_path), passport_id=agent.id),
+        registry,
+        model,
+        agent,
+    )
 
 
 def capture(setup, *, selection=True, edit=True, tool="codex", outcome="manual_stop"):
@@ -65,7 +97,11 @@ def test_trace_survives_compaction_and_backup(setup, tmp_path):
     second = capture(setup)
     expected = report(store)
     stats = expected["periods"]["history"]
-    assert (stats["meaningful_changes"], stats["reconstructable_changes"], stats["between_session_changes"]) == (3, 2, 1)
+    assert (
+        stats["meaningful_changes"],
+        stats["reconstructable_changes"],
+        stats["between_session_changes"],
+    ) == (3, 2, 1)
     assert stats["reconstructable_change_rate"] == 6666
     assert all(r["trace"] == "complete" for r in expected["records"])
     assert expected["records"][0]["evolution"]["previous_session_id"] == first.session_id
@@ -104,7 +140,9 @@ def test_normalization_ignores_order_diagnostics_and_exclusions(setup):
     project, store, *_ = setup
     start, _ = store.start(project, tool="codex", selection=setup[2])
     with sql(store) as db:
-        raw = db.execute("SELECT payload FROM snapshots WHERE session_id=?", (start.session_id,)).fetchone()[0]
+        raw = db.execute(
+            "SELECT payload FROM snapshots WHERE session_id=?", (start.session_id,)
+        ).fetchone()[0]
     _, snapshot = read_snapshot(raw)
     data = snapshot.model_dump(mode="json")
     data["files"]["excluded_count"] += 9
@@ -118,10 +156,114 @@ def test_normalization_ignores_order_diagnostics_and_exclusions(setup):
     assert normalized(DetailedSnapshot.model_validate(data)) != normalized(snapshot)
 
 
+def test_revision_encoding_matches_canonical_serializer_and_remains_bounded(setup):
+    project, store, *_ = setup
+    start, _ = store.start(project, tool="codex", selection=setup[2])
+    with sql(store) as db:
+        raw = db.execute(
+            "SELECT payload FROM snapshots WHERE session_id=?", (start.session_id,)
+        ).fetchone()[0]
+    _, snapshot = read_snapshot(raw)
+    data = normalized(snapshot).model_dump(mode="json")
+    # An apparent array marker inside a JSON string cannot be used as the
+    # structural file-array location. All string escaping still uses canonical().
+    data["metadata"]["passport"]["name"] = 'literal "files":[] \\ café 🌍 \u2028'
+    _canonical_file.cache_clear()
+    try:
+        cases = [[], [{"path": '路径/quo"te.py', "fingerprint": "a" * 64, "executable": False}]]
+        cases += [
+            [
+                {
+                    "path": f"src/{index:04}.py",
+                    "fingerprint": f"{wave:064x}",
+                    "executable": bool(wave % 2),
+                }
+                for index in range(MAX_FILES)
+            ]
+            for wave in range(5)
+        ]
+        for files in cases:
+            data["files"]["files"] = files
+            revision = Revision.model_validate(data)
+            expected = canonical(revision)
+            assert _canonical_revision(revision) == expected
+            assert read(Revision, expected, encoder=_canonical_revision) == revision
+            for wrong in (
+                json.dumps(data, ensure_ascii=True, sort_keys=True, separators=(",", ":")).encode(),
+                json.dumps(data, ensure_ascii=False, indent=2).encode(),
+            ):
+                with pytest.raises(ContractError, match="invalid_session_record"):
+                    read(Revision, wrong, encoder=_canonical_revision)
+        assert _canonical_file.cache_info().currsize <= MAX_FILES * 4
+    finally:
+        _canonical_file.cache_clear()
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "files",
+        "unknown_paths",
+        "excluded_count",
+        "reasons",
+        "sources",
+        "facts",
+        "source_reason",
+        "passport_reason",
+        "meaningful_state",
+    ],
+)
+def test_normal_form_check_matches_existing_profile(setup, field):
+    project, store, *_ = setup
+    (project / "another.py").write_text("x = 1\n")
+    (project / "package.json").write_text(json.dumps({"dependencies": {"alpha": "1", "beta": "2"}}))
+    start, _ = store.start(project, tool="codex", selection=setup[2])
+    with sql(store) as db:
+        raw = db.execute(
+            "SELECT payload FROM snapshots WHERE session_id=?", (start.session_id,)
+        ).fetchone()[0]
+    _, snapshot = read_snapshot(raw)
+    revision = normalized(snapshot)
+    assert is_normalized(revision)
+    data = revision.model_dump(mode="json")
+    if field == "files":
+        data["files"]["files"].reverse()
+    elif field == "unknown_paths":
+        data["files"]["unknown_paths"] = ["unknown-z.py", "unknown-a.py"]
+    elif field == "excluded_count":
+        data["files"]["excluded_count"] = 1
+    elif field == "reasons":
+        data["files"]["reasons"] = ["unavailable"]
+    elif field == "sources":
+        data["metadata"]["sources"].reverse()
+    elif field == "facts":
+        source = next(s for s in data["metadata"]["sources"] if len(s["facts"]) >= 2)
+        source["facts"].reverse()
+    elif field == "source_reason":
+        data["metadata"]["sources"][0]["reason"] = "unavailable"
+    elif field == "passport_reason":
+        data["metadata"]["passport"]["reason"] = "unavailable"
+    else:
+        data["files"]["inventory_complete"] = False
+    changed = Revision.model_validate(data)
+    old_check = (
+        normalized(DetailedSnapshot(files=changed.files, metadata=changed.metadata, selection={}))
+        == changed
+    )
+    assert is_normalized(changed) == old_check == (field == "meaningful_state")
+
+
 def test_core_version_change_remains_declared_project_history(setup):
     project, store, selection, registry, model, first_agent = setup
     capture(setup)
-    next_agent = AgentPassport(name=first_agent.name, version="2.0", creator={"name": "Fixture"}, model_id=model.id, task_type="customer-support", architecture="ReAct")
+    next_agent = AgentPassport(
+        name=first_agent.name,
+        version="2.0",
+        creator={"name": "Fixture"},
+        model_id=model.id,
+        task_type="customer-support",
+        architecture="ReAct",
+    )
     registry.register_agent(next_agent)
     next_selection = Selection(registry=selection.registry, passport_id=next_agent.id)
     start, _ = store.start(project, tool="claude-code", selection=next_selection)
@@ -132,7 +274,9 @@ def test_core_version_change_remains_declared_project_history(setup):
     assert receipt.passport_id == next_agent.id != first_agent.id
     assert row["trace"] == "complete"
     assert row["evolution"]["event_sequence"] == 2
-    assert row["evolution"]["basis"] == "unsigned_local_project_history_declared_passport_associations"
+    assert (
+        row["evolution"]["basis"] == "unsigned_local_project_history_declared_passport_associations"
+    )
     assert any(c["category"] == "passport" for c in row["between_changes"])
     assert "Agent continuity is unproven" in render(result).decode()
 
@@ -183,7 +327,7 @@ def test_tampering_never_retains_reconstruction_claim(setup, mutation):
     store = setup[1]
     with sql(store) as db:
         if mutation == "revision":
-            db.execute("UPDATE observed_revisions SET payload=?", (zlib.compress(b'{}'),))
+            db.execute("UPDATE observed_revisions SET payload=?", (zlib.compress(b"{}"),))
         elif mutation == "event":
             raw = db.execute("SELECT payload FROM session_evolution").fetchone()[0]
             data = json.loads(raw)
@@ -194,6 +338,7 @@ def test_tampering_never_retains_reconstruction_claim(setup, mutation):
             data = json.loads(raw)
             data["elapsed_ms"] += 1
             import rfc8785
+
             db.execute("UPDATE receipts SET payload=?", (rfc8785.dumps(data),))
         elif mutation == "head":
             db.execute("UPDATE evolution_heads SET digest=?", ("0" * 64,))
@@ -203,6 +348,9 @@ def test_tampering_never_retains_reconstruction_claim(setup, mutation):
     assert result["records"][0]["evolution"]["status"] == "broken"
     assert result["periods"]["history"]["reconstructable_changes"] == 0
     assert result["periods"]["history"]["meaningful_changes"] == 1
+    with store.history_connection() as db:
+        check = list(verify(db))[0][1]
+    assert check["interval"] is None and check["gap_interval"] is None
 
 
 def test_broken_parent_propagates(setup):
@@ -210,7 +358,9 @@ def test_broken_parent_propagates(setup):
     capture(setup)
     store = setup[1]
     with sql(store) as db:
-        db.execute("UPDATE session_evolution SET digest=? WHERE session_id=?", ("a" * 64, first.session_id))
+        db.execute(
+            "UPDATE session_evolution SET digest=? WHERE session_id=?", ("a" * 64, first.session_id)
+        )
     assert all(r["evolution"]["status"] == "broken" for r in report(store)["records"])
 
 
@@ -236,6 +386,7 @@ def test_inconsistent_event_counts_make_percentage_unavailable(setup):
         data = json.loads(raw)
         data["during_counts"]["files"] = 99
         import rfc8785
+
         updated = rfc8785.dumps(data)
         identity = digest("forkit-session-event-v1", updated)
         db.execute("UPDATE session_evolution SET payload=?, digest=?", (updated, identity))
@@ -249,7 +400,16 @@ def test_inconsistent_event_counts_make_percentage_unavailable(setup):
     assert stats["incomplete_history_receipts"] == 1
 
 
-@pytest.mark.parametrize("raw", [b"", b"not-zlib", zlib.compress(b"{}")[:-1], zlib.compress(b"{}") + b"trailing", zlib.compress(b"x" * 1_048_577)])
+@pytest.mark.parametrize(
+    "raw",
+    [
+        b"",
+        b"not-zlib",
+        zlib.compress(b"{}")[:-1],
+        zlib.compress(b"{}") + b"trailing",
+        zlib.compress(b"x" * 1_048_577),
+    ],
+)
 def test_bounded_decompression(raw):
     with pytest.raises(ContractError):
         unpack(raw)
@@ -268,7 +428,11 @@ def test_dependency_manifest_lock_and_file_count_once(setup):
     project, store, *_ = setup
     start, _ = store.start(project, tool="codex", selection=setup[2])
     (project / "package.json").write_text(json.dumps({"dependencies": {"stripe": "^1.0.0"}}))
-    (project / "package-lock.json").write_text(json.dumps({"lockfileVersion": 3, "packages": {"node_modules/stripe": {"version": "1.0.0"}}}))
+    (project / "package-lock.json").write_text(
+        json.dumps(
+            {"lockfileVersion": 3, "packages": {"node_modules/stripe": {"version": "1.0.0"}}}
+        )
+    )
     store.finish(start.session_id)
     result = report(store)
     row = result["records"][0]
@@ -281,7 +445,7 @@ def test_partial_metadata_never_manufactures_removal(setup):
     project, store, *_ = setup
     (project / "package.json").write_text('{"dependencies":{"stripe":"1.0.0"}}')
     start, _ = store.start(project, tool="codex", selection=setup[2])
-    (project / "package.json").write_text('{ malformed')
+    (project / "package.json").write_text("{ malformed")
     store.finish(start.session_id)
     row = report(store)["records"][0]
     assert row["partial"]
@@ -289,11 +453,25 @@ def test_partial_metadata_never_manufactures_removal(setup):
 
 
 def test_calendar_totals_include_receipts_beyond_display_limit(setup):
-    for moment in ("2026-09-13T21:59:00Z", "2026-09-13T22:01:00Z", "2026-09-14T10:00:00Z", "2026-09-15T10:00:00Z"):
+    for moment in (
+        "2026-09-13T21:59:00Z",
+        "2026-09-13T22:01:00Z",
+        "2026-09-14T10:00:00Z",
+        "2026-09-15T10:00:00Z",
+    ):
         with patch("forkit_radar.sessions.storage.now", return_value=moment):
             capture(setup)
-    result = build(setup[1], timezone_name="Europe/Berlin", at=datetime(2026, 9, 14, 12, tzinfo=timezone.utc), limit=1)
-    assert (result["displayed_receipts"], result["total_receipts"], result["future_dated_receipts"]) == (1, 4, 1)
+    result = build(
+        setup[1],
+        timezone_name="Europe/Berlin",
+        at=datetime(2026, 9, 14, 12, tzinfo=timezone.utc),
+        limit=1,
+    )
+    assert (
+        result["displayed_receipts"],
+        result["total_receipts"],
+        result["future_dated_receipts"],
+    ) == (1, 4, 1)
     assert result["periods"]["today"]["receipts"] == 2
     assert result["periods"]["week"]["receipts"] == 2
     assert result["periods"]["history"]["receipts"] == 4
@@ -324,7 +502,12 @@ def test_legacy_read_then_atomic_upgrade_preserves_receipts(setup):
     capture(setup)
     with sql(store) as db:
         assert db.execute("PRAGMA user_version").fetchone()[0] == 2
-        assert db.execute("SELECT payload FROM receipts WHERE session_id=?", (first.session_id,)).fetchone()[0] == raw
+        assert (
+            db.execute(
+                "SELECT payload FROM receipts WHERE session_id=?", (first.session_id,)
+            ).fetchone()[0]
+            == raw
+        )
         assert db.execute("SELECT COUNT(*) FROM session_evolution").fetchone()[0] == 1
     assert report(store)["records"][0]["evolution"]["earlier_history_gap"]
 
@@ -341,14 +524,19 @@ def test_migration_rolls_back_on_failure(setup):
             store.start(setup[0], tool="codex")
     with sql(store) as db:
         assert db.execute("PRAGMA user_version").fetchone()[0] == 1
-        assert not db.execute("SELECT name FROM sqlite_master WHERE name='observed_revisions'").fetchall()
+        assert not db.execute(
+            "SELECT name FROM sqlite_master WHERE name='observed_revisions'"
+        ).fetchall()
     assert len(store.history()) == 1
 
 
 def test_failed_evolution_write_rolls_back_finish_and_can_retry(setup):
     project, store, *_ = setup
     start, _ = store.start(project, tool="codex", selection=setup[2])
-    with patch("forkit_radar.sessions.storage.append_evolution", side_effect=ContractError("injected_failure")):
+    with patch(
+        "forkit_radar.sessions.storage.append_evolution",
+        side_effect=ContractError("injected_failure"),
+    ):
         with pytest.raises(ContractError):
             store.finish(start.session_id)
     assert store.active()[0].started.session_id == start.session_id
@@ -359,9 +547,16 @@ def test_failed_evolution_write_rolls_back_finish_and_can_retry(setup):
 
 def test_view_does_not_reread_projects_or_use_network(setup):
     capture(setup)
+
     def forbidden(*_args, **_kwargs):
         raise AssertionError("external operation")
-    with patch("socket.socket", forbidden), patch("subprocess.Popen", forbidden), patch("forkit_radar.sessions.storage.capture", forbidden), patch("forkit_radar.sessions.storage.capture_metadata", forbidden):
+
+    with (
+        patch("socket.socket", forbidden),
+        patch("subprocess.Popen", forbidden),
+        patch("forkit_radar.sessions.storage.capture", forbidden),
+        patch("forkit_radar.sessions.storage.capture_metadata", forbidden),
+    ):
         result = report(setup[1])
         assert b"What changed?" in render(result)
         assert b"forkit_summary_card" in encode(card(result), ".json")
@@ -370,22 +565,37 @@ def test_view_does_not_reread_projects_or_use_network(setup):
 def test_private_html_escaping_and_public_projection(setup):
     project, store, *_ = setup
     start, _ = store.start(project, tool="cursor", selection=setup[2])
-    filename = '<img src=x onerror=alert(1)>.py'
+    filename = "<img src=x onerror=alert(1)>.py"
     (project / filename).write_text("print('private source never persisted')\n")
     store.finish(start.session_id)
     result = report(store)
     raw = render(result)
-    assert b'<img src=x onerror=alert(1)>' not in raw
-    assert b'&lt;img src=x onerror=alert(1)&gt;.py' in raw
+    assert b"<img src=x onerror=alert(1)>" not in raw
+    assert b"&lt;img src=x onerror=alert(1)&gt;.py" in raw
     assert b"private source never persisted" not in raw
     for format in (".json", ".svg", ".html"):
         public = encode(card(result), format)
-        for private in (filename, setup[-1].id, str(project), "support-agent", result["records"][0]["receipt"]["session_id"]):
+        for private in (
+            filename,
+            setup[-1].id,
+            str(project),
+            "support-agent",
+            result["records"][0]["receipt"]["session_id"],
+        ):
             assert private.encode() not in public
     assert set(json.loads(encode(card(result), ".json"))) == set(SummaryCard.model_fields)
 
 
-@pytest.mark.parametrize("mutation", [{"meaningful_changes": 999}, {"reconstructable_changes": 99}, {"partial_receipts": 99}, {"passport_id": "a" * 64}, {"receipts": True}])
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        {"meaningful_changes": 999},
+        {"reconstructable_changes": 99},
+        {"partial_receipts": 99},
+        {"passport_id": "a" * 64},
+        {"receipts": True},
+    ],
+)
 def test_public_summary_rejects_inconsistency_and_private_fields(setup, mutation):
     capture(setup)
     data = card(report(setup[1])).model_dump()
@@ -405,7 +615,19 @@ def test_empty_history_does_not_create_storage(tmp_path):
 
 def test_digest_domains_are_distinct():
     raw = b"{}"
-    assert len({digest(domain, raw) for domain in ("forkit-session-event-v1", "forkit-session-revision-v1", "forkit-session-receipt-v1")}) == 3
+    assert (
+        len(
+            {
+                digest(domain, raw)
+                for domain in (
+                    "forkit-session-event-v1",
+                    "forkit-session-revision-v1",
+                    "forkit-session-receipt-v1",
+                )
+            }
+        )
+        == 3
+    )
     assert digest("forkit-session-revision-v1", raw) != hashlib.sha256(raw).hexdigest()
 
 
@@ -422,3 +644,29 @@ def test_evolution_and_receipt_commit_together(setup):
     with setup[1]._connect() as db:
         observed = list(verify(db))
     assert observed[0][0] == receipt and observed[0][1]["status"] == "consistent"
+
+
+def test_today_is_default_and_only_deliberate_cli_views_count(setup, capsys, tmp_path):
+    from forkit_radar.cli import main
+    project, store, *_ = setup
+    capture(setup)
+    args = ['--store', str(store.root)]
+    with patch('forkit_radar.reporting.usage_capture.engagement') as engagement:
+        assert main(['summary', *args, '--json']) == 0
+        implicit = json.loads(capsys.readouterr().out)
+        assert main(['summary', *args, '--json', '--period', 'today']) == 0
+        explicit = json.loads(capsys.readouterr().out)
+        assert implicit == explicit
+        assert main(['summary-card', *args, '--json']) == 0
+        default_card = json.loads(capsys.readouterr().out)
+        assert default_card['period'] == 'today'
+        assert main(['receipt', *args]) == 0
+        capsys.readouterr()
+        engagement.assert_not_called()
+        with patch('sys.stdout.isatty', return_value=True):
+            assert main(['history', *args]) == 0
+        capsys.readouterr()
+        engagement.assert_called_once_with('history')
+        engagement.reset_mock()
+        assert main(['card', *args, '--output', str(tmp_path / 'card.html')]) == 0
+        engagement.assert_called_once_with('card')

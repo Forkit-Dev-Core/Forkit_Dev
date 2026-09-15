@@ -17,6 +17,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--endpoint", required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--policy", choices=["usage-v2", "usage-v3"], default="usage-v2")
     args = parser.parse_args()
     url = urlsplit(args.endpoint)
     assert url.scheme == "http" and url.hostname == "127.0.0.1" and url.path == "/api/v1/radar"
@@ -53,7 +54,7 @@ def main():
             "--endpoint",
             args.endpoint,
             "--consent",
-            "usage-v2",
+            args.policy,
             "--store",
             sessions,
             "--validation",
@@ -98,6 +99,19 @@ def main():
             for secret in (str(project), private.name, original["session_id"], "next change"):
                 assert secret not in raw
             checks.append("receipt_views_do_not_inflate_and_private_content_excluded")
+            if args.policy == "usage-v3":
+                assert sum(d['viewed'] for d in p['days']) == 0
+                action = subprocess.run([sys.executable, '-I', '-m', 'forkit_radar.desktop',
+                    'engagement', '--store', str(sessions)], input='{"action":"history"}',
+                    cwd=project, env=env, capture_output=True, text=True, timeout=20)
+                assert action.returncode == 0 and json.loads(action.stdout)['ok']
+                cli('card', '--store', sessions, '--output', root / 'card.html')
+                p = json.loads(cli('usage', 'preview'))
+                assert p['schema_version'] == '3.0' and p['policy'] == 'usage-v3'
+                assert sum(d['viewed'] for d in p['days']) == 1
+                assert sum(d['history_viewed'] for d in p['days']) == 1
+                assert sum(d['card_exports'] for d in p['days']) == 1
+                checks.append('v3_deliberate_view_and_successful_export_separate_from_receipts')
             # Another selected project shares the one installation profile.
             second = root / "PRIVATE-second-project"
             second.mkdir()
@@ -123,6 +137,7 @@ def main():
                 "checks": checks,
                 "count": len(checks),
                 "traffic": "synthetic local validation, never adoption",
+                "policy": args.policy,
             },
             indent=2,
         )

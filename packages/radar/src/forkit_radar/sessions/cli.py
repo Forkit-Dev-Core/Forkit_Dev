@@ -102,7 +102,7 @@ def configure(commands):
         if name == "view":
             operation.add_argument("--limit", type=int, default=200, help="Timeline entries, 1–1000; calendar totals still use all receipts")
         if name in {"summary", "summary-card"}:
-            operation.add_argument("--period", choices=("today", "week", "history") if name == "summary" else ("today", "week"), default="week")
+            operation.add_argument("--period", choices=("today", "week", "history") if name == "summary" else ("today", "week"), default="today")
         if name == "summary":
             operation.add_argument("--json", action="store_true", help="Private summary JSON")
         else:
@@ -517,6 +517,17 @@ def command(args) -> int:
             )
             _emit(receipt, args)
             _usage_created(store, receipt, args)
+        # Intentional interactive inspection is distinct from background capture.
+        # Pipe/JSON consumers and generated HTML refreshes are not user views.
+        from ..reporting.usage_capture import engagement
+        if args.command in {'card', 'summary-card'} and not args.json:
+            engagement('card')
+        elif args.command in {'receipt', 'summary', 'history'} and not args.json and sys.stdout.isatty():
+            try:
+                if store.history(limit=1):
+                    engagement('history' if args.command == 'history' else 'view')
+            except (OSError, ValueError):
+                pass  # Optional counting cannot fail an already delivered local result.
         return 0
     except ContractError as exc:
         print(f"Session operation unavailable: {exc}.", file=sys.stderr)

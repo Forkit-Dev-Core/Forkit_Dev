@@ -1,7 +1,7 @@
 name: Session Receipt release checks
 on:
   push:
-    branches: [codex/session-receipt-hn-release]
+    branches: [codex/session-receipt-hn-release, codex/session-receipt-beta-release]
   workflow_dispatch:
 permissions:
   contents: read
@@ -38,10 +38,10 @@ jobs:
           PYTHONPATH: src:packages/radar/src
         run: python -m pytest --import-mode=importlib tests packages/radar/tests scripts/tests -q
       - name: Build the offline bundle
-        run: python scripts/build_radar_bundle.py --project-wheels output/dist --wheelhouse output/wheelhouse --output output/forkit-session-receipt-0.1.0b3-${{ matrix.target }}.zip
+        run: python scripts/build_radar_bundle.py --project-wheels output/dist --wheelhouse output/wheelhouse --output output/forkit-session-receipt-0.1.0b5-${{ matrix.target }}.zip
       - name: Install and try without a Forkit account
         run: |
-          python scripts/check_radar_public_bundle.py output/forkit-session-receipt-0.1.0b3-${{ matrix.target }}.zip --output output/install-check.json
+          python scripts/check_radar_public_bundle.py output/forkit-session-receipt-0.1.0b5-${{ matrix.target }}.zip --output output/install-check.json
       - uses: actions/upload-artifact@v4
         with:
           name: session-receipt-${{ matrix.target }}

@@ -1,6 +1,6 @@
 # Session Receipt count collector — release and operations
 
-Candidate 0.1.0b3 is locally validated, not deployed. The local OSS product works
+Candidate 0.1.0b5 is a local beta candidate, not deployed. The local OSS product works
 without this service. Production collection requires a separate reviewed release.
 The older manual `/metrics` protocol remains documented in README.md.
 
@@ -10,11 +10,11 @@ The older manual `/metrics` protocol remains documented in README.md.
 profile's snapshot; authenticated `DELETE` withdraws it. `GET /api/v1/radar/usage`
 returns only sanitized aggregates. Hosted `GET /api/v1/radar/health` checks schema
 access; the standalone runner exposes this check at `GET /health`.
-The new schema is 2.0/policy usage-v2. Validation audiences are refused by a
+Intake accepts strict schema 2.0/policy usage-v2 and schema 3.0/policy usage-v3. Acknowledgements echo the accepted schema version. Older consent/wire keys are unchanged. Public schema 2.0 retains existing keys and adds explicitly named daily and engagement fields. Validation audiences are refused by a
 production collector. Generated credentials authenticate updates, not real users.
 
 The client sends 29 daily count rows and local distinct-Passport windows. Public
-totals use 7 or 28 complete UTC days, excluding today. No raw Passport or session
+totals use 7 or 28 complete UTC days, excluding today. Yesterday counters include only profiles with a snapshot generated today; publish daily_coverage_profiles beside them. A missing fresh cohort is unknown, not zero. The rolling seven-day repeat-view metric can appear after a second viewed date; it is not cohort retention. No raw Passport or session
 ID leaves the device. Read the complete [count definitions](../beta-kit/USAGE.md).
 Minimum five profiles applies to cohorts and positive counter/tool subgroups.
 Unrecorded, suppressed or incomplete evidence stays unknown. Do not relabel

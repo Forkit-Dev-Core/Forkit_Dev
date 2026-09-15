@@ -30,6 +30,11 @@ async function submit(who,p=payload(),method='PUT',raw){
   return fetch(base+'/installations/'+who.id,{method,body,headers:{Authorization:'Bearer '+who.token,'Content-Type':'application/json','Content-Length':String(Buffer.byteLength(body))}});
 }
 async function metrics(){const r=await fetch(base+'/usage');return {status:r.status,value:await r.json()};}
+function engagementPayload(){
+  const p=payload();p.schema_version='3.0';p.policy='usage-v3';
+  p.days.forEach((d,i)=>Object.assign(d,{viewed:i>=26&&i<=27?1:0,history_viewed:i===27?1:0,card_exports:i===27?1:0}));
+  return p;
+}
 before(async()=>{
   assert.match((await pool.query('SELECT current_database() AS name')).rows[0].name,/^forkit_p11_/);
   await pool.query(await fs.readFile(new URL('../schema.sql',import.meta.url),'utf8'));
@@ -143,4 +148,34 @@ test('weekly receipts exclude older activity and suppress small contributors',()
     for(const w of row.payload.passport_windows)w.distinct_passports=0;
   }
   assert.equal(aggregateUsage(rows,now).metrics.receipts_7_days,null);
+});
+
+test('new consent protocol round-trips over HTTP and adds daily/viewing metrics',async()=>{
+  for(let i=0;i<5;i++){
+    const reply=await submit(identity(),engagementPayload());assert.equal(reply.status,200);
+    assert.equal((await reply.json()).schema_version,'3.0');
+  }
+  const m=(await metrics()).value.metrics;
+  assert.equal(m.receipts_yesterday,5);assert.equal(m.during_changes_yesterday,10);
+  assert.equal(m.viewing_profiles_7_days,5);assert.equal(m.repeat_viewing_profiles_7_days,5);
+  assert.equal(m.repeat_view_rate_basis_points,10000);assert.equal(m.card_exports_7_days,5);
+  assert.equal(m.daily_date,'2026-09-14');assert.equal(m.total_installs,null);
+});
+
+test('legacy activity never becomes engagement and missing/stale coverage stays unknown',()=>{
+  const legacy=Array.from({length:5},()=>({payload:payload()}));
+  const m=aggregateUsage(legacy,now).metrics;
+  assert.equal(m.viewing_profiles_7_days,null);assert.equal(m.repeat_view_rate_basis_points,null);
+  const rows=Array.from({length:5},()=>({payload:engagementPayload()}));
+  assert.equal(aggregateUsage(rows,new Date('2026-09-16T12:00:00Z')).metrics.receipts_yesterday,null);
+  rows[0].payload.days[26].viewed=0;
+  assert.equal(aggregateUsage(rows,now).metrics.repeat_view_rate_basis_points,null);
+  rows[0].payload.collection_complete=false;
+  assert.equal(aggregateUsage(rows,now).metrics.repeat_view_rate_basis_points,null);
+});
+
+test('v3 private fields, incompatible consent and fabricated daily flags are rejected',()=>{
+  for(const change of [p=>p.policy='usage-v2',p=>p.days[27].viewed=2,p=>p.days[27].viewed=true,p=>p.days[27].viewed=0,p=>p.days[27].url='private',p=>p.days[27].card_exports=-1]){
+    const p=engagementPayload();change(p);assert.throws(()=>parseUsage(Buffer.from(canonical(p)),now));
+  }
 });

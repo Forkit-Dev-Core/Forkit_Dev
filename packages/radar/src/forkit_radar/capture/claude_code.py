@@ -1,6 +1,6 @@
 """Claude Code official lifecycle settings; experimental until live CLI validation."""
-from .common import envelope
 from ..jsonio import ContractError
+from .common import envelope
 
 
 def parse(raw, project):

@@ -160,8 +160,9 @@ def git(project: Path, *arguments: str) -> bytes:
         "GIT_TERMINAL_PROMPT": "0",
         "GIT_NO_LAZY_FETCH": "1",
     }
+    from ..mac_runtime import bundled_git
     command = [
-        GIT,
+        bundled_git() or GIT,
         "--no-optional-locks",
         "-c",
         "core.fsmonitor=false",

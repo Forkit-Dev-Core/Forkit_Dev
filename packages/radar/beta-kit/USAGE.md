@@ -1,101 +1,89 @@
-# Optional usage counts — usage-v2
+# Optional counts — explicit consent, after your first receipt
 
-Local Forkit needs no signup, login or reporting. Install, create local Passports,
-capture sessions, view history/diffs/summaries and generate local cards with
-reporting disabled. No public collector is included or enabled by this candidate.
+All local features work without signup or reporting. There is no deployed collector
+or preselected endpoint in this candidate. Normal reporting stays off.
 
-After your first useful original receipt, inspect the policy:
+After your first real receipt, read `forkit-radar usage policy` and the chosen
+operator’s privacy/retention notice. If you want to contribute:
 
 ```console
-forkit-radar usage policy
+forkit-radar usage enable --endpoint https://YOUR-COLLECTOR/api/v1/radar --consent usage-v3
+forkit-radar usage preview
 forkit-radar usage status
 ```
 
-If you choose a collector whose operator has published its privacy and retention
-notice, explicitly enable new automatic-count consent:
+The hostname is a placeholder, not a Forkit service address. Native Mac users can
+choose **Optional usage counts…** in the application menu and explicitly enter the
+operator’s HTTPS endpoint. There is no consent prompt before the first receipt.
+Saving consent sends nothing. It never imports old activity; the CLI’s optional
+`--include-latest` explicitly includes only the most recent original receipt.
+Pass `--store PATH` when that first receipt is in a custom store.
+
+During later ordinary use a short-lived worker may send at most once every 24
+hours. Each attempt has a seven-second process deadline; a lost acknowledgement
+retries the same snapshot up to three times on later use. No daemon, scheduled
+reminder, login task or reporting service is installed. Offline use works; without
+later activity the website receives no update. Public numbers can lag.
+
+## What the counts mean
+
+| Count | Definition and limit |
+| --- | --- |
+| Participating profiles | Accepted opt-in installation profiles, not total installs or unique people. |
+| Original receipts | Saved original session receipts. Reopening/exporting does not create another receipt. |
+| Scans / successful scans | Completed scans / scans whose supported sources were all complete or missing. |
+| Detection observations | Discovery observations, possibly repeated. Never unique agents or models. |
+| Detected tool profiles | Fixed tool presence labels from supported application/process discovery. Separate from a session’s selected or hook-reported tool. |
+| Meaningful changes | Supported recorded during-session file/metadata changes. Between-session changes are separate. |
+| Active Passports | Distinct locally associated, internally consistent Passports in an active reporting profile/window. Not website registrations or verified owners. |
+| View-days (v3) | A day with an intentional receipt/summary/history view. Native opening with receipts and deliberate tab clicks count; automatic refreshes do not. CLI views count only in an interactive terminal. |
+| History view-days (v3) | A viewed day that included intentional history inspection. It is a subset of view-days. |
+| Card exports (v3) | Successful local card saves through the CLI or native viewer. Repeated exports can count; they are not unique cards, public shares or referrals. |
+| Repeat viewing (v3) | Profiles viewed on two or more complete UTC dates within the last seven, divided by profiles viewed in that window. Available after a second day; not a next-day cohort retention measure. |
+
+Opening the portable offline HTML file, using PNG/SVG buttons in that file, or
+looking at a screenshot is not measured. Local UTC view flags are deduplicated to
+one per date; no exact click timestamps or selected receipt IDs are reported.
+
+Public yesterday counters include only snapshots generated today, with the fresh
+coverage-profile count shown beside them. Other totals use the last 7 or 28
+complete UTC days. Minimum five profiles applies to cohorts and positive
+subgroups. Unknown/suppressed values remain **—**. Incomplete collection suppresses
+rates that would otherwise imply complete evidence. Repeat-check activity can be
+background capture; repeat-viewing is the stronger, separate usage signal.
+
+Local reconstructable-change rate checks retained Passport/session/previous-version
+links. It is unsigned local history, not proof of AI authorship, factual truth or
+authenticated identity continuity. It is not a website Passport registration count.
+
+## Privacy and control
+
+One random installation reporting profile is shared across local project stores.
+Incoming data is **pseudonymous**, not fully anonymous: a random reporting handle
+links snapshots and the service sees connection metadata. The payload has only
+coarse UTC dates, counts and fixed `codex`, `claude-code`, `cursor`, `other` labels.
+No prompts, chats, source code, paths, filenames, project names, Passport/session
+IDs, source hashes, hardware IDs, existing secrets or credentials are uploaded.
+A separate generated reporting credential authorizes updates/withdrawal; it does
+not authenticate a person. Private deduplication keys stay on the device.
 
 ```console
-forkit-radar usage enable --endpoint https://YOUR-COLLECTOR/api/v1/radar --consent usage-v2
-```
-
-Replace the example hostname with that operator's actual endpoint; it is not a
-Forkit service address. If your first receipt is in a custom store, pass the same
-`--store PATH`. The command itself sends nothing. Add `--include-latest` only if
-you choose to include the most recent existing receipt. Otherwise only future
-original operations count. Earlier Footprints/manual consent never upgrades.
-
-```console
-forkit-radar usage preview
 forkit-radar usage disable
 forkit-radar usage withdraw
 ```
 
-Preview shows the current snapshot without sending. It can change with later
-activity; this is automatic reporting after consent, unlike the older exact-file
-`metrics preview/send` feature. Disable cancels queued snapshots and prevents a
-new attempt after disable completes. An already in-flight request may finish.
-Withdrawal immediately disables future reporting locally, then removes the live
-contribution when the collector confirms. An interrupted withdrawal stays disabled;
-retry `usage withdraw`. Screenshots and previously published aggregates cannot be
-recalled. Local receipts are never deleted by these commands.
+Disable stops future attempts and cancels pending snapshots. A request already in
+flight may finish. Withdrawal also removes the live contribution when the collector
+confirms; retry an interrupted withdrawal. Neither recalls previously published
+aggregates or screenshots. Local history is never removed.
 
-During ordinary scans, Passport creation or receipt completion, a short-lived
-worker may send at most once every 24 hours. Each attempt has a seven-second total
-process deadline, including DNS. A lost acknowledgement retries the same snapshot
-on a later ordinary use, up to three attempts; then a new cumulative snapshot
-supersedes it. No daemon, timer service, login hook or startup task is installed.
-Offline use always works. No later activity means no new send, and counts can lag.
+Existing **usage-v2** consent retains its old strict payload and no view/export
+counters. Withdraw that profile before choosing v3. Earlier Footprints/manual
+consent never upgrades. Fresh consent does not backfill history.
 
-One random installation reporting profile is shared across selected project stores
-in `~/.forkit-radar/usage.sqlite3`. A private local override `FORKIT_USAGE_STORE`
-supports isolated installations/tests. The reporting ID is separate from Passport
-identity, and requests use a newly generated reporting credential. Incoming data is
-pseudonymous, not fully anonymous: the collector necessarily sees connection
-metadata. The wire payload contains coarse UTC dates, fixed labels (`codex`,
-`claude-code`, `cursor`, `other`) and counts. It excludes prompts, code, chats,
-filenames, paths, project/repository names, Passport/session IDs, source hashes,
-existing credentials, hardware identifiers and arbitrary names. Private local
-HMAC keys deduplicate original operations and Passports; those keys never leave.
-
-Public metrics use the previous **7 or 28 complete UTC days**, excluding today.
-The snapshot includes today's row so it can become eligible tomorrow. Profiles
-count accepted opt-in installations, not total installs, users or hardware.
-Resets, copied profiles, multiple devices and forged clients affect that estimate.
-Downloads, old Footprints observations, CI and explicit validation profiles are
-not community adoption. Use `--validation --allow-local-collector` with a loopback
-collector for controlled tests; production intake rejects validation reports.
-Never enable community reporting for examples, fixtures or internal testing.
-
-- Original receipt creation counts once; viewing/exporting a receipt does not.
-- Completed scan results and fully successful scans are separate. Detection
-  observations can repeat across scans; they are not unique agents/models.
-- Tool presence counts once per profile/tool/window and comes only from supported
-  application/process discovery. A session's selected tool is a separate declaration;
-  it does not authenticate who changed a file.
-- Weekly activity requires a successful scan or original receipt. Repeat-check rate
-  is profiles active on at least two UTC dates divided by profiles active on at least
-  one date in the same seven days. It is not cohort retention.
-- Weekly Active Passports sum locally distinct consistent Passport associations per
-  profile. The same Passport on two devices can count twice. Missing current coverage
-  stays unknown; no IDs are uploaded to deduplicate globally.
-- Meaningful/reconstructable counts reuse the existing local evolution policy.
-  Reconstruction links an observed change to a Passport, session and previous version;
-  it is not authenticated AI execution. Incomplete history makes the rate unavailable.
-
-Counts can decrease through corrections, expiry or withdrawal. Public cohorts and
-positive tool/counter subgroups need at least five profiles. Smaller or unknown
-values are suppressed. No extrapolation, global market estimate or paid-demand
-claim follows from these counters.
-
-The local journal keeps up to 10,000 count events and prunes events older than
-35 days on the next capture; inactive local files are not pruned by a timer. A bounded local
-Passport dedup set persists while that profile exists. Hitting a bound marks
-collection incomplete and withholds rates. The reference collector physically
-marks inactive bodies eligible for deletion after 35 days. Daily cleanup removes
-them within 36 days when operated as required. Minimal authentication,
-sequence and withdrawal metadata remain to reject replays (10,000-profile capacity;
-no silent tombstone eviction). Rate-limit hashes expire after two hours. Production
-operators must suppress request identifiers/credentials/IPs in application and
-ingress logs, publish any residual retention, and limit backups to 35 days. Deleted
-contributions may consequently remain in backups for up to 35 additional days;
-restore must reapply withdrawals and expiry before reopening intake.
+Only real, externally used profiles belong in community counts. Use a separate
+`FORKIT_USAGE_STORE` and `--validation --allow-local-collector` with loopback for
+controlled tests; production rejects validation audiences. Do not enable community
+reporting for examples, CI or internal testing. Downloads, automated scans, local
+tests and registered accounts alone do not establish market demand. Resets,
+multiple devices, copied profiles and forged clients limit all self-reported counts.

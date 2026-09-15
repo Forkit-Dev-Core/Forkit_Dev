@@ -1,10 +1,12 @@
 """Allowlisted counters from original local operations, never re-exports."""
 
 import sys
-from datetime import timezone
+from datetime import datetime, timezone
+from uuid import uuid4
 
 from ..sessions.evolution import verify
 from ..sessions.summary import _record, utc
+from .usage_contracts import ENGAGEMENT_POLICY
 from .usage_storage import UsageStore, root
 
 PRODUCTS = {
@@ -13,6 +15,32 @@ PRODUCTS = {
     "Claude Code": "claude-code",
     "Cursor": "cursor",
 }
+
+
+def engagement(action):
+    """Intentional local UI/CLI actions only; no view contents or IDs collected."""
+    if action not in {'view', 'history', 'card'}:
+        return
+    store = UsageStore(root())
+    try:
+        status = store.status()
+        if status['state'] != 'enabled' or status['consent'] != ENGAGEMENT_POLICY:
+            return
+        when = datetime.now(timezone.utc)
+        identity = str(uuid4()) if action == 'card' else action + ':' + when.date().isoformat()
+        store.event('engagement', identity, dict(viewed=int(action != 'card'),
+            history_viewed=int(action == 'history'), card_exports=int(action == 'card')), observed=when)
+        from .usage_worker import kick
+        kick(store)
+    except Exception:
+        # Engagement never prevents a result or leaks private exception details.
+        try:
+            with store._connect(write=True) as db:
+                p = store._profile(db)
+                p['collection_complete'] = False
+                store._save(db, p)
+        except Exception:
+            pass
 
 
 def receipt(store, sessions, original, *, include_previous=False):

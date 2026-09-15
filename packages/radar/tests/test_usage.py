@@ -13,7 +13,12 @@ from forkit_radar.cli import main
 from forkit_radar.identity.storage import canonical
 from forkit_radar.reporting.storage import ReportingStore
 from forkit_radar.reporting.usage_capture import receipt, safely_record, scan
-from forkit_radar.reporting.usage_contracts import UsageContribution
+from forkit_radar.reporting.usage_contracts import (
+    EngagementContribution,
+    EngagementDay,
+    UsageContribution,
+    read_usage,
+)
 from forkit_radar.reporting.usage_storage import UsageStore
 from forkit_radar.reporting.usage_worker import begin_withdrawal, deliver, kick, supervise, withdraw
 from forkit_radar.sessions.storage import SessionStore
@@ -26,6 +31,7 @@ NOW = datetime(2026, 9, 15, 12, tzinfo=timezone.utc)
 def state(tmp_path, monkeypatch):
     monkeypatch.setenv("FORKIT_USAGE_STORE", str(tmp_path / "usage"))
     monkeypatch.setenv("CI", "1")
+    monkeypatch.setattr("forkit_radar.reporting.usage_capture.datetime", NS(now=lambda _: NOW))
     with patch("forkit_radar.reporting.usage_storage.today", return_value=NOW.date()):
         yield UsageStore(tmp_path / "usage")
 
@@ -86,6 +92,70 @@ def test_requires_first_result_before_consent(state, tmp_path):
         == 2
     )
     assert not state.root.exists()
+
+
+def test_engagement_requires_new_consent_and_old_wire_stays_unchanged(state):
+    from forkit_radar.reporting.usage_capture import engagement
+    enable(state)
+    before = canonical(state.preview())
+    with patch('forkit_radar.reporting.usage_worker.kick') as worker:
+        engagement('view')
+        engagement('history')
+        engagement('card')
+    assert canonical(state.preview()) == before
+    assert b'viewed' not in before and state.status()['consent'] == 'usage-v2'
+    worker.assert_not_called()
+    with pytest.raises(ValueError, match='withdraw_before_changing_usage_policy'):
+        state.enable(ENDPOINT, consent='usage-v3', validation=True, allow_local=True)
+
+
+def test_engagement_days_are_bounded_and_deduplicated_without_private_content(state):
+    from forkit_radar.reporting.usage_capture import engagement
+    state.enable(ENDPOINT, consent='usage-v3', validation=True, allow_local=True, now=0)
+    event(state)
+    with patch('forkit_radar.reporting.usage_worker.kick'):
+        for _ in range(4):
+            engagement('view')
+            engagement('history')
+        engagement('card')
+        engagement('card')
+        engagement('PRIVATE-FILENAME')
+    p = state.preview()
+    assert isinstance(p, EngagementContribution)
+    assert p.days[-1].viewed == p.days[-1].history_viewed == 1
+    assert p.days[-1].card_exports == 2 and p.days[-1].receipts == 1
+    assert read_usage(p.model_dump(mode='json')) == p
+    raw = canonical(p)
+    assert len(raw) < 32768
+    for private in (b'PRIVATE', b'SECRET', b'local-secret', b'event_key', b'credential', b'surface_id'):
+        assert private not in raw
+
+
+def test_invalid_engagement_or_policy_cannot_claim_viewing(state):
+    for values in ({'viewed':2}, {'history_viewed':1}, {'viewed':True}, {'card_exports':-1}, {'filename':'private'}):
+        with pytest.raises(ValueError):
+            EngagementDay(date=NOW.date().isoformat(), **values)
+    state.enable(ENDPOINT, consent='usage-v3', validation=True, allow_local=True, now=0)
+    p = state.preview().model_dump(mode='json')
+    p['policy'] = 'usage-v2'
+    with pytest.raises(ValueError):
+        read_usage(p)
+
+
+def test_v3_retry_confirms_exact_protocol_and_disable_blocks_engagement(state):
+    from forkit_radar.reporting.usage_capture import engagement
+    state.enable(ENDPOINT, consent='usage-v3', validation=True, allow_local=True, now=0)
+    with patch('forkit_radar.reporting.usage_worker.kick'):
+        engagement('view')
+    transport = Mock()
+    assert deliver(state, now=NOW.timestamp(), transport=transport)
+    assert transport.call_args.kwargs['schema_version'] == '3.0'
+    state.disable()
+    with patch('forkit_radar.reporting.usage_worker.kick') as worker:
+        engagement('card')
+    worker.assert_not_called()
+    with state._connect() as db:
+        assert sum(d.card_exports for d in state.contribution(db, 2).days) == 0
 
 
 def test_no_backfill_except_explicit_latest(state):

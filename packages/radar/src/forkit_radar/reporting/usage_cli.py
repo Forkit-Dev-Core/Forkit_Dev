@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 from ..sessions.storage import SessionStore
-from .usage_contracts import POLICY
+from .usage_contracts import ENGAGEMENT_POLICY, POLICY
 from .usage_storage import UsageStore, root
 
 NOTICE = """Optional usage-v2 reporting, off by default. Local Forkit needs no account.
@@ -14,7 +14,7 @@ During normal use a short-lived worker may send at most once per 24 hours, with
 three bounded attempts per snapshot. No background service or historical backfill.
 The first receipt is excluded unless you explicitly choose --include-latest.
 The snapshot contains 29 daily count rows, fixed tool labels and local distinct
-Passport counts. Public windows use 7 or 28 complete UTC days, excluding today.
+Passport counts. Public windows use yesterday or 7/28 complete UTC days, excluding today.
 A random reporting profile and separate credential link updates across projects;
 they do not identify a human. Incoming data is pseudonymous, not fully anonymous.
 The collector sees connection metadata. No code, prompts, chats, paths, filenames,
@@ -26,6 +26,16 @@ can undo already published aggregates or third-party screenshots. Read the
 collector's retention/privacy notice before enabling its explicit HTTPS endpoint.
 Legacy metrics/Footprints consent is independent and is never converted."""
 
+ENGAGEMENT_NOTICE = """Optional usage-v3 adds daily yes/no counts for intentional
+receipt/summary viewing and history viewing, plus successful card-export counts.
+Automatic refreshes are excluded. The CLI counts views only in an interactive
+terminal; offline browser-file interactions are not measured. Daily aggregates
+can show early repeat use; repeat viewing is not cohort retention or unique people.
+No additional identifiers or content are sent. Public counts cover complete UTC
+days, may lag while offline, and keep the existing minimum-five-profile rule.
+Existing usage-v2 consent does not permit these additional counters. Withdraw it
+before selecting usage-v3. Local features work with either policy or neither."""
+
 
 def configure(commands):
     parser = commands.add_parser(
@@ -36,7 +46,7 @@ def configure(commands):
         p = ops.add_parser(name)
         if name == "enable":
             p.add_argument("--endpoint", required=True)
-            p.add_argument("--consent", required=True, choices=[POLICY])
+            p.add_argument("--consent", required=True, choices=[POLICY, ENGAGEMENT_POLICY])
             p.add_argument(
                 "--store", type=Path, help="Session store containing your first useful receipt"
             )
@@ -59,6 +69,7 @@ def command(args):
         op = args.usage_command
         if op == "policy":
             print(NOTICE)
+            print(ENGAGEMENT_NOTICE)
         elif op == "status":
             print(json.dumps(store.status(), indent=2))
         elif op == "enable":
@@ -67,6 +78,8 @@ def command(args):
             if not latest:
                 raise ValueError("first_receipt_required")
             print(NOTICE)
+            if args.consent == ENGAGEMENT_POLICY:
+                print(ENGAGEMENT_NOTICE)
             store.enable(
                 args.endpoint,
                 consent=args.consent,

@@ -197,7 +197,7 @@ export function createHandler({pool,secret,enabled=false,environment='validation
         await db.query(sql("UPDATE radar_metrics.surfaces SET payload=$2::jsonb,payload_digest=$3,sequence=$4,updated_at=$5 WHERE surface_hash=$1"),[key,canonical(payload),payloadDigest,payload.sequence,now]);
         return 'stored';
       });
-      return response(res,200,{schema_version:usage?'2.0':'1.0',status:outcome,accepted_sequence:payload.sequence,payload_sha256:payloadDigest});
+      return response(res,200,{schema_version:usage?payload.schema_version:'1.0',status:outcome,accepted_sequence:payload.sequence,payload_sha256:payloadDigest});
     }catch(error){
       // Never log request data, URLs, credentials, SQL values, IPs or error text.
       res.setHeader('Connection','close');

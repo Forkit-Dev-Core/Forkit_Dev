@@ -11,6 +11,8 @@ from ..contracts import Contract, Entries
 from .contracts import Count, Day, day
 
 POLICY = "usage-v2"
+ENGAGEMENT_POLICY = "usage-v3"
+ENGAGEMENT_COUNTERS = ("viewed", "history_viewed", "card_exports")
 TOOLS = ("codex", "claude-code", "cursor", "other")
 Tool = Literal["codex", "claude-code", "cursor", "other"]
 COUNTERS = (
@@ -92,3 +94,28 @@ class UsageContribution(Contract):
         if [p.end_exclusive for p in self.passport_windows] != dates:
             raise ValueError("invalid_passport_windows")
         return self
+
+
+class EngagementDay(UsageDay):
+    viewed: Annotated[int, Field(strict=True, ge=0, le=1)] = 0
+    history_viewed: Annotated[int, Field(strict=True, ge=0, le=1)] = 0
+    card_exports: Count = 0
+
+    @model_validator(mode="after")
+    def viewing(self):
+        if self.history_viewed > self.viewed:
+            raise ValueError("history_requires_view")
+        return self
+
+
+class EngagementContribution(UsageContribution):
+    schema_version: Literal["3.0"] = "3.0"
+    policy: Literal["usage-v3"] = ENGAGEMENT_POLICY
+    days: Annotated[Entries[EngagementDay], Field(min_length=29, max_length=29)]
+
+
+def read_usage(value):
+    if not isinstance(value, dict):
+        raise ValueError("invalid_usage_contribution")
+    cls = EngagementContribution if value.get("schema_version") == "3.0" else UsageContribution
+    return cls.model_validate(value)

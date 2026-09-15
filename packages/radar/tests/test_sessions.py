@@ -8,12 +8,14 @@ import signal
 import sqlite3
 import subprocess
 import sys
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import rfc8785
 
 from forkit_radar.contracts import read_contract
 from forkit_radar.identity.storage import EnrollmentStore
@@ -21,11 +23,44 @@ from forkit_radar.jsonio import ContractError
 from forkit_radar.sessions.cli import render
 from forkit_radar.sessions.clock import stamp
 from forkit_radar.sessions.inventory import allowed, difference, git
-from forkit_radar.sessions.models import ClockStamp, FileState, Snapshot, elapsed
+from forkit_radar.sessions.models import (
+    MAX_FILES,
+    ClockStamp,
+    FileState,
+    Snapshot,
+    elapsed,
+    safe_relative,
+)
 from forkit_radar.sessions.storage import SessionStore
 
 SECRET = "SESSION_SECRET_SENTINEL_672c4b"
 FIXTURES = Path(__file__).parent / "fixtures"
+
+
+def test_path_validation_cache_stays_bounded_and_preserves_rejections():
+    safe_relative.cache_clear()
+    try:
+        for index in range(MAX_FILES * 4 + 100):
+            safe_relative(f"src/file_{index}.py")
+        assert safe_relative.cache_info().currsize <= MAX_FILES * 4
+        for _ in range(2):
+            assert (
+                FileState(path="src/main.py", fingerprint="0" * 64, executable=False).path
+                == "src/main.py"
+            )
+            for path in (
+                "/src/main.py",
+                "src/../main.py",
+                "src//main.py",
+                "src/./main.py",
+                "src\\main.py",
+                "src/\u202emain.py",
+                "a/" * 13 + "main.py",
+            ):
+                with pytest.raises(ValueError):
+                    FileState(path=path, fingerprint="0" * 64, executable=False)
+    finally:
+        safe_relative.cache_clear()
 
 
 def run_git(project, *args):
@@ -253,6 +288,96 @@ def test_finish_is_immutable_and_duplicate_stop_rejected(project, store):
     with pytest.raises(ContractError, match="already_finished"):
         store.finish(started.session_id)
     assert store.receipt() == receipt and len(store.history()) == 1
+
+
+def test_history_snapshot_is_consistent_readonly_and_does_not_block_finish(project, store):
+    first, _ = store.start(project, tool="codex")
+    store.finish(first.session_id)
+    second, _ = store.start(project, tool="codex")
+    (project / "main.py").write_text("new change\n")
+    with store.history_connection() as snapshot:
+        assert snapshot.execute("SELECT COUNT(*) FROM receipts").fetchone()[0] == 1
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            receipt = executor.submit(store.finish, second.session_id).result(timeout=5)
+        assert len(receipt.file_changes) == 1 and not store.active()
+        assert snapshot.execute("SELECT COUNT(*) FROM receipts").fetchone()[0] == 1
+        assert (
+            snapshot.execute("SELECT COUNT(*) FROM sessions WHERE state='active'").fetchone()[0]
+            == 1
+        )
+        with pytest.raises(sqlite3.OperationalError, match="readonly"):
+            snapshot.execute("DELETE FROM receipts")
+    assert len(store.history()) == 2
+    with pytest.raises(sqlite3.ProgrammingError, match="closed"):
+        snapshot.execute("SELECT 1")
+
+
+def test_independent_finishes_capture_concurrently_and_commit_correctly(project, store, tmp_path):
+    from forkit_radar.sessions import storage
+
+    second = tmp_path / "second"
+    second.mkdir()
+    run_git(second, "init", "-q")
+    (second / "main.py").write_text("before\n")
+    starts = [store.start(root, tool="codex")[0] for root in (project, second)]
+    for root in (project, second):
+        (root / "main.py").write_text("changed\n")
+    rendezvous = threading.Barrier(2, timeout=5)
+    capture = storage.capture
+
+    def concurrent_capture(*args, **kwargs):
+        assert kwargs.get("previous") is not None
+        rendezvous.wait()
+        return capture(*args, **kwargs)
+
+    with patch.object(storage, "capture", concurrent_capture):
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            receipts = list(executor.map(store.finish, [s.session_id for s in starts]))
+    assert len(store.history()) == 2 and not store.active()
+    assert len({r.project_id for r in receipts}) == 2
+    assert all(
+        [(c.kind, c.path) for c in r.file_changes] == [("modified", "main.py")] for r in receipts
+    )
+
+
+@pytest.mark.parametrize("changed_input", ["baseline", "locator", "key", "started"])
+def test_finish_refuses_starting_inputs_changed_during_endpoint_capture(
+    project, store, changed_input
+):
+    from forkit_radar.sessions import storage
+
+    started, _ = store.start(project, tool="codex")
+    capture = storage.capture
+
+    def changing_capture(*args, **kwargs):
+        endpoint = capture(*args, **kwargs)
+        with store._connect(write=True) as db:
+            if changed_input == "baseline":
+                row = db.execute("SELECT payload FROM snapshots WHERE phase='before'").fetchone()
+                value = json.loads(row[0])
+                value["files"]["excluded_count"] += 1
+                db.execute(
+                    "UPDATE snapshots SET payload=? WHERE phase='before'",
+                    (rfc8785.dumps(value),),
+                )
+            elif changed_input == "locator":
+                row = db.execute("SELECT locator FROM projects").fetchone()
+                value = json.loads(row[0])
+                value["inode"] += 1
+                db.execute("UPDATE projects SET locator=?", (rfc8785.dumps(value),))
+            elif changed_input == "key":
+                db.execute("UPDATE settings SET value=? WHERE name='locator_key'", (b"k" * 32,))
+            else:
+                row = db.execute("SELECT started FROM sessions").fetchone()
+                value = json.loads(row[0])
+                value["tool"] = "other"
+                db.execute("UPDATE sessions SET started=?", (rfc8785.dumps(value),))
+        return endpoint
+
+    with patch.object(storage, "capture", changing_capture):
+        with pytest.raises(ContractError, match="session_changed_during_capture"):
+            store.finish(started.session_id)
+    assert len(store.active()) == 1 and not store.history()
 
 
 def test_recovery_marks_unknown_end_and_retains_session(project, store):

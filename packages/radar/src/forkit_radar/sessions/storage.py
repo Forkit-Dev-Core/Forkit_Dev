@@ -5,6 +5,9 @@ from __future__ import annotations
 import hashlib
 import hmac
 import os
+import sqlite3
+import time
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Literal
 from uuid import uuid4
@@ -16,12 +19,14 @@ from ..discovery.safeio import directory
 from ..identity.passports import now
 from ..identity.storage import MAX_STORE_BYTES, EnrollmentStore, canonical
 from ..jsonio import MAX_DOCUMENT_BYTES, ContractError, load_json
+from ..lifecycle import session_operation
 from .clock import stamp
 from .details import Comparison, Delta, DetailedSnapshot, ReceiptV2, Selection, categories
 from .details import complete as metadata_complete
 from .details import difference as metadata_difference
 from .evolution import SCHEMA as EVOLUTION_SCHEMA
 from .evolution import append as append_evolution
+from .evolution import prepare as prepare_evolution
 from .inventory import capture, difference, select_project
 from .metadata import capture as capture_metadata
 from .metadata import unavailable as unavailable_metadata
@@ -47,27 +52,35 @@ def checked_bytes(model) -> bytes:
     return raw
 
 
-def read(model, raw):
+def _read_parsed(model, raw, data, *, encoder=None):
     try:
-        record = model.model_validate(load_json(raw, max_nodes=100_000))
-        if canonical(record) != raw:
+        record = model.model_validate(data)
+        if (encoder(record) if encoder is not None else canonical(record)) != raw:
             raise ValueError
         return record
     except (ValueError, TypeError):
         raise ContractError("invalid_session_record") from None
 
 
+def read(model, raw, *, encoder=None):
+    try:
+        data = load_json(raw, max_nodes=100_000)
+    except (ValueError, TypeError):
+        raise ContractError("invalid_session_record") from None
+    return _read_parsed(model, raw, data, encoder=encoder)
+
+
 def read_receipt(raw):
     data = load_json(raw, max_nodes=100_000)
-    return read(ReceiptV2 if data.get("schema_version") == "2.0" else Receipt, raw)
+    return _read_parsed(ReceiptV2 if data.get("schema_version") == "2.0" else Receipt, raw, data)
 
 
 def read_snapshot(raw):
     data = load_json(raw, max_nodes=100_000)
     if data.get("schema_version") == "2.0":
-        detailed = read(DetailedSnapshot, raw)
+        detailed = _read_parsed(DetailedSnapshot, raw, data)
         return detailed.files, detailed
-    return read(Snapshot, raw), None
+    return _read_parsed(Snapshot, raw, data), None
 
 
 def compare_endpoint(baseline, endpoint, *, baseline_id, skipped, recovered=False):
@@ -144,6 +157,34 @@ class SessionStore(EnrollmentStore):
     )
     schema = legacy_schema + EVOLUTION_SCHEMA
 
+    @contextmanager
+    def history_connection(self):
+        """A consistent bounded in-memory copy releases live locks before rendering.
+
+        The existing connection validates the private store/schema and bounds its
+        size. SQLite copies its read transaction; all receipt/evolution checks
+        still run on those exact bytes. No extra history file is written.
+        """
+        snapshot = sqlite3.connect(":memory:")
+        try:
+            with self._connect() as source:
+                deadline = time.monotonic() + 5
+
+                def progress(_status, _remaining, _total):
+                    if time.monotonic() > deadline:
+                        raise ContractError("history_snapshot_timeout")
+
+                source.backup(snapshot, pages=128, progress=progress, sleep=0.005)
+            snapshot.execute("PRAGMA trusted_schema=OFF")
+            snapshot.execute("PRAGMA query_only=ON")
+            deadline = time.monotonic() + 5
+            snapshot.set_progress_handler(lambda: int(time.monotonic() > deadline), 1000)
+            yield snapshot
+        except sqlite3.Error:
+            raise ContractError("history_snapshot_unavailable") from None
+        finally:
+            snapshot.close()
+
     def _check_schema(self, connection, version, app_id, schema, *, write):
         if (
             version == 1
@@ -176,8 +217,23 @@ class SessionStore(EnrollmentStore):
             raise ContractError("invalid_session_projection")
         return SessionEntry(state=state, started=started)
 
+    @session_operation
+    def initialize(self):
+        # A requested start waits for a concurrent creator's schema transaction
+        # before reading active sessions. Readers must not mistake its temporary
+        # zero-schema file for a permanently damaged store.
+        with self._connect(write=True, create=True) as db:
+            self._key(db)
+
+    @session_operation
     def start(
-        self, project: Path, *, tool: str, mode: str = "manual", selection: Selection | None = None, hook_identity: str | None = None
+        self,
+        project: Path,
+        *,
+        tool: str,
+        mode: str = "manual",
+        selection: Selection | None = None,
+        hook_identity: str | None = None,
     ) -> tuple[Started, Snapshot]:
         selection = Selection.model_validate(selection or Selection())
         project, identity = select_project(project)
@@ -186,8 +242,7 @@ class SessionStore(EnrollmentStore):
         locator = ProjectLocator(path=str(project), device=identity[0], inode=identity[1])
         # Commit an empty valid store before capture. A failed first capture must
         # not leave a zero-schema SQLite file masquerading as corrupt history.
-        with self._connect(write=True, create=True) as db:
-            self._key(db)
+        self.initialize()
         with self._connect(write=True) as db:
             # Reserve a bounded finish (after snapshot + receipt + SQLite
             # overhead) for every active session before accepting a new one.
@@ -215,7 +270,14 @@ class SessionStore(EnrollmentStore):
             if not snapshot.inventory_complete:
                 raise ContractError("complete_starting_inventory_required")
             if mode == "official_hook" and tool == "cursor":
-                snapshot = snapshot.model_copy(update={"inventory_complete": False, "reasons": tuple(sorted(set(snapshot.reasons) | {"hook_start_not_blocking"}))})
+                snapshot = snapshot.model_copy(
+                    update={
+                        "inventory_complete": False,
+                        "reasons": tuple(
+                            sorted(set(snapshot.reasons) | {"hook_start_not_blocking"})
+                        ),
+                    }
+                )
             details = DetailedSnapshot(
                 files=snapshot,
                 selection=selection,
@@ -238,7 +300,9 @@ class SessionStore(EnrollmentStore):
                 if not hook_identity:
                     raise ContractError("hook_identity_required")
                 hook_token = self._hook_token(key, tool, hook_identity)
-                db.execute("INSERT INTO settings VALUES (?, ?)", ("hook:" + started.session_id, hook_token))
+                db.execute(
+                    "INSERT INTO settings VALUES (?, ?)", ("hook:" + started.session_id, hook_token)
+                )
             if not row:
                 db.execute("INSERT INTO projects VALUES (?, ?, ?)", (project_id, token, raw))
             db.execute(
@@ -251,15 +315,15 @@ class SessionStore(EnrollmentStore):
             )
             return started, snapshot
 
+    @session_operation
     def finish(self, session_id: str, *, outcome="manual_stop", exit_code=None) -> Receipt:
         TypeAdapter(Identifier).validate_python(session_id, strict=True)
-        with self._connect(write=True) as db:
-            entry = self._entry(
-                db.execute(
-                    "SELECT session_id, project_id, state, started FROM sessions WHERE session_id=?",
-                    (session_id,),
-                ).fetchone()
-            )
+        with self._connect() as db:
+            entry_row = db.execute(
+                "SELECT session_id, project_id, state, started FROM sessions WHERE session_id=?",
+                (session_id,),
+            ).fetchone()
+            entry = self._entry(entry_row)
             if entry.state != "active":
                 raise ContractError("session_already_finished")
             key = self._key(db)
@@ -269,42 +333,73 @@ class SessionStore(EnrollmentStore):
                 "SELECT locator FROM projects WHERE project_id=?", (started.project_id,)
             ).fetchone()
             locator = read(ProjectLocator, raw_locator[0])
-            row = db.execute(
+            baseline_row = db.execute(
                 "SELECT payload FROM snapshots WHERE session_id=? AND phase='before'", (session_id,)
             ).fetchone()
-            if row is None:
+            if baseline_row is None:
                 raise ContractError("session_baseline_missing")
-            before, before_details = read_snapshot(row[0])
-            project = Path(locator.path)
-            try:
-                with directory(project) as descriptor:
-                    info = os.fstat(descriptor)
-                if (info.st_dev, info.st_ino) != (locator.device, locator.inode):
+            before, before_details = read_snapshot(baseline_row[0])
+        project = Path(locator.path)
+        try:
+            with directory(project) as descriptor:
+                info = os.fstat(descriptor)
+            if (info.st_dev, info.st_ino) != (locator.device, locator.inode):
+                raise ValueError
+            after = capture(project, key, previous=before)
+            after_metadata = (
+                capture_metadata(project, before_details.selection, key) if before_details else None
+            )
+            with directory(project) as descriptor:
+                current = os.fstat(descriptor)
+                if (current.st_dev, current.st_ino) != (locator.device, locator.inode):
                     raise ValueError
-                after = capture(project, key, previous=before)
-                after_metadata = (
-                    capture_metadata(project, before_details.selection, key)
-                    if before_details
-                    else None
-                )
-                with directory(project) as descriptor:
-                    current = os.fstat(descriptor)
-                    if (current.st_dev, current.st_ino) != (locator.device, locator.inode):
-                        raise ValueError
-            except (OSError, ValueError):
-                after = Snapshot(
-                    files=(),
-                    unknown_paths=(),
-                    excluded_count=0,
-                    inventory_complete=False,
-                    reasons=("project_unavailable_or_replaced",),
-                )
-                after_metadata = (
-                    unavailable_metadata(before_details.metadata, "project_unavailable_or_replaced")
-                    if before_details
-                    else None
-                )
-            changes, unknown_count, complete = difference(before, after)
+        except (OSError, ValueError):
+            after = Snapshot(
+                files=(),
+                unknown_paths=(),
+                excluded_count=0,
+                inventory_complete=False,
+                reasons=("project_unavailable_or_replaced",),
+            )
+            after_metadata = (
+                unavailable_metadata(before_details.metadata, "project_unavailable_or_replaced")
+                if before_details
+                else None
+            )
+        stored_after = after
+        if before_details is not None:
+            stored_after = DetailedSnapshot(
+                files=after, selection=before_details.selection, metadata=after_metadata
+            )
+            prepared_before = prepare_evolution(before_details)
+            prepared_after = prepare_evolution(stored_after)
+            delta = metadata_difference(before_details.metadata, after_metadata)
+        stored_after_raw = checked_bytes(stored_after)
+        changes, unknown_count, complete = difference(before, after)
+        # File/metadata reads and pure preparation need no database write lock. Recheck the exact
+        # starting inputs before one atomic commit; another finish or changed
+        # baseline must never be overwritten with this prepared endpoint.
+        with self._connect(write=True) as db:
+            current_row = db.execute(
+                "SELECT session_id, project_id, state, started FROM sessions WHERE session_id=?",
+                (session_id,),
+            ).fetchone()
+            if self._entry(current_row).state != "active":
+                raise ContractError("session_already_finished")
+            if (
+                current_row != entry_row
+                or self._key(db) != key
+                or db.execute(
+                    "SELECT locator FROM projects WHERE project_id=?", (started.project_id,)
+                ).fetchone()
+                != raw_locator
+                or db.execute(
+                    "SELECT payload FROM snapshots WHERE session_id=? AND phase='before'",
+                    (session_id,),
+                ).fetchone()
+                != baseline_row
+            ):
+                raise ContractError("session_changed_during_capture")
             elapsed_ms = elapsed(started.clock, end_clock)
             reasons = set(before.reasons) | set(after.reasons)
             if outcome == "recovered":
@@ -339,15 +434,10 @@ class SessionStore(EnrollmentStore):
                 excluded_after=after.excluded_count,
                 reasons=tuple(sorted(reasons)),
             )
-            stored_after = after
             if before_details is not None:
-                stored_after = DetailedSnapshot(
-                    files=after, selection=before_details.selection, metadata=after_metadata
-                )
                 baseline_id, baseline, skipped = self._baseline(
                     db, started.project_id, before_details.selection
                 )
-                delta = metadata_difference(before_details.metadata, after_metadata)
                 data = receipt.model_dump()
                 data.update(
                     schema_version="2.0",
@@ -377,14 +467,14 @@ class SessionStore(EnrollmentStore):
                 receipt = fit_receipt(ReceiptV2.model_validate(data))
             db.execute(
                 "INSERT INTO snapshots VALUES (?, 'after', ?)",
-                (session_id, checked_bytes(stored_after)),
+                (session_id, stored_after_raw),
             )
             db.execute(
                 "INSERT INTO receipts(session_id, payload) VALUES (?, ?)",
                 (session_id, checked_bytes(receipt)),
             )
             if before_details is not None:
-                append_evolution(db, receipt, before_details, stored_after, key)
+                append_evolution(db, receipt, prepared_before, prepared_after, key)
             db.execute(
                 "UPDATE sessions SET state=? WHERE session_id=?", (receipt.status, session_id)
             )
@@ -425,28 +515,43 @@ class SessionStore(EnrollmentStore):
 
     @staticmethod
     def _hook_token(key, tool, identity):
-        return hmac.new(key, ("forkit-hook-v1\n" + tool + "\n" + identity).encode(), hashlib.sha256).digest()
+        return hmac.new(
+            key, ("forkit-hook-v1\n" + tool + "\n" + identity).encode(), hashlib.sha256
+        ).digest()
 
     def matches_hook(self, entry, tool, identity):
         if entry.started.capture_mode != "official_hook" or entry.started.tool != tool:
             return False
         with self._connect() as db:
-            row = db.execute("SELECT value FROM settings WHERE name=?", ("hook:" + entry.started.session_id,)).fetchone()
-            return bool(row and hmac.compare_digest(row[0], self._hook_token(self._key(db), tool, identity)))
+            row = db.execute(
+                "SELECT value FROM settings WHERE name=?", ("hook:" + entry.started.session_id,)
+            ).fetchone()
+            return bool(
+                row and hmac.compare_digest(row[0], self._hook_token(self._key(db), tool, identity))
+            )
 
     def active_in(self, project: Path) -> SessionEntry | None:
         """Find only the exact selected project binding; never the latest global session."""
         project, identity = select_project(project)
-        raw = checked_bytes(ProjectLocator(path=str(project), device=identity[0], inode=identity[1]))
+        raw = checked_bytes(
+            ProjectLocator(path=str(project), device=identity[0], inode=identity[1])
+        )
         try:
             with self._connect() as db:
-                token = hmac.new(self._key(db), b"forkit-session-project-v1\n" + raw, hashlib.sha256).hexdigest()
-                binding = db.execute("SELECT project_id, locator FROM projects WHERE locator_token=?", (token,)).fetchone()
+                token = hmac.new(
+                    self._key(db), b"forkit-session-project-v1\n" + raw, hashlib.sha256
+                ).hexdigest()
+                binding = db.execute(
+                    "SELECT project_id, locator FROM projects WHERE locator_token=?", (token,)
+                ).fetchone()
                 if binding is None:
                     return None
                 if binding[1] != raw:
                     raise ContractError("project_binding_conflict")
-                row = db.execute("SELECT session_id, project_id, state, started FROM sessions WHERE project_id=? AND state='active'", (binding[0],)).fetchone()
+                row = db.execute(
+                    "SELECT session_id, project_id, state, started FROM sessions WHERE project_id=? AND state='active'",
+                    (binding[0],),
+                ).fetchone()
                 return self._entry(row) if row else None
         except FileNotFoundError:
             return None

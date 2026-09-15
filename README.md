@@ -1,5 +1,24 @@
 # forkit-core
 
+## Forkit Session Receipt · developer beta
+
+**You vibe code. Forkit remembers what changed.**
+
+Session Receipt shows files and supported dependency/tool/model changes after an
+AI coding session, with local Passport history and a comparison to the previous
+session. No Forkit signup for local receipts, history or share cards.
+
+- [Session Receipt source, install and supported platforms](packages/radar/README.md)
+- [Try two sessions](packages/radar/beta-kit/BETA.md)
+- [Capture adapters and limitations](packages/radar/CAPTURE.md)
+- [Privacy and optional count reporting](packages/radar/beta-kit/USAGE.md)
+
+This branch prepares **0.1.0b5**. Source and installers must be published together;
+older public b3 is not the native b5 app. The Mac app is a developer beta with
+ad-hoc signing, not notarized distribution. Linux ARM64 has CLI support; new
+Linux x86_64 validation is pending. Hosted website/account/team services are
+separate from this open-source package.
+
 **Open-source AI passports with deterministic IDs and lineage.**
 
 Portable passports for AI models and agents: deterministic IDs, provenance links, artifact hashes, lineage records, and CI-friendly validation.

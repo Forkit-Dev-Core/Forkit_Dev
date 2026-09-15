@@ -37,7 +37,7 @@ def main():
         wheel_lock(wheels, root / "requirements.lock")
         python = f"{sys.version_info.major}.{sys.version_info.minor}"
         (root / "README.txt").write_text(
-            f"Forkit Session Receipt open-source beta 0.1.0b3\n"
+            f"Forkit Session Receipt open-source beta 0.1.0b5\n"
             f"Platform: {sys.platform} {platform.machine()} | Python {python}\n\n"
             "Start by opening START_HERE.html. Then run: sh install.sh\n"
             "Check prerequisites first: sh install.sh --check\n"
@@ -46,7 +46,9 @@ def main():
             "Installs to ~/.local/share/forkit-radar; command ~/.local/bin/forkit-radar.\n"
             "Existing installations/commands are refused, never overwritten.\n"
             "Use --prefix and --bin-dir for separate custom destinations.\n"
-            "Capture: forkit-radar session run --tool codex -- codex\n"
+            "Installation configures detected tools once. Codex: review Forkit in /hooks, then start a new session.\n"
+            "Open local history: forkit-radar open; on Mac use the installed Finder launcher.\n"
+            "Skip integration: --no-capture. Pause: forkit-radar setup --disable.\n"
             "Review: forkit-radar receipt | forkit-radar history (run separately)\n"
             "Card: forkit-radar card --output receipt.html (open it to save PNG)\n"
             "Local data remains in ~/.forkit-radar. Usage reporting is off until new explicit consent.\n"
@@ -55,8 +57,9 @@ def main():
             "Forkit is Apache-2.0; third-party wheel licenses are retained inside each wheel.\n"
         )
         shutil.copyfile(ROOT / "packages/radar/CAPTURE.md", root / "CAPTURE.md")
+        shutil.copyfile(ROOT / "packages/radar/MACOS.md", root / "MACOS.md")
         kit = ROOT / "packages/radar/beta-kit"
-        for name in ("START_HERE.html", "USAGE.md"):
+        for name in ("START_HERE.html", "USAGE.md", "BETA.md"):
             shutil.copyfile(kit / name, root / name)
         shell = (ROOT / "scripts/install_radar.sh").read_text().replace("FORKIT_REQUIRED_MINOR=''", "FORKIT_REQUIRED_MINOR='" + python + "'").replace("FORKIT_INSTALLER='install_radar.py'", "FORKIT_INSTALLER='install.py'")
         for name in ("install.sh", "Install.command"):

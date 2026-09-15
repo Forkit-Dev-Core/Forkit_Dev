@@ -9,6 +9,7 @@ from typing import Literal
 
 from pydantic import model_validator
 
+from ..branding import card_logo
 from ..contracts import Contract, Counter
 from ..identity.storage import canonical
 from .cards import SCRIPT
@@ -46,7 +47,7 @@ class SummaryCard(Contract):
         return self
 
 
-def project(report, period="week"):
+def project(report, period="today"):
     stats = report["periods"][period]
     # Explicit projection; arbitrary keys, strings, names, IDs and paths cannot
     # flow through from the private report into this independent contract.
@@ -70,6 +71,7 @@ def svg(card):
     def text(x, y, value, size=22, color="#EDEAF8", weight=400):
         parts.append(f'<text x="{x}" y="{y}" fill="{color}" font-size="{size}" font-weight="{weight}" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">{escape(str(value))}</text>')
     text(65, 78, "FORKIT · " + ("TODAY" if card.period == "today" else "THIS WEEK"), 22, "#5AD8D2", 700)
+    parts.append(card_logo())
     text(65, 159, number(card.meaningful_changes), 66, weight=700)
     text(65, 198, "meaningful change events", 25)
     text(65, 237, f"{number(card.receipts)} saved session receipts", 22, "#C2BAD8")
@@ -84,7 +86,7 @@ def svg(card):
         text(x, y, f"{names[key]}  {number(value)}", 22)
     text(65, 487, f"{number(card.partial_receipts)} receipts with partial coverage · counts follow a scoped policy", 17, "#FFCB75")
     text(38, 565, "You vibe code. Forkit remembers.", 29, "#27185F", 700)
-    text(38, 602, "Local history · declared associations · runtime and authorship unverified", 18, "#3E2C74")
+    text(38, 602, "Local history · runtime/authorship unverified · github.com/Forkit-Dev-Core/Forkit_Dev", 16, "#3E2C74")
     return "\n".join(parts + ["</svg>"])
 
 

@@ -2,7 +2,51 @@
 
 Forkit works locally without a Forkit account. It observes changes inside a chosen Git root; it does not authenticate who authored each edit. Keep one active capture per project, or use separate worktrees for concurrent agents.
 
-## 1. Official hooks
+## 1. Install once: user-level automatic capture (b4 candidate)
+
+The b4 installer runs `forkit-radar setup` after installation. It detects supported
+CLI commands and existing allowlisted macOS application metadata without launching
+an agent. It configures detected tools once, without connecting repositories:
+
+```sh
+forkit-radar setup --status
+forkit-radar open
+```
+
+On macOS the installer also creates a local Finder launcher in
+`~/Applications/Forkit Session Receipt.app`. Open it after coding to generate fresh
+private history. This launcher is not a signed, self-contained macOS distribution;
+the installed Python environment is still required. See [MACOS.md](MACOS.md).
+
+User hooks live in `~/.codex/hooks.json`, `~/.claude/settings.json` and
+`~/.cursor/hooks.json`. Explicit `CODEX_HOME` and `CLAUDE_CONFIG_DIR` overrides are
+respected. Existing JSON settings and other hooks are preserved, with private
+backups before replacement. Malformed, unsupported, oversized or unsafe settings
+are left for review. Setup does not change tool policies or disableAllHooks.
+Codex still requires review/trust of the exact new definitions in `/hooks`.
+Restart the coding tool and start a new session; an already-open session has no
+retroactive baseline. Changed definitions need tool review again.
+
+The event's reported working directory selects its nearest physical Git root.
+Root/home directories and broad personal folders are refused; symlinked paths,
+non-Git chats and unsupported remote/background workspaces are not captured.
+There is no scan of home, project registration, process polling, startup daemon,
+cloud signup, invented Passport or AI-authorship claim. Separate projects share
+local history while retaining distinct project identity. One active capture per
+Git root remains the limit; simultaneous agents in one root need separate worktrees.
+The existing project-file, metadata and privacy bounds still apply.
+
+Install another supported coding tool later, then rerun `forkit-radar setup`.
+Use `setup --agent claude-code` or `setup --agent cursor` to select an experimental
+adapter explicitly. Use installer `--no-capture` to omit automatic integration.
+`setup --disable` disables callbacks first and removes only recorded Forkit hook
+definitions. It restores the original config when unchanged, or preserves later
+unrelated edits. History and private config backups are retained. Finish or recover
+an active interval explicitly; disabling capture does not invent an end time.
+`setup --status` checks configuration, not the coding tool's internal trust decision.
+The private app reports the last received callback; it does not imply continuous liveness.
+
+## Project-specific hooks (optional advanced alternative)
 
 Run once inside your Git project:
 

@@ -18,7 +18,19 @@ from ..identity.storage import EnrollmentStore
 from ..jsonio import ContractError, load_json
 from .client import checked_endpoint
 from .contracts import day
-from .usage_contracts import COUNTERS, POLICY, TOOLS, PassportWindow, UsageContribution, UsageDay
+from .usage_contracts import (
+    COUNTERS,
+    ENGAGEMENT_COUNTERS,
+    ENGAGEMENT_POLICY,
+    POLICY,
+    TOOLS,
+    EngagementContribution,
+    EngagementDay,
+    PassportWindow,
+    UsageContribution,
+    UsageDay,
+    read_usage,
+)
 
 
 def root():
@@ -54,7 +66,7 @@ def profile(value):
     try:
         if (
             p["state"] not in {"enabled", "disabled", "withdrawn", "withdrawing"}
-            or p["consent"] != POLICY
+            or p["consent"] not in {POLICY, ENGAGEMENT_POLICY}
         ):
             raise ValueError
         if type(p["allow_local"]) is not bool or type(p["collection_complete"]) is not bool:
@@ -88,8 +100,8 @@ def profile(value):
         }:
             raise ValueError
         if p["pending"] is not None:
-            packet = UsageContribution.model_validate(p["pending"])
-            if packet.sequence != p["sequence"] or packet.audience != p["audience"]:
+            packet = read_usage(p["pending"])
+            if packet.sequence != p["sequence"] or packet.audience != p["audience"] or packet.policy != p["consent"]:
                 raise ValueError
     except (ValueError, TypeError, AttributeError):
         raise ContractError("invalid_usage_profile") from None
@@ -152,7 +164,7 @@ class UsageStore(EnrollmentStore):
             }
 
     def enable(self, endpoint, *, consent, validation=False, allow_local=False, now=None):
-        if consent != POLICY or (allow_local and not validation):
+        if consent not in {POLICY, ENGAGEMENT_POLICY} or (allow_local and not validation):
             raise ContractError("explicit_usage_v2_consent_required")
         if os.environ.get("CI") and not validation:
             raise ContractError("ci_is_not_community_adoption")
@@ -162,6 +174,8 @@ class UsageStore(EnrollmentStore):
             if row:
                 p = self._profile(db)
                 if p["state"] != "withdrawn":
+                    if p['consent'] != consent:
+                        raise ContractError('withdraw_before_changing_usage_policy')
                     if (p["endpoint"], p["allow_local"], p["audience"]) != (
                         endpoint,
                         allow_local,
@@ -187,7 +201,7 @@ class UsageStore(EnrollmentStore):
                 credential=secrets.token_hex(32),
                 sequence=0,
                 last_sent_sequence=0,
-                consent=POLICY,
+                consent=consent,
                 consented_at=int(now if now is not None else time.time()),
                 audience="validation" if validation else "community",
                 last_attempt=0,
@@ -253,10 +267,14 @@ class UsageStore(EnrollmentStore):
                 p["collection_complete"] = False
                 self._save(db, p)
                 return
-            values = {k: 0 for k in COUNTERS}
+            engaged = p['consent'] == ENGAGEMENT_POLICY
+            if kind == 'engagement' and not engaged:
+                return
+            day_type = EngagementDay if engaged else UsageDay
+            values = {k: 0 for k in COUNTERS + (ENGAGEMENT_COUNTERS if engaged else ())}
             values.update(counters)
             sessions = {k.replace("-", "_"): int(k == selected) for k in TOOLS}
-            record = UsageDay(
+            record = day_type(
                 date=when.date().isoformat(),
                 **values,
                 detected_tools=tuple(sorted(set(detected))),
@@ -272,9 +290,13 @@ class UsageStore(EnrollmentStore):
                 db.execute("INSERT INTO seen_passports VALUES(?)", (event_key,))
 
     def contribution(self, db, sequence, *, at=None):
+        p = self._profile(db)
+        engaged = p['consent'] == ENGAGEMENT_POLICY
+        day_type = EngagementDay if engaged else UsageDay
+        counters = COUNTERS + (ENGAGEMENT_COUNTERS if engaged else ())
         end = at or today()
         dates = [(end - timedelta(days=28 - i)).isoformat() for i in range(29)]
-        rows = {d: UsageDay(date=d).model_dump(mode="json") for d in dates}
+        rows = {d: day_type(date=d).model_dump(mode="json") for d in dates}
         passports = {}
         events = db.execute("SELECT day,payload FROM events ORDER BY day").fetchall()
         if len(events) > 10_000:
@@ -291,15 +313,17 @@ class UsageStore(EnrollmentStore):
                 )
             ):
                 raise ContractError("invalid_usage_event")
-            event = UsageDay.model_validate(value["counts"])
+            event = day_type.model_validate(value["counts"])
             if observed != event.date:
                 raise ContractError("invalid_usage_event_date")
             passports.setdefault(observed, set()).update(value["passports"])
             if observed not in rows:
                 continue
             target = rows[observed]
-            for k in COUNTERS:
+            for k in counters:
                 target[k] += getattr(event, k)
+                if k in {'viewed', 'history_viewed'}:
+                    target[k] = min(1, target[k])
             target["detected_tools"] = sorted(
                 set(target["detected_tools"]) | set(event.detected_tools)
             )
@@ -310,13 +334,12 @@ class UsageStore(EnrollmentStore):
             first = (day(d) - timedelta(days=7)).isoformat()
             members = set().union(*(v for k, v in passports.items() if first <= k < d))
             windows.append(PassportWindow(end_exclusive=d, distinct_passports=len(members)))
-        p = self._profile(db)
-        return UsageContribution(
+        return (EngagementContribution if engaged else UsageContribution)(
             audience=p["audience"],
             sequence=sequence,
             generated_on=end.isoformat(),
             collection_complete=p["collection_complete"],
-            days=tuple(UsageDay(**r) for r in rows.values()),
+            days=tuple(day_type(**r) for r in rows.values()),
             passport_windows=tuple(windows),
         )
 

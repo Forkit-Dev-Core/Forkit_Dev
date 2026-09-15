@@ -23,7 +23,7 @@ def main():
             if any(Path(n).is_absolute() or '..' in Path(n).parts for n in archive.namelist()): raise ValueError('unsafe archive')
             archive.extractall(extracted)
         app=root/'app'; bin_dir=root/'bin'; project=root/'project'; project.mkdir()
-        env={k:v for k,v in os.environ.items() if not k.startswith(('FORKIT','PYTHON','PIP_'))}
+        env={k:v for k,v in os.environ.items() if not k.startswith(('FORKIT','PYTHON','PIP_')) and k not in {'CODEX_HOME','CLAUDE_CONFIG_DIR'}}
         env.update(PIP_NO_INDEX='1',PIP_DISABLE_PIP_VERSION_CHECK='1',PIP_CONFIG_FILE=os.devnull,HOME=str(root),FORKIT_USAGE_STORE=str(root/'usage'),PATH=str(Path(sys.executable).parent)+os.pathsep+env.get('PATH',''))
         def run(argv,cwd=project):
             result=subprocess.run([str(x) for x in argv],cwd=cwd,env=env,capture_output=True,text=True)
@@ -31,7 +31,7 @@ def main():
             return result.stdout
         run(['sh','install.sh','--prefix',app,'--bin-dir',bin_dir],extracted/'forkit-session-receipt')
         command=bin_dir/'forkit-radar'; checks.append('offline_hashed_install')
-        assert '0.1.0b3' in run([command,'--version'])
+        assert '0.1.0b5' in run([command,'--version'])
         run(['git','init','-q',project]); (project/'main.py').write_text('value = 1\n')
         run([command,'start','--tool','codex']); (project/'main.py').write_text('value = 2\n')
         receipt=json.loads(run([command,'stop','--json'])); assert len(receipt['file_changes'])==1
@@ -42,7 +42,10 @@ def main():
         model=root/'model-input.json'; model.write_text(json.dumps({'passport_type':'model','name':'Local bundle validation model','version':'1.0','creator':{'name':'Release validation'},'task_type':'code-generation','architecture':'other'}))
         run([command,'passport','create','--input',model,'--output',root/'model.json'])
         checks.append('local_core_passport')
-        run([command,'hooks','setup','--agent','codex']); config=project/'.codex/hooks.json'
+        # Explicit tool selection makes this deterministic even on a CI machine
+        # without Codex. Actual app lifecycle acceptance is a separate check.
+        run([command,'setup','--agent','codex']); config=root/'.codex/hooks.json'
+        assert not (project/'.codex/hooks.json').exists()
         hooks=json.loads(config.read_text())['hooks']; hook_receipts=[]
         for event in ('SessionStart','SessionEnd'):
             if event=='SessionEnd': (project/'main.py').write_text('value = 3\n')
@@ -53,6 +56,18 @@ def main():
         hook=json.loads(run([command,'receipt','--json'])); assert hook['tool_basis']=='hook_reported' and len(hook['file_changes'])==1
         assert b'NEVER_STORED_BUNDLE_MARKER' not in (root/'.forkit-radar/sessions.sqlite3').read_bytes()
         checks.append('installed_hook_callbacks')
+        sub=project/'src'; sub.mkdir()
+        for event in ('SessionStart','SessionEnd'):
+            if event=='SessionEnd': (project/'main.py').write_text('value = 4\n')
+            callback=hooks[event][0]['hooks'][0]['command']
+            data={'session_id':'bundle-second-lifecycle','cwd':str(sub),'hook_event_name':event,'source':'startup'}
+            subprocess.run(callback,shell=True,cwd=sub,env=env,input=json.dumps(data),text=True,check=True,capture_output=True)
+        assert len(json.loads(run([command,'history','--json'])))==3
+        private=json.loads(run([command,'open','--no-browser','--json']))
+        assert Path(private['file']).is_file() and private['account_required'] is False
+        run([command,'setup','--disable'])
+        assert not config.exists() and len(json.loads(run([command,'history','--json'])))==3
+        checks.extend(['global_hooks_no_project_setup','subdirectory_capture','local_app_view','disable_preserves_history'])
         assert not (root/'usage').exists()
         checks.append('reporting_off_no_signup')
     args.output.parent.mkdir(parents=True,exist_ok=True)

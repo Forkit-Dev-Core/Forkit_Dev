@@ -2,17 +2,21 @@ import {MAX_WIRE,keys,integer,date,day,shift,canonical} from './contract.mjs';
 export const COUNTERS=['scans','successful_scans','detection_observations','receipts','during_changes','between_changes','reconstructable_changes','partial_receipts','incomplete_history_receipts','passport_versions_created'];
 export const TOOLS=['codex','claude-code','cursor','other'];
 export const TOOL_FIELDS=TOOLS.map(x=>x.replace('-','_'));
+export const ENGAGEMENT_COUNTERS=['viewed','history_viewed','card_exports'];
 export function validateUsage(p,now,{retained=false}={}) {
+  const engagement=p?.schema_version==='3.0'&&p?.policy==='usage-v3';
+  const counters=engagement?[...COUNTERS,...ENGAGEMENT_COUNTERS]:COUNTERS;
   if(!keys(p,['schema_version','kind','policy','audience','sequence','generated_on','collection_complete','days','passport_windows'])
-    || p.schema_version!=='2.0' || p.kind!=='forkit_usage_contribution' || p.policy!=='usage-v2'
+    || (!engagement&&(p.schema_version!=='2.0'||p.policy!=='usage-v2')) || p.kind!=='forkit_usage_contribution'
     || !['community','validation'].includes(p.audience) || typeof p.collection_complete!=='boolean'
     || !integer(p.sequence,1000000000) || p.sequence<1 || !Array.isArray(p.days) || p.days.length!==29
     || !Array.isArray(p.passport_windows) || p.passport_windows.length!==29)throw new Error('invalid_usage');
   const generated=date(p.generated_on),today=date(day(now));
   if(generated>today || generated<shift(today,retained?-28:-7))throw new Error('invalid_usage_date');
   p.days.forEach((r,i)=>{
-    if(!keys(r,['date',...COUNTERS,'detected_tools','session_tools']) || r.date!==day(shift(generated,i-28))
-      || COUNTERS.some(k=>!integer(r[k])) || !keys(r.session_tools,TOOL_FIELDS) || TOOL_FIELDS.some(k=>!integer(r.session_tools[k]))
+    if(!keys(r,['date',...counters,'detected_tools','session_tools']) || r.date!==day(shift(generated,i-28))
+      || counters.some(k=>!integer(r[k])) || !keys(r.session_tools,TOOL_FIELDS) || TOOL_FIELDS.some(k=>!integer(r.session_tools[k]))
+      || (engagement&&(r.viewed>1||r.history_viewed>r.viewed))
       || !Array.isArray(r.detected_tools) || r.detected_tools.some(t=>!TOOLS.includes(t))
       || JSON.stringify([...new Set(r.detected_tools)].sort())!==JSON.stringify(r.detected_tools)
       || r.successful_scans>r.scans || r.reconstructable_changes>r.during_changes
@@ -59,8 +63,26 @@ export function aggregateUsage(rows,now,{environment='validation',minimumProfile
   const meaningful=cohort(totalChanges.filter(n=>n>0).length)===null?null:totalChanges.reduce((a,b)=>a+b,0);
   const reconstruction=count('reconstructable_changes');
   const incomplete=data.reduce((n,d)=>n+sum(d.month,'incomplete_history_receipts'),0);
+  const yesterday=day(shift(date(end),-1));
+  const daily=data.filter(d=>d.p.generated_on===end);
+  const dailyCount=k=>{
+    const totals=daily.map(d=>d.p.days.find(r=>r.date===yesterday)?.[k]??0);
+    return daily.length<minimumProfiles||cohort(totals.filter(n=>n>0).length)===null?null:totals.reduce((a,b)=>a+b,0);
+  };
+  const engaged=data.filter(d=>d.p.policy==='usage-v3');
+  const viewers=engaged.filter(d=>d.week.some(r=>r.viewed));
+  const repeatViewers=viewers.filter(d=>d.week.filter(r=>r.viewed).length>=2);
+  const engagementComplete=engaged.every(d=>d.p.collection_complete);
+  const cardTotals=engaged.map(d=>sum(d.week,'card_exports'));
   result.metrics={participating_profiles_28_days:profiles.length,total_installs:null,
     receipts_7_days:count('receipts', 'week'),
+    daily_date:yesterday,daily_coverage_profiles:cohort(daily.length),
+    receipts_yesterday:dailyCount('receipts'),during_changes_yesterday:dailyCount('during_changes'),
+    engagement_policy:'usage-v3',engagement_profiles_28_days:cohort(engaged.length),
+    viewing_profiles_7_days:engaged.length>=minimumProfiles?cohort(viewers.length):null,
+    repeat_viewing_profiles_7_days:engaged.length>=minimumProfiles?cohort(repeatViewers.length):null,
+    repeat_view_rate_basis_points:engagementComplete&&viewers.length>=minimumProfiles&&cohort(repeatViewers.length)!==null?Math.floor(repeatViewers.length*10000/viewers.length):null,
+    card_exports_7_days:engaged.length>=minimumProfiles&&cohort(cardTotals.filter(n=>n>0).length)!==null?cardTotals.reduce((a,b)=>a+b,0):null,
     weekly_active_profiles:cohort(active.length),weekly_repeat_profiles:cohort(repeat.length),
     repeat_check_rate_basis_points:complete&&active.length>=minimumProfiles&&cohort(repeat.length)!==null?Math.floor(repeat.length*10000/active.length):null,
     ...Object.fromEntries(COUNTERS.map(k=>[k,count(k)])),meaningful_changes:meaningful,

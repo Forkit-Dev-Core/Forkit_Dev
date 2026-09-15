@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "forkit-radar"
-version = "0.1.0b3"
+version = "0.1.0b5"
 description = "Local evidence and continuity contracts for Forkit Radar"
 readme = "README.md"
 license = "Apache-2.0"
@@ -27,7 +27,7 @@ forkit-radar = "forkit_radar.cli:main"
 packages = ["src/forkit_radar"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src", "tests", "README.md", "CAPTURE.md", "LICENSE", "pyproject.toml"]
+include = ["src", "tests", "README.md", "CAPTURE.md", "MACOS.md", "LICENSE", "pyproject.toml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

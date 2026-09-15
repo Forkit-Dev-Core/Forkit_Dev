@@ -13,6 +13,7 @@ import importlib.util
 import json
 import os
 import platform
+import plistlib
 import re
 import shlex
 import shutil
@@ -22,7 +23,7 @@ import tempfile
 import venv
 from pathlib import Path
 
-PROJECTS = {"forkit_core-0.1.0-py3-none-any.whl", "forkit_radar-0.1.0b3-py3-none-any.whl"}
+PROJECTS = {"forkit_core-0.1.0-py3-none-any.whl", "forkit_radar-0.1.0b5-py3-none-any.whl"}
 
 
 def digest(path):
@@ -93,7 +94,7 @@ def checked_bundle(root):
     if not isinstance(hashes, dict) or not 4 <= len(hashes) <= 40:
         raise ValueError("Invalid bundle file inventory.")
     for name, expected in hashes.items():
-        if name not in {"install.py", "install.sh", "Install.command", "START_HERE.html", "USAGE.md", "CAPTURE.md", "requirements.lock", "README.txt", "LICENSE"} and not re.fullmatch(
+        if name not in {"install.py", "install.sh", "Install.command", "START_HERE.html", "USAGE.md", "BETA.md", "CAPTURE.md", "MACOS.md", "requirements.lock", "README.txt", "LICENSE"} and not re.fullmatch(
             r"wheels/[A-Za-z0-9_.+\-]+\.whl", name
         ):
             raise ValueError("Unexpected bundle file.")
@@ -115,6 +116,60 @@ def checked_bundle(root):
     }:
         raise ValueError("Unexpected bundle wheel contents.")
     return root / "wheels", root / "requirements.lock"
+
+
+def mac_launcher(python, destination):
+    """A local Finder launcher, not a signed or self-contained distribution."""
+    parent = safe_path(destination.parent)
+    if destination.exists() or destination.is_symlink():
+        raise ValueError('The Finder launcher already exists; it was left unchanged.')
+    parent.mkdir(parents=True, exist_ok=True)
+    destination.mkdir(mode=0o700)
+    try:
+        contents = destination / 'Contents'
+        executable = contents / 'MacOS/Forkit'
+        executable.parent.mkdir(parents=True)
+        executable.write_text('#!/bin/sh\nexec ' + shlex.quote(str(python)) + ' -I -m forkit_radar open\n')
+        executable.chmod(0o755)
+        (contents / 'Info.plist').write_bytes(plistlib.dumps({
+            'CFBundleName': 'Forkit Session Receipt', 'CFBundleDisplayName': 'Forkit Session Receipt',
+            'CFBundleIdentifier': 'dev.forkit.sessionreceipt.local', 'CFBundlePackageType': 'APPL',
+            'CFBundleExecutable': 'Forkit', 'CFBundleVersion': '4', 'CFBundleShortVersionString': '0.1.0b5',
+            'LSUIElement': True,
+        }))
+    except Exception:
+        shutil.rmtree(destination)
+        raise
+    return destination
+
+
+def finish_setup(python, args, launcher):
+    command = shlex.quote(str(launcher))
+    if not getattr(args, 'no_capture', False):
+        print('\nSetting up automatic capture for detected coding tools. Local Git projects only; no upload.', flush=True)
+        try:
+            result = subprocess.run([str(python), '-I', '-m', 'forkit_radar', 'setup'], env=environment(),
+                                    stdin=subprocess.DEVNULL, timeout=30)
+            configured = result.returncode == 0
+        except (OSError, subprocess.TimeoutExpired):
+            configured = False
+        if not configured:
+            print('Forkit is installed, but automatic capture needs attention. Run ' + command + ' setup --status.')
+    else:
+        print('Automatic capture was skipped. Enable later with: ' + command + ' setup')
+    if sys.platform == 'darwin' and not getattr(args, 'no_app', False):
+        destination = Path.home() / 'Applications/Forkit Session Receipt.app'
+        try:
+            mac_launcher(python, destination)
+            print('Open Forkit Session Receipt in your Applications folder to see local history.')
+        except (ValueError, OSError):
+            print('Finder launcher needs attention. Open local history with: ' + command + ' open')
+    else:
+        print('Open local history with: ' + command + ' open')
+    print('Codex requires one review of the new Forkit definitions in /hooks. No trust bypass is installed.')
+    print('Then start a new coding session normally. No repository connection or Forkit account.')
+    print('Pause automatic capture: ' + command + ' setup --disable')
+    print('Manual fallback: ' + command + ' start --tool cursor, then ' + command + ' stop')
 
 
 def install(args):
@@ -204,14 +259,9 @@ def install(args):
             shutil.rmtree(prefix)
     print("\nForkit installed locally. No signup, login or shell-profile changes.")
     command = shlex.quote(str(launcher))
-    print("From the root of your Git project:")
-    print(command + " doctor")
-    print(command + " start --tool cursor")
-    print("Work in your editor, then return to that same project and run:")
-    print(command + " stop")
+    finish_setup(python, args, launcher)
     print(command + " history")
     print(command + " card --output receipt.html")
-    print("Use --tool codex, claude-code or other for your selected tool. No AI command was launched.")
     if str(bin_dir) not in os.environ.get("PATH", "").split(os.pathsep):
         print("Use the full command path above, or add this directory to PATH yourself: " + str(bin_dir))
 
@@ -223,6 +273,8 @@ def main():
     parser.add_argument("--wheelhouse", type=Path)
     parser.add_argument("--offline", action="store_true")
     parser.add_argument("--check", action="store_true", help="Check prerequisites and destinations without installing or downloading")
+    parser.add_argument('--no-capture', action='store_true', help='Install without configuring coding-tool hooks')
+    parser.add_argument('--no-app', action='store_true', help='Do not create the macOS Finder launcher')
     args = parser.parse_args()
     try:
         install(args)

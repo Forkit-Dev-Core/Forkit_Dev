@@ -10,7 +10,9 @@ from __future__ import annotations
 import hashlib
 import hmac
 import zlib
+from dataclasses import dataclass
 from functools import lru_cache
+from itertools import pairwise
 from typing import Literal
 
 from ..contracts import Contract, Digest, Identifier, Sequence
@@ -20,7 +22,7 @@ from .details import DetailedSnapshot, Metadata, ReceiptV2
 from .details import difference as metadata_difference
 from .inventory import difference as file_difference
 from .meaningful import POLICY, ChangeCounts, changes, counts
-from .models import Snapshot
+from .models import MAX_FILES, FileState, Snapshot
 
 PROFILE = "session-observed-state-v1"
 MAX_HISTORY = 10_000
@@ -41,7 +43,9 @@ class Event(Contract):
     schema_version: Literal["1.0"] = "1.0"
     kind: Literal["local_session_evolution"] = "local_session_evolution"
     association_basis: Literal["explicit_declared_association"] = "explicit_declared_association"
-    continuity_basis: Literal["local_project_and_selected_scope"] = "local_project_and_selected_scope"
+    continuity_basis: Literal["local_project_and_selected_scope"] = (
+        "local_project_and_selected_scope"
+    )
     authentication: Literal["unsigned_local_record"] = "unsigned_local_record"
     session_id: Identifier
     project_id: Identifier
@@ -79,7 +83,57 @@ def normalized(snapshot: DetailedSnapshot) -> Revision:
         source["reason"] = "normalized_source_state"
     metadata["sources"] = sorted(metadata["sources"], key=lambda s: s["key"])
     metadata["passport"]["reason"] = "captured_core_check"
-    return Revision(files=Snapshot.model_validate(files), metadata=Metadata.model_validate(metadata))
+    return Revision(
+        files=Snapshot.model_validate(files), metadata=Metadata.model_validate(metadata)
+    )
+
+
+def _increasing(values):
+    return all(left < right for left, right in pairwise(values))
+
+
+def is_normalized(revision: Revision) -> bool:
+    """Check the same v1 normal form without rebuilding a second 2000-file model.
+
+    The caller first validates Revision's schema, including uniqueness. Only
+    fields transformed by normalized() need these additional profile checks.
+    """
+    files, metadata = revision.files, revision.metadata
+    return (
+        files.excluded_count == 0
+        and not files.reasons
+        and _increasing(f.path for f in files.files)
+        and _increasing(files.unknown_paths)
+        and _increasing(s.key for s in metadata.sources)
+        and metadata.passport.reason == "captured_core_check"
+        and all(
+            source.reason == "normalized_source_state" and _increasing(f.key for f in source.facts)
+            for source in metadata.sources
+        )
+    )
+
+
+@lru_cache(maxsize=MAX_FILES * 4)
+def _canonical_file(file: FileState) -> bytes:
+    # FileState is validated and frozen. Cache pure encoded records, never
+    # filesystem reads/stat results; a changed fingerprint is a different key.
+    return canonical(file)
+
+
+def _canonical_revision(revision: Revision) -> bytes:
+    """Reuse the existing canonical serializer for every byte of the revision.
+
+    Only the large file array is assembled from independently canonical objects.
+    Its schema location must be unambiguous; future ambiguous schemas fall back
+    to the whole-record serializer. Array ordering and all other fields remain.
+    """
+    empty = revision.model_copy(update={"files": revision.files.model_copy(update={"files": ()})})
+    raw = canonical(empty)
+    marker = b'"files":[]'
+    if raw.count(marker) != 1:
+        return canonical(revision)
+    files = b",".join(_canonical_file(file) for file in revision.files.files)
+    return raw.replace(marker, b'"files":[' + files + b"]", 1)
 
 
 def unpack(raw: bytes) -> bytes:
@@ -102,25 +156,46 @@ def unpack(raw: bytes) -> bytes:
         raise ContractError("invalid_revision_compression") from None
 
 
-def _store_revision(db, project_id, scope, snapshot):
+@dataclass(frozen=True)
+class PreparedRevision:
+    """Checked immutable endpoint bytes, prepared before taking the DB writer."""
+
+    value: Revision
+    scope: bytes
+    raw: bytes
+    identity: str
+    compressed: bytes
+
+
+def prepare(snapshot: DetailedSnapshot) -> PreparedRevision:
     from .storage import checked_bytes
 
     revision = normalized(snapshot)
     raw = checked_bytes(revision)
     identity = digest("forkit-session-revision-v1", raw)
+    return PreparedRevision(
+        value=revision,
+        scope=canonical(snapshot.selection.model_copy(update={"passport_id": None})),
+        raw=raw,
+        identity=identity,
+        compressed=zlib.compress(raw),
+    )
+
+
+def _store_revision(db, project_id, scope, prepared: PreparedRevision):
     previous = db.execute(
         "SELECT payload FROM observed_revisions WHERE project_id=? AND scope_token=? AND digest=?",
-        (project_id, scope, identity),
+        (project_id, scope, prepared.identity),
     ).fetchone()
     if previous:
-        if unpack(previous[0]) != raw:
+        if unpack(previous[0]) != prepared.raw:
             raise ContractError("revision_content_conflict")
     else:
         db.execute(
             "INSERT INTO observed_revisions VALUES (?, ?, ?, ?)",
-            (project_id, scope, identity, zlib.compress(raw)),
+            (project_id, scope, prepared.identity, prepared.compressed),
         )
-    return identity
+    return prepared.identity
 
 
 def read_event(row):
@@ -130,21 +205,21 @@ def read_event(row):
         raise ContractError("evolution_record_missing")
     session_id, project_id, scope, identity, raw = row
     event = read(Event, raw)
-    if (
-        (event.session_id, event.project_id, event.scope_token) != (session_id, project_id, scope)
-        or digest("forkit-session-event-v1", raw) != identity
-    ):
+    if (event.session_id, event.project_id, event.scope_token) != (
+        session_id,
+        project_id,
+        scope,
+    ) or digest("forkit-session-event-v1", raw) != identity:
         raise ContractError("evolution_record_mismatch")
     return event, identity
 
 
-def append(db, receipt: ReceiptV2, before: DetailedSnapshot, after: DetailedSnapshot, key: bytes):
+def append(db, receipt: ReceiptV2, before: PreparedRevision, after: PreparedRevision, key: bytes):
     from .storage import checked_bytes, read
 
     scope = hmac.new(
         key,
-        b"forkit-session-evolution-scope-v1\n"
-        + canonical(before.selection.model_copy(update={"passport_id": None})),
+        b"forkit-session-evolution-scope-v1\n" + before.scope,
         hashlib.sha256,
     ).hexdigest()
     head = db.execute(
@@ -153,11 +228,16 @@ def append(db, receipt: ReceiptV2, before: DetailedSnapshot, after: DetailedSnap
     ).fetchone()
     prior, prior_digest = None, None
     if head:
-        prior, prior_digest = read_event(db.execute(
-            "SELECT session_id, project_id, scope_token, digest, payload FROM session_evolution WHERE session_id=?",
-            (head[0],),
-        ).fetchone())
-        if prior_digest != head[1] or (prior.project_id, prior.scope_token) != (receipt.project_id, scope):
+        prior, prior_digest = read_event(
+            db.execute(
+                "SELECT session_id, project_id, scope_token, digest, payload FROM session_evolution WHERE session_id=?",
+                (head[0],),
+            ).fetchone()
+        )
+        if prior_digest != head[1] or (prior.project_id, prior.scope_token) != (
+            receipt.project_id,
+            scope,
+        ):
             raise ContractError("evolution_head_mismatch")
     count = db.execute(
         "SELECT COUNT(*) FROM session_evolution WHERE project_id=? AND scope_token=?",
@@ -165,7 +245,7 @@ def append(db, receipt: ReceiptV2, before: DetailedSnapshot, after: DetailedSnap
     ).fetchone()[0]
     if count != (prior.sequence if prior else 0):
         raise ContractError("evolution_chain_gap")
-    left, right = normalized(before), normalized(after)
+    left, right = before.value, after.value
     during_counts = interval_counts(left, right)
     between_counts = None
     if prior and receipt.previous_session_id == prior.session_id:
@@ -180,7 +260,9 @@ def append(db, receipt: ReceiptV2, before: DetailedSnapshot, after: DetailedSnap
             raise ContractError("revision_digest_mismatch")
         between_counts = interval_counts(read(Revision, previous_raw), left)
     event = Event(
-        session_id=receipt.session_id, project_id=receipt.project_id, scope_token=scope,
+        session_id=receipt.session_id,
+        project_id=receipt.project_id,
+        scope_token=scope,
         sequence=count + 1,
         receipt_digest=digest("forkit-session-receipt-v1", checked_bytes(receipt)),
         before_revision=_store_revision(db, receipt.project_id, scope, before),
@@ -189,13 +271,21 @@ def append(db, receipt: ReceiptV2, before: DetailedSnapshot, after: DetailedSnap
         previous_event_digest=prior_digest,
         previous_after_revision=prior.after_revision if prior else None,
         previous_project_session_id=receipt.previous_session_id,
-        during_counts=during_counts, between_counts=between_counts,
+        during_counts=during_counts,
+        between_counts=between_counts,
     )
     raw = checked_bytes(event)
     identity = digest("forkit-session-event-v1", raw)
-    db.execute("INSERT INTO session_evolution VALUES (?, ?, ?, ?, ?)", (
-        event.session_id, event.project_id, scope, identity, raw,
-    ))
+    db.execute(
+        "INSERT INTO session_evolution VALUES (?, ?, ?, ?, ?)",
+        (
+            event.session_id,
+            event.project_id,
+            scope,
+            identity,
+            raw,
+        ),
+    )
     db.execute(
         "INSERT INTO evolution_heads VALUES (?, ?, ?, ?) ON CONFLICT(project_id, scope_token) DO UPDATE SET session_id=excluded.session_id, digest=excluded.digest",
         (event.project_id, scope, event.session_id, identity),
@@ -216,25 +306,32 @@ def verify(db):
     upgraded = db.execute("PRAGMA user_version").fetchone()[0] == 2
     events, heads, last = {}, {}, {}
     if upgraded:
-        rows = db.execute("SELECT session_id, project_id, scope_token, digest, payload FROM session_evolution").fetchall()
+        rows = db.execute(
+            "SELECT session_id, project_id, scope_token, digest, payload FROM session_evolution"
+        ).fetchall()
         if len(rows) > MAX_HISTORY:
             raise ContractError("evolution_history_limit")
         events = {row[0]: row for row in rows}
         heads = {(p, s): (sid, d) for p, s, sid, d in db.execute("SELECT * FROM evolution_heads")}
-        for sid, p, s, d in db.execute("SELECT e.session_id, e.project_id, e.scope_token, e.digest FROM session_evolution e JOIN receipts r USING(session_id) ORDER BY r.ordinal"):
+        for sid, p, s, d in db.execute(
+            "SELECT e.session_id, e.project_id, e.scope_token, e.digest FROM session_evolution e JOIN receipts r USING(session_id) ORDER BY r.ordinal"
+        ):
             last[p, s] = (sid, d)
 
     @lru_cache(maxsize=16)
     def revision(project, scope, identity):
-        row = db.execute("SELECT payload FROM observed_revisions WHERE project_id=? AND scope_token=? AND digest=?", (project, scope, identity)).fetchone()
+        row = db.execute(
+            "SELECT payload FROM observed_revisions WHERE project_id=? AND scope_token=? AND digest=?",
+            (project, scope, identity),
+        ).fetchone()
         if row is None:
             raise ContractError("revision_missing")
         raw = unpack(row[0])
         if digest("forkit-session-revision-v1", raw) != identity:
             raise ContractError("revision_digest_mismatch")
-        result = read(Revision, raw)
+        result = read(Revision, raw, encoder=_canonical_revision)
         # Enforce the normalization profile, including semantic set ordering.
-        if normalized(DetailedSnapshot(files=result.files, metadata=result.metadata, selection={} )) != result:
+        if not is_normalized(result):
             raise ContractError("revision_not_normalized")
         return result
 
@@ -244,12 +341,26 @@ def verify(db):
     ):
         receipt = read_receipt(raw)
         from .models import Started
+
         started = read(Started, started_raw)
         if (receipt.session_id, receipt.project_id, receipt.status) != (sid, pid, state) or (
-            started.session_id, started.project_id, started.tool, started.capture_mode, started.started_at
+            started.session_id,
+            started.project_id,
+            started.tool,
+            started.capture_mode,
+            started.started_at,
         ) != (sid, pid, receipt.tool, receipt.capture_mode, receipt.started_at):
             raise ContractError("invalid_receipt_projection")
-        result = {"status": "unavailable", "reason": "legacy_receipt_no_retained_evolution", "event": None, "before": None, "after": None, "gap_before": None}
+        result = {
+            "status": "unavailable",
+            "reason": "legacy_receipt_no_retained_evolution",
+            "event": None,
+            "before": None,
+            "after": None,
+            "gap_before": None,
+            "interval": None,
+            "gap_interval": None,
+        }
         row = events.get(sid)
         if row:
             scope_key = (row[1], row[2])
@@ -258,12 +369,22 @@ def verify(db):
             try:
                 event, identity = read_event(row)
                 result["event"] = event
-                expected_previous = (previous[0], previous[1], previous[2], previous[3] + 1) if previous else (None, None, None, 1)
+                expected_previous = (
+                    (previous[0], previous[1], previous[2], previous[3] + 1)
+                    if previous
+                    else (None, None, None, 1)
+                )
                 if (
                     (event.project_id, event.session_id) != (pid, sid)
-                    or
-                    (event.previous_session_id, event.previous_event_digest, event.previous_after_revision, event.sequence) != expected_previous
-                    or previous and not previous[4]
+                    or (
+                        event.previous_session_id,
+                        event.previous_event_digest,
+                        event.previous_after_revision,
+                        event.sequence,
+                    )
+                    != expected_previous
+                    or previous
+                    and not previous[4]
                     or heads.get(scope_key) != last.get(scope_key)
                     or event.previous_project_session_id != receipt.previous_session_id
                     or receipt.previous_session_id != prior_project.get(pid)
@@ -275,39 +396,88 @@ def verify(db):
                 after = revision(pid, event.scope_token, event.after_revision)
                 if not isinstance(receipt, ReceiptV2):
                     raise ContractError("evolution_requires_detailed_receipt")
-                for recorded, captured in ((before.metadata.passport, receipt.passport_before), (after.metadata.passport, receipt.passport_after)):
-                    if recorded.model_dump(exclude={"reason"}) != captured.model_dump(exclude={"reason"}):
+                for recorded, captured in (
+                    (before.metadata.passport, receipt.passport_before),
+                    (after.metadata.passport, receipt.passport_after),
+                ):
+                    if recorded.model_dump(exclude={"reason"}) != captured.model_dump(
+                        exclude={"reason"}
+                    ):
                         raise ContractError("passport_endpoint_mismatch")
-                file_changes, unknown, complete = file_difference(before.files, after.files)
-                if file_changes != receipt.file_changes or unknown != receipt.unknown_count or (
-                    receipt.outcome != "recovered" and receipt.comparison != ("complete" if complete else "partial")
+                during = interval(before, after)
+                file_changes, delta, unknown, complete = during
+                if (
+                    file_changes != receipt.file_changes
+                    or unknown != receipt.unknown_count
+                    or (
+                        receipt.outcome != "recovered"
+                        and receipt.comparison != ("complete" if complete else "partial")
+                    )
                 ):
                     raise ContractError("file_endpoint_mismatch")
-                delta = metadata_difference(before.metadata, after.metadata)
-                reduced = any(c.after_reason == "receipt_detail_limit" for c in receipt.metadata.coverage)
-                if delta.passport_change != receipt.metadata.passport_change or not reduced and (
-                    delta.changes != receipt.metadata.changes
-                    or [c.model_dump(exclude={"before_reason", "after_reason"}) for c in delta.coverage]
-                    != [c.model_dump(exclude={"before_reason", "after_reason"}) for c in receipt.metadata.coverage]
+                reduced = any(
+                    c.after_reason == "receipt_detail_limit" for c in receipt.metadata.coverage
+                )
+                if (
+                    delta.passport_change != receipt.metadata.passport_change
+                    or not reduced
+                    and (
+                        delta.changes != receipt.metadata.changes
+                        or [
+                            c.model_dump(exclude={"before_reason", "after_reason"})
+                            for c in delta.coverage
+                        ]
+                        != [
+                            c.model_dump(exclude={"before_reason", "after_reason"})
+                            for c in receipt.metadata.coverage
+                        ]
+                    )
                 ):
                     raise ContractError("metadata_endpoint_mismatch")
-                if interval_counts(before, after) != event.during_counts:
+                if _counts_for_interval(before, after, during) != event.during_counts:
                     raise ContractError("evolution_count_mismatch")
-                result.update(status="consistent", reason="retained_local_evidence_checked", before=before, after=after)
+                result.update(
+                    status="consistent",
+                    reason="retained_local_evidence_checked",
+                    before=before,
+                    after=after,
+                    interval=during,
+                )
                 if previous and receipt.previous_session_id == previous[0]:
-                    result["gap_before"] = revision(pid, event.scope_token, event.previous_after_revision)
-                    if interval_counts(result["gap_before"], before) != event.between_counts:
+                    result["gap_before"] = revision(
+                        pid, event.scope_token, event.previous_after_revision
+                    )
+                    gap = interval(result["gap_before"], before)
+                    if (
+                        _counts_for_interval(result["gap_before"], before, gap)
+                        != event.between_counts
+                    ):
                         raise ContractError("evolution_count_mismatch")
+                    result["gap_interval"] = gap
                 elif event.between_counts is not None:
                     raise ContractError("unexpected_gap_counts")
                 valid = True
             except (ValueError, TypeError) as error:
                 if str(error) in {"evolution_count_mismatch", "unexpected_gap_counts"}:
                     result["event"] = None
-                result.update(status="broken", reason="missing_or_inconsistent_local_evidence", before=None, after=None, gap_before=None)
+                result.update(
+                    status="broken",
+                    reason="missing_or_inconsistent_local_evidence",
+                    before=None,
+                    after=None,
+                    gap_before=None,
+                    interval=None,
+                    gap_interval=None,
+                )
             # Retain the expected predecessor even when its content is broken.
             event = result["event"]
-            prior_scope[scope_key] = (sid, row[3], event.after_revision if event else None, event.sequence if event else 0, valid)
+            prior_scope[scope_key] = (
+                sid,
+                row[3],
+                event.after_revision if event else None,
+                event.sequence if event else 0,
+                valid,
+            )
         elif upgraded:
             # An absent event with a head pointing to it cannot be mistaken for
             # old data. Descendants will also fail their predecessor checks.
@@ -324,5 +494,11 @@ def interval(before: Revision, after: Revision):
 
 
 def interval_counts(before: Revision, after: Revision):
-    files, delta, _unknown, _complete = interval(before, after)
-    return ChangeCounts(**counts(changes(files, delta, before.metadata.passport, after.metadata.passport)))
+    return _counts_for_interval(before, after, interval(before, after))
+
+
+def _counts_for_interval(before: Revision, after: Revision, calculated):
+    files, delta, _unknown, _complete = calculated
+    return ChangeCounts(
+        **counts(changes(files, delta, before.metadata.passport, after.metadata.passport))
+    )

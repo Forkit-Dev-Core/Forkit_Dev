@@ -1,17 +1,18 @@
 """Create reviewable official project hooks; callbacks are local and quiet."""
 from __future__ import annotations
 
+import argparse
 import json
 import shlex
 import sys
 from pathlib import Path
 
-from . import claude_code, codex, cursor
 from ..identity.storage import write_new
-from ..jsonio import ContractError, MAX_DOCUMENT_BYTES
+from ..jsonio import MAX_DOCUMENT_BYTES, ContractError
 from ..sessions.cli import selected
 from ..sessions.inventory import select_project
 from ..sessions.storage import SessionStore
+from . import claude_code, codex, cursor
 
 ADAPTERS = {'codex': codex, 'claude-code': claude_code, 'cursor': cursor}
 CONFIG = {'codex': '.codex/hooks.json', 'claude-code': '.claude/settings.local.json', 'cursor': '.cursor/hooks.json'}
@@ -20,6 +21,9 @@ CONFIG = {'codex': '.codex/hooks.json', 'claude-code': '.claude/settings.local.j
 def configure(commands):
     parser = commands.add_parser('hooks', help='Set up official automatic session hooks in one Git project; no account')
     actions = parser.add_subparsers(dest='hook_action', required=True)
+    automatic = actions.add_parser('auto', help=argparse.SUPPRESS)
+    automatic.add_argument('--agent', choices=tuple(ADAPTERS), required=True)
+    automatic.add_argument('--store', type=Path, required=True)
     for action in ('setup', 'print', 'receive'):
         command = actions.add_parser(action, help='Print configuration for review/merging' if action == 'print' else None)
         command.add_argument('--agent', choices=tuple(ADAPTERS), required=True)
@@ -31,7 +35,7 @@ def configure(commands):
 
 
 def configuration(args, project):
-    argv = [sys.executable, '-m', 'forkit_radar', 'hooks', 'receive', '--agent', args.agent,
+    argv = [sys.executable, '-I', '-m', 'forkit_radar', 'hooks', 'receive', '--agent', args.agent,
             '--project', str(project), '--store', str(args.store.absolute())]
     for name in ('agent_manifest', 'registry', 'passport_id'):
         value = getattr(args, name)
@@ -50,26 +54,57 @@ def receive(args, raw):
     project, _ = select_project(args.project)
     action, identity = ADAPTERS[args.agent].parse(raw, project)
     if action == 'ignore':
-        return
+        return 'ignored'
     store = SessionStore(args.store)
+    if action == 'start':
+        if store.root == project or project in store.root.parents:
+            raise ContractError('session_store_must_be_outside_project')
+        store.initialize()
     current = store.active_in(project)
     if current:
         # Match an exact agent + private external-session token. Never stop a
         # wrapper/manual receipt or another concurrent agent's interval.
         if not store.matches_hook(current, args.agent, identity):
+            if store.active_in(project) is None:
+                return 'no_active_capture'  # Another end committed since the read.
             raise ContractError('another_capture_active_use_wrapper_or_separate_worktree')
         if action == 'start':
-            return  # duplicate SessionStart; compact does not reset the baseline
-        receipt = store.finish(current.started.session_id, outcome='hook_end')
+            return 'duplicate'  # compact does not reset the baseline
+        try:
+            receipt = store.finish(current.started.session_id, outcome='hook_end')
+        except ContractError as error:
+            if str(error) != 'session_already_finished':
+                raise
+            return 'duplicate'  # Exact token matched before another end won.
         from ..reporting.usage_capture import safely_record
         safely_record('receipt', store, receipt)
+        return 'receipt_saved'
     elif action == 'start':
-        store.start(project, tool=args.agent, mode='official_hook', selection=selected(args), hook_identity=identity)
+        if getattr(args, 'automatic_selection', False):
+            from ..sessions.associations import selection_for
+            choice = selection_for(args.store, project)
+        else:
+            choice = selected(args)
+        try:
+            store.start(project, tool=args.agent, mode='official_hook', selection=choice, hook_identity=identity)
+        except ContractError as error:
+            if str(error) != 'active_session_exists_stop_or_recover_it':
+                raise
+            winner = store.active_in(project)
+            if winner is None or not store.matches_hook(winner, args.agent, identity):
+                raise
+            return 'duplicate'  # Concurrent delivery of the same start only.
+        return 'capture_started'
     # A duplicate/end-without-start never creates a retroactive receipt.
+    return 'no_active_capture'
 
 
 def command(args):
     try:
+        if args.hook_action == 'auto':
+            from .automatic import automatic_receive
+            automatic_receive(args.agent, args.store, sys.stdin.buffer.read(MAX_DOCUMENT_BYTES + 1))
+            return 0
         args.project = args.project or Path.cwd()
         args.store = args.store or Path.home() / '.forkit-radar'
         if args.hook_action == 'receive':

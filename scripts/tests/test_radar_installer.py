@@ -33,6 +33,32 @@ def test_existing_app_never_modified(installer, tmp_path):
     assert (destination / "keep").read_text() == "original"
 
 
+def test_mac_launcher_uses_installed_python_without_shell_interpolation(installer, tmp_path):
+    import plistlib
+    import shlex
+    destination = tmp_path / 'Applications/Forkit Session Receipt.app'
+    python = tmp_path / "python ' space $(never-executed)"
+    installer.mac_launcher(python, destination)
+    command = destination / 'Contents/MacOS/Forkit'
+    assert command.stat().st_mode & 0o777 == 0o755
+    assert shlex.split(command.read_text().splitlines()[1]) == ['exec', str(python), '-I', '-m', 'forkit_radar', 'open']
+    plist = plistlib.loads((destination / 'Contents/Info.plist').read_bytes())
+    assert plist['CFBundleExecutable'] == 'Forkit'
+    assert not any('UsageDescription' in key for key in plist)
+    before = command.read_bytes()
+    with pytest.raises(ValueError, match='already exists'):
+        installer.mac_launcher(python, destination)
+    assert command.read_bytes() == before
+
+
+def test_skipped_capture_does_not_mutate_tool_configuration(installer, tmp_path, monkeypatch):
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError('setup or launcher attempted')
+    monkeypatch.setattr(installer.subprocess, 'run', forbidden)
+    monkeypatch.setattr(installer, 'mac_launcher', forbidden)
+    installer.finish_setup(tmp_path/'python', args(tmp_path, no_capture=True, no_app=True), tmp_path/'forkit')
+
+
 @pytest.mark.parametrize("kind", ["file", "symlink", "broken_symlink"])
 def test_existing_command_never_replaced(installer, tmp_path, kind):
     directory = tmp_path / "bin"

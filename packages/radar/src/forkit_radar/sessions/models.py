@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unicodedata
+from functools import lru_cache
 from pathlib import PurePosixPath
 from typing import Annotated, Literal, TypeVar
 
@@ -22,7 +23,10 @@ TOOL_NAMES = {
 }
 
 
+@lru_cache(maxsize=MAX_FILES * 4)
 def safe_relative(value: str) -> str:
+    # Cache only pure string validation, never filesystem state or contents.
+    # Repeated endpoint validation in one short-lived hook uses the same paths.
     path = PurePosixPath(value)
     if (
         not value

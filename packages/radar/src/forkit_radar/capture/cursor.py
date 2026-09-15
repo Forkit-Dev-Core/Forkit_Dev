@@ -1,6 +1,6 @@
 """Cursor local single-workspace lifecycle; fire-and-forget baseline is partial."""
-from .common import envelope
 from ..jsonio import ContractError
+from .common import envelope
 
 
 def parse(raw, project):

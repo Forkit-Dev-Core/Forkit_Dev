@@ -15,7 +15,7 @@ from pydantic import TypeAdapter
 from ..contracts import Identifier
 from ..jsonio import ContractError
 from .details import ReceiptV2
-from .evolution import interval, verify
+from .evolution import verify
 from .meaningful import CATEGORIES, POLICY, changes, counts
 
 
@@ -92,11 +92,11 @@ def _record(receipt, check, tz):
         gap = changes(prior.file_changes, prior.metadata)
         gap_status = "saved_adjacent_comparison_evidence_unavailable"
     if before and after:
-        file_changes, delta, _unknown, _complete = interval(before, after)
+        file_changes, delta, _unknown, _complete = check["interval"]
         events = changes(file_changes, delta, before.metadata.passport, after.metadata.passport)
         if check["gap_before"]:
             gap_before = check["gap_before"]
-            files, metadata, unknown, complete = interval(gap_before, before)
+            files, metadata, unknown, complete = check["gap_interval"]
             gap = changes(files, metadata, gap_before.metadata.passport, before.metadata.passport)
             gap_status = "complete" if complete and not unknown and metadata.status() == "complete" else "partial"
     trace = "complete"
@@ -159,7 +159,7 @@ def build(store, *, timezone_name=None, at=None, limit=200, project_id=None):
     total, future, project_ids = 0, 0, set()
     active = []
     try:
-        with store._connect() as db:
+        with store.history_connection() as db:
             for receipt, check in verify(db):
                 if project_id and receipt.project_id != project_id:
                     continue

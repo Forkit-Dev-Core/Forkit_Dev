@@ -1,6 +1,7 @@
 """Allowlisted lifecycle envelope; everything else is discarded in memory."""
-from pathlib import Path
 import re
+from pathlib import Path
+
 from ..jsonio import ContractError, load_json
 
 

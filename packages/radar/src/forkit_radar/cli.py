@@ -37,6 +37,10 @@ def main(argv: list[str] | None = None) -> int:
     from .onboarding import configure as configure_onboarding
 
     configure_onboarding(commands)
+    from .capture.automatic import configure as configure_automatic
+    from .local_app import configure as configure_local_app
+    configure_automatic(commands)
+    configure_local_app(commands)
     schema = commands.add_parser("schema", help="Print a versioned JSON shape schema")
     schema.add_argument("contract")
     validate = commands.add_parser(
@@ -131,6 +135,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "hooks":
         from .capture.cli import command as hooks_command
         return hooks_command(args)
+    if args.command == 'setup':
+        from .capture.automatic import command as automatic_command
+        return automatic_command(args)
+    if args.command == 'open':
+        from .local_app import command as open_command
+        return open_command(args)
     if args.command == "doctor":
         from .onboarding import doctor_command
 
