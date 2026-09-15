@@ -234,6 +234,7 @@ class SessionStore(EnrollmentStore):
         mode: str = "manual",
         selection: Selection | None = None,
         hook_identity: str | None = None,
+        observe_activity: bool = False,
     ) -> tuple[Started, Snapshot]:
         selection = Selection.model_validate(selection or Selection())
         project, identity = select_project(project)
@@ -303,6 +304,10 @@ class SessionStore(EnrollmentStore):
                 db.execute(
                     "INSERT INTO settings VALUES (?, ?)", ("hook:" + started.session_id, hook_token)
                 )
+                if observe_activity:
+                    from ..capture.activity import initial_bytes
+                    db.execute("INSERT INTO settings VALUES (?, ?)",
+                               ("activity:" + started.session_id, initial_bytes()))
             if not row:
                 db.execute("INSERT INTO projects VALUES (?, ?, ?)", (project_id, token, raw))
             db.execute(

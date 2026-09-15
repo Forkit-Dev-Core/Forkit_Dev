@@ -37,9 +37,9 @@ def main():
         wheel_lock(wheels, root / "requirements.lock")
         python = f"{sys.version_info.major}.{sys.version_info.minor}"
         (root / "README.txt").write_text(
-            f"Forkit Session Receipt open-source beta 0.1.0b5\n"
+            f"Forkit Session Receipt open-source beta 0.1.0b6\n"
             f"Platform: {sys.platform} {platform.machine()} | Python {python}\n\n"
-            "Start by opening START_HERE.html. Then run: sh install.sh\n"
+            "Start by opening START_HERE.html. Then run: sh install.sh --no-app\n"
             "Check prerequisites first: sh install.sh --check\n"
             "macOS: Install.command is a convenience launcher, not a signed app.\n"
             "No network, account or login required. Requires a compatible Python with venv/pip.\n"
@@ -47,7 +47,7 @@ def main():
             "Existing installations/commands are refused, never overwritten.\n"
             "Use --prefix and --bin-dir for separate custom destinations.\n"
             "Installation configures detected tools once. Codex: review Forkit in /hooks, then start a new session.\n"
-            "Open local history: forkit-radar open; on Mac use the installed Finder launcher.\n"
+            "Open local history: ~/.local/bin/forkit-radar open; rerun after new receipts.\n"
             "Skip integration: --no-capture. Pause: forkit-radar setup --disable.\n"
             "Review: forkit-radar receipt | forkit-radar history (run separately)\n"
             "Card: forkit-radar card --output receipt.html (open it to save PNG)\n"

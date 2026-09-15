@@ -166,6 +166,8 @@ def build(store, *, timezone_name=None, at=None, limit=200, project_id=None):
                 total += 1
                 project_ids.add(receipt.project_id)
                 record = _record(receipt, check, tz)
+                from ..capture.activity import view as activity_view
+                record['activity'] = activity_view(db, receipt.session_id)
                 displayed.append(record)
                 add(periods["history"], record)
                 if utc(receipt.finished_at) > current:

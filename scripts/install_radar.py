@@ -23,7 +23,7 @@ import tempfile
 import venv
 from pathlib import Path
 
-PROJECTS = {"forkit_core-0.1.0-py3-none-any.whl", "forkit_radar-0.1.0b5-py3-none-any.whl"}
+PROJECTS = {"forkit_core-0.1.0-py3-none-any.whl", "forkit_radar-0.1.0b6-py3-none-any.whl"}
 
 
 def digest(path):
@@ -134,7 +134,7 @@ def mac_launcher(python, destination):
         (contents / 'Info.plist').write_bytes(plistlib.dumps({
             'CFBundleName': 'Forkit Session Receipt', 'CFBundleDisplayName': 'Forkit Session Receipt',
             'CFBundleIdentifier': 'dev.forkit.sessionreceipt.local', 'CFBundlePackageType': 'APPL',
-            'CFBundleExecutable': 'Forkit', 'CFBundleVersion': '4', 'CFBundleShortVersionString': '0.1.0b5',
+            'CFBundleExecutable': 'Forkit', 'CFBundleVersion': '4', 'CFBundleShortVersionString': '0.1.0b6',
             'LSUIElement': True,
         }))
     except Exception:

@@ -82,4 +82,4 @@ def test_version_does_not_import_optional_verifiers(capsys, monkeypatch):
     with pytest.raises(SystemExit) as exit_status:
         main(["--version"])
     assert exit_status.value.code == 0
-    assert capsys.readouterr().out.strip() == "forkit-radar 0.1.0b5"
+    assert capsys.readouterr().out.strip() == "forkit-radar 0.1.0b6"

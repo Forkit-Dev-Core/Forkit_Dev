@@ -5,6 +5,8 @@ from .common import envelope
 
 def parse(raw, project):
     data, identity = envelope(raw, project)
+    if data.get('hook_event_name') in {'PostToolUse', 'PostToolUseFailure'}:
+        return 'activity', identity
     if data.get('hook_event_name') == 'SessionStart':
         if data.get('source') == 'compact':
             return 'ignore', identity

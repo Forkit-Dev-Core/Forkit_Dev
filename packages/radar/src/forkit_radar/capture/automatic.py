@@ -65,18 +65,26 @@ def save(root, value):
     files.replace(path, encode(value), expected=files.read(path, private=True))
 
 
-def groups(agent, root, executable=None):
+def groups(agent, root, executable=None, *, activity=False):
     python = Path(executable or sys.executable)
     # Normalize directory aliases such as macOS /tmp -> /private/tmp, without
     # resolving the final Python symlink out of a virtual environment.
     python = python.parent.resolve() / python.name
     command = shlex.join([str(python), '-I', '-B', '-m', 'forkit_radar', 'hooks', 'auto', '--agent', agent, '--store', str(root)])
     if agent == 'cursor':
-        return {event: [{'command': command}] for event in ('sessionStart', 'sessionEnd')}
-    return {
+        owned = {event: [{'command': command}] for event in ('sessionStart', 'sessionEnd')}
+    else:
+        owned = {
         'SessionStart': [{'matcher': '^(startup|resume|clear)$', 'hooks': [{'type': 'command', 'command': command, 'timeout': 10}]}],
         'SessionEnd': [{'hooks': [{'type': 'command', 'command': command, 'timeout': 3 if agent == 'codex' else 10}]}],
-    }
+        }
+    if activity:
+        from .activity import EVENTS
+        for event in EVENTS[agent]:
+            matcher = {'codex': '^mcp__', 'claude-code': '^(WebFetch|WebSearch|mcp__.*)$', 'cursor': '^(MCP:|mcp__)'}[agent]
+            owned[event] = ([{'command': command, 'matcher': matcher}] if agent == 'cursor' else
+                            [{'matcher': matcher, 'hooks': [{'type': 'command', 'command': command, 'timeout': 3}]}])
+    return owned
 
 
 def parsed_config(raw, agent):
@@ -118,7 +126,7 @@ def original_bytes(root, item):
     return before
 
 
-def install_agent(agent, root, path, executable=None):
+def install_agent(agent, root, path, executable=None, *, activity=None):
     current = state(root)
     previous = current['agents'].get(agent)
     if previous and previous.get('path') != str(path):
@@ -126,7 +134,8 @@ def install_agent(agent, root, path, executable=None):
     raw = files.read(path)
     value = parsed_config(raw, agent)
     before = raw
-    owned = groups(agent, root, executable)
+    activity = bool(previous and previous.get('activity')) if activity is None else activity
+    owned = groups(agent, root, executable, activity=activity)
     if previous and previous['enabled'] and previous['groups'] == owned and contains(value, owned):
         return 'configured_review_in_tool' if agent == 'codex' else 'configured_experimental'
     if previous:
@@ -158,6 +167,7 @@ def install_agent(agent, root, path, executable=None):
     # Persist the recovery inventory before touching the coding tool's config.
     # The callback remains disabled until publication succeeds.
     entry = {'enabled': False, 'phase': 'pending', 'generation': str(uuid4()), 'path': str(path), 'groups': owned, 'backup': backup,
+             'activity': activity,
              'before_sha256': files.digest(before), 'after_sha256': files.digest(after)}
     current['agents'][agent] = entry
     save(root, current)
@@ -198,7 +208,7 @@ def disable_agent(agent, root):
     return 'disabled'
 
 
-def setup(root, *, agents=None, disable=False, inspect=False, home=None, executable=None):
+def setup(root, *, agents=None, disable=False, inspect=False, home=None, executable=None, activity=None):
     home = home or Path.home()
     root = root.expanduser().absolute()
     available = detected(home)
@@ -215,7 +225,8 @@ def setup(root, *, agents=None, disable=False, inspect=False, home=None, executa
                     configured = contains(parsed_config(files.read(Path(item['path'])), agent), item['groups'])
                 except (OSError, ValueError):
                     pass
-            results.append({'agent': agent, 'detected': agent in available, 'state':
+            results.append({'agent': agent, 'detected': agent in available,
+                            'local_activity': bool(configured and item.get('activity', False)), 'state':
                             'needs_attention' if item and item.get('phase') in {'pending', 'disabling'} else
                             ('configured_review_in_tool' if agent == 'codex' else 'configured_experimental') if configured else
                             ('needs_attention' if item and item['enabled'] else 'disabled' if item else 'not_configured')})
@@ -223,7 +234,7 @@ def setup(root, *, agents=None, disable=False, inspect=False, home=None, executa
         with guard(root, exclusive=True), files.locked(root):
             for agent in sorted(targets):
                 try:
-                    result = disable_agent(agent, root) if disable else install_agent(agent, root, paths[agent], executable)
+                    result = disable_agent(agent, root) if disable else install_agent(agent, root, paths[agent], executable, activity=activity)
                 except (OSError, ValueError):
                     result = 'needs_attention'
                 results.append({'agent': agent, 'detected': agent in available, 'state': result})
@@ -271,6 +282,17 @@ def automatic_receive(agent, root, raw):
         raise
 
 
+def workspace_state(path=None):
+    """Read-only eligibility, not proof of the coding tool's current workspace."""
+    try:
+        project = project_for_event({'cwd': str(path or Path.cwd()), 'session_id': 'scope-check',
+                                     'hook_event_name': 'SessionStart', 'source': 'startup'},
+                                    'codex', Path.home())
+        return 'eligible_git_project' if project else 'outside_local_git_project'
+    except (OSError, ValueError):
+        return 'unavailable'
+
+
 def _automatic_receive(agent, root, raw):
     # Re-read under the lifecycle lock: a pause may have won before acquisition.
     current = state(root)
@@ -290,9 +312,10 @@ def _automatic_receive(agent, root, raw):
         data['cwd'] = str(project)
     args = argparse.Namespace(agent=agent, project=project, store=root,
                               agent_manifest=None, registry=None, passport_id=None,
-                              automatic_selection=True)
+                              automatic_selection=True, activity=item.get('activity', False))
     result = receive(args, encode(data))
-    note_event(root, agent, result, item.get('generation'))
+    if not result.startswith('activity_'):
+        note_event(root, agent, result, item.get('generation'))
 
 
 def note_event(root, agent, result, generation):
@@ -312,18 +335,26 @@ def configure(commands):
     p.add_argument('--agent', choices=tuple(ADAPTERS), action='append', help='Select a tool explicitly; otherwise detect installed tools')
     p.add_argument('--store', type=Path)
     p.add_argument('--json', action='store_true')
+    activity = p.add_mutually_exclusive_group()
+    activity.add_argument('--activity', dest='activity', action='store_true', default=None,
+                          help='Opt in to private tool categories, destination hosts and outcomes for future sessions')
+    activity.add_argument('--no-activity', dest='activity', action='store_false', default=None,
+                          help='Stop future tool activity capture; preserve existing local annotations')
 
 
 def command(args):
     try:
         result = setup(args.store or Path.home() / '.forkit-radar', agents=args.agent,
-                       disable=args.disable, inspect=args.status)
+                       disable=args.disable, inspect=args.status, activity=args.activity)
+        result['command_directory_scope'] = workspace_state()
         if args.json:
             print(json.dumps(result, indent=2))
         else:
             print('Forkit automatic local capture' + (' — status' if args.status else ''))
             for item in result['agents']:
                 print(item['agent'] + ': ' + item['state'].replace('_', ' '))
+            if result['command_directory_scope'] != 'eligible_git_project':
+                print('This command is outside an eligible Git project. Open the actual repository in your coding tool; parent folders are not tracked.')
             if not result['agents']:
                 print('No supported coding tool detected. Install one, then run forkit-radar setup again.')
             if not args.disable:
@@ -333,6 +364,9 @@ def command(args):
             else:
                 print('Any still-active capture keeps its baseline. Use session active and session recover ID after stopping work; its end time remains unknown.')
             print('No Forkit account or repository connection. Local history stays private. Reporting was not enabled.')
+            if args.activity is not None and not args.status and not args.disable:
+                print('Local tool activity ' + ('enabled for new sessions; review changed hooks in your tool.' if args.activity else 'disabled; existing history is preserved.'))
+                print('Supported hook events only, not a network audit. Hostnames stay local; no prompts, URL paths, credentials or tool results are retained.')
         return 0 if not any(r['state'] == 'needs_attention' for r in result['agents']) else 1
     except (OSError, ValueError, TypeError, KeyError):
         print('Automatic setup needs attention. Existing history is preserved; check configuration permissions or run setup --status.', file=sys.stderr)

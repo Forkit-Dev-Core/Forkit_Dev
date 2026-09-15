@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "forkit-radar"
-version = "0.1.0b5"
+version = "0.1.0b6"
 description = "Local evidence and continuity contracts for Forkit Radar"
 readme = "README.md"
 license = "Apache-2.0"

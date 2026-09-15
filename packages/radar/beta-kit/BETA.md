@@ -1,58 +1,51 @@
-# Forkit Session Receipt — short developer beta
+# Forkit Session Receipt — CLI developer beta b6
 
-**You vibe code. Forkit remembers what changed.**
+You vibe code. Forkit remembers what changed.
 
-Finish a supported coding session, inspect the receipt, open **Today**, and save a
-card if it is useful. After your next session the new comparison is available;
-tomorrow, check Today again. Weekly history is an extra, not a waiting period.
-All local history stays free without signup. Website Passport registration/sync is
-optional future work; it is not available in this offline beta.
+The candidate supports Apple Silicon Mac with Python 3.11/Git, and Ubuntu ARM64
+with Python 3.12/venv/pip/Git. Native Mac archives are withheld. Intel Mac, Windows
+and new Linux x86_64 have no validated package. Outside-user acceptance remains.
 
-## Choose the matching package
+Extract the matching ZIP, run `sh install.sh --check`, then
+`sh install.sh --no-app`. Installation refuses existing locations. Use `--prefix`
+and `--bin-dir` for a separate upgrade destination; preserve your old install and
+private store until the new one is checked. No Forkit account is required.
 
-| Platform | Path | Scope |
-| --- | --- | --- |
-| macOS Apple Silicon | Native app with bundled Python/Git; or separate Python 3.11 CLI ZIP | Primary developer beta. One physical Mac tested; broader OS/fresh-user and signed download acceptance remain. |
-| Linux ARM64 | Python 3.12 CLI ZIP and offline HTML view | Local Ubuntu 24.04 ARM64 VM validation is recorded in the release audit. No native Linux GUI. |
-| Linux x86_64 | Python 3.12 CLI release workflow | Older public b3 passed Ubuntu 24.04 x86_64. The new b5 needs its own x86_64 CI evidence before this build is advertised there. |
-| Intel Mac / Windows | No supported package in this candidate | Not validated. Do not substitute another architecture’s ZIP. |
+Review installed hooks in the coding tool, restart it and open the actual Git
+repository, not a parent folder. Start and finish a new session. For Codex the
+boundary is the conversation lifecycle, not each reply; archive/normal close or
+idle finalization can be required. Wrapper fallback:
 
-These are candidate delivery paths, not a claim that b5 is already public. The
-public b3 release is older and has a hook-ended share-card bug fixed in this source.
-Do not use b3 to demonstrate the new native app, logo/map or count policy.
+```sh
+~/.local/bin/forkit-radar session run --tool codex -- codex
+~/.local/bin/forkit-radar open
+```
 
-## First useful result
+Repeat `open` after another captured session. History shows retained receipts;
+Latest shows only the newest one. Local history is free without a time gate,
+subject to the documented 64 MiB store cap and backup/maintenance controls.
 
-Mac native: open the reviewed app, let it install to your user Applications folder,
-review Forkit hooks in Codex’s `/hooks`, then start a new Git-project session.
-For the CLI ZIP, extract it and run `sh install.sh --check`, then `sh install.sh`.
-The CLI needs the exact Python minor version shown in README.txt, plus Git and
-venv/pip. It refuses existing install locations rather than overwriting them.
+Optional tool activity is experimental and off by default:
 
-No repository connection or Forkit login is required. The coding tool may need its
-own account. If it was installed after Forkit, rerun `forkit-radar setup`.
+```sh
+~/.local/bin/forkit-radar setup --activity
+# Review changed hooks and begin a new session.
+~/.local/bin/forkit-radar setup --no-activity
+```
 
-1. Finish a real coding session and open Forkit / run `forkit-radar receipt`.
-2. Check one file change and one supported dependency/configuration change against
-   what you actually did. Report missing/duplicate results as bugs; never upload
-   private receipt JSON or project content publicly.
-3. Open Today / run `forkit-radar summary`. Save a local card with
-   `forkit-radar card --output receipt-card.html`; open it to save PNG.
-4. Continue your next session normally, then inspect the new receipt and history.
-   A same-day second session gives immediate usefulness; another day can show a
-   return. No questionnaire is required.
+Supported tool categories, hostname destinations when exposed and reported
+outcomes stay local. Read CAPTURE.md for exact agent coverage. This does not
+observe all API traffic, script-internal requests or personal browser history.
+Prompts, query strings, URL paths, headers and results are not retained. Tool
+success is not independently verified network success. Activity is excluded from
+share cards, public reporting, change counts and Passport-version counts.
 
-Codex official lifecycle capture is the primary adapter. It measures the session
-boundary, not each reply. Desktop completion may await archive/app exit or idle
-finalization. Claude Code and Cursor adapters are experimental; Cursor’s start is
-fire-and-forget and its receipts remain partial. Use the explicit wrapper
-`forkit-radar session run --tool codex -- codex` for a command boundary, and manual
-start/stop only when hooks/wrapping are unavailable. Read the included CAPTURE.md.
+Try two real coding sessions: verify one changed file and supported metadata
+against your work, then check the previous-session comparison. A day or week of
+waiting is unnecessary. No questionnaire is required. Hook callbacks tested in
+isolation are not the same as actual application acceptance; Claude Code and
+Cursor remain experimental. The change map replays changed areas, not actual
+network crossings, edit chronology or authenticated AI authorship.
 
-The map replays recorded changed areas, not a live route, edit chronology, network
-crossings or proof that the AI authored every change. Model/runtime values are
-only detectable declarations. Unsupported data stays unknown. Local history has
-no time gate; the 64 MiB per-store cap and explicit backup/compaction controls apply.
-
-Optional counts are separate and stay off until consent after the first useful
-receipt. See [USAGE.md](USAGE.md). No real adoption numbers are bundled.
+Cards are local exports; review before sharing. Optional count reporting is a
+separate opt-in described in USAGE.md. No adoption numbers are bundled.

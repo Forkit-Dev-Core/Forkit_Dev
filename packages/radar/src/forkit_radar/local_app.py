@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 from .capture import setup_files as files
-from .capture.automatic import setup
+from .capture.automatic import setup, workspace_state
 from .capture.automatic import state as setup_state
 from .jsonio import load_json
 from .sessions.models import TOOL_NAMES
@@ -70,7 +70,10 @@ def capture_panel(root, *, native=False):
             elif agent == 'codex':
                 state, label = 'setup', 'Review Forkit in Codex /hooks, then start a session'
             experimental = ' <span class="badge">Experimental</span>' if agent != 'codex' else ''
-            rows.append(f'<div class="capture-line" data-capture-state="{state}"><strong>{html.escape(TOOL_NAMES[agent])}</strong>{experimental}<span>{html.escape(label)}</span></div>')
+            timestamp = last.get('last_event_at') if last else None
+            observed_at = f' · {html.escape(timestamp)}' if isinstance(timestamp, str) and re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z', timestamp) else ''
+            activity = ' · local activity enabled' if item.get('local_activity') else ''
+            rows.append(f'<div class="capture-line" data-capture-state="{state}"><strong>{html.escape(TOOL_NAMES[agent])}</strong>{experimental}<span>{html.escape(label)}{observed_at}{activity}</span></div>')
     except (OSError, ValueError, TypeError, KeyError):
         rows = ['<div class="capture-line" data-capture-state="attention"><strong>Capture needs attention</strong><span>Your saved receipts are available below.</span></div>']
     if not rows:
@@ -92,6 +95,9 @@ def capture_panel(root, *, native=False):
 def refresh(root, *, native=False):
     report = build(SessionStore(root), limit=200)
     raw = render(report, native=native).replace(b'<div class="context">', capture_panel(root, native=native).encode() + b'<div class="context">', 1)
+    if not native and workspace_state() != 'eligible_git_project':
+        notice = b'<p class="notice">This view was opened from outside an eligible Git project. Saved history is shown below. For new capture, open the actual repository in your coding tool, not its parent folder.</p>'
+        raw = raw.replace(b'<div class="context">', notice + b'<div class="context">', 1)
     files.private_directory(root)
     # HTML can be larger than setup JSON. It is private generated output, not
     # a user-supplied report or a source file. Reuse the exclusive document writer

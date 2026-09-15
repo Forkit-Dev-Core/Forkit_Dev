@@ -2,6 +2,55 @@
 
 Forkit works locally without a Forkit account. It observes changes inside a chosen Git root; it does not authenticate who authored each edit. Keep one active capture per project, or use separate worktrees for concurrent agents.
 
+## Optional local tool activity (b6, experimental)
+
+```sh
+~/.local/bin/forkit-radar setup --activity
+# Review the changed hooks in your coding tool, restart it, start a NEW session.
+~/.local/bin/forkit-radar open
+# Stop future activity collection, preserving saved history:
+~/.local/bin/forkit-radar setup --no-activity
+```
+
+This explicit choice records supported tool events only while their external
+session matches an active official-hook capture. It is off by default, is not
+enabled by installation or reporting consent, and never backfills earlier work.
+Plain `setup` preserves an existing explicit activity choice. Project-specific
+hooks and wrapper/manual captures do not collect this optional activity.
+
+Separate adapters accept Codex PostToolUse MCP events, Claude Code WebFetch /
+WebSearch / MCP completion and failure events, and Cursor local MCP completion
+and failure events. They are experimental pending validation inside each actual
+coding application/version. Tool IDs are keyed locally for deduplication; raw
+external identifiers are not saved. Unknown shapes or missing call IDs are skipped.
+
+Known `browser_navigate`, `fetch` and `http_request` MCP URL arguments can expose
+a hostname. Custom MCP tools keep only the fixed MCP category; their destinations
+are unknown. Codex hosted WebSearch, script-internal requests, model-provider
+connections, search-result destinations and personal browser history are not
+observed. Successful tool return does not prove a remote request or side effect.
+
+Only category, hostname when available, local observation time and tool-reported
+outcome are retained. URL userinfo, paths, query strings, fragments, prompts,
+headers, raw tool names, responses and transcripts are discarded. Private IPs and
+local/internal hostnames are coarsened; public hostnames can still be sensitive
+and remain private. No packet interception, root access, TLS certificate, account
+or external collector is needed.
+
+At most 128 events per session are retained, with an explicit truncation notice.
+All coverage is partial; no events does not establish no network activity. Late
+events cannot modify a finished session. Activity is an unsigned local annotation
+in the existing private store, beside unchanged immutable receipt bytes. It is
+included in private summary JSON and a separate private activity export, but never
+in share cards, change totals, Passport versions or optional public usage reports.
+Existing store backup/permissions/capacity limits apply; uninstall does not delete
+history. Damaged annotations do not hide valid change receipts.
+
+The HTML view is a saved snapshot: rerun `open` after new receipts. Use History
+to see older entries. Open the actual Git repository in the coding tool, not a
+parent folder containing repositories. `setup --status` also reports eligibility
+of the directory where that command runs, separately from tool hook trust.
+
 ## 1. Install once: user-level automatic capture (b4 candidate)
 
 The b4 installer runs `forkit-radar setup` after installation. It detects supported

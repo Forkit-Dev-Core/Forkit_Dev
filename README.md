@@ -13,11 +13,12 @@ session. No Forkit signup for local receipts, history or share cards.
 - [Capture adapters and limitations](packages/radar/CAPTURE.md)
 - [Privacy and optional count reporting](packages/radar/beta-kit/USAGE.md)
 
-This branch prepares **0.1.0b5**. Source and installers must be published together;
-older public b3 is not the native b5 app. The Mac app is a developer beta with
-ad-hoc signing, not notarized distribution. Linux ARM64 has CLI support; new
-Linux x86_64 validation is pending. Hosted website/account/team services are
-separate from this open-source package.
+This branch prepares **0.1.0b6**, a CLI-only developer beta for Apple Silicon Mac
+and Linux ARM64. Source and installers must be published together. Native Mac
+archives are withheld; Windows, Intel Mac and new Linux x86_64 are not validated.
+Optional local tool activity records supported hook-reported categories,
+destination hostnames and outcomes. It is experimental, not a network audit;
+read CAPTURE.md before enabling it. Hosted services remain separate.
 
 **Open-source AI passports with deterministic IDs and lineage.**
 

@@ -59,6 +59,20 @@ def passport_block(receipt):
     return f'<div class="passport"><div class="section-label">AGENT BEING BUILT · DECLARED ASSOCIATION</div><h3>{e(passport["name"])} <span class="version">{e(passport["version"])}</span></h3><p>Passport ID</p><code class="hash">{e(passport["passport_id"])}</code><p class="quiet">Core ID was consistent at capture · model reference: {e(passport["model_reference"])}</p>{transition}</div>'
 
 
+def activity_block(record, index):
+    from ..capture.activity import KINDS, STATES
+    activity = record.get('activity', {'state': 'not_enabled', 'events': [], 'truncated': False})
+    if activity['state'] == 'not_enabled':
+        return '<section class="activity"><h3>Tools &amp; destinations</h3><p class="quiet">Not enabled for this session. <a href="#workflow">Enable local activity for future sessions</a>.</p></section>'
+    if activity['state'] == 'unavailable':
+        return '<section class="activity"><h3>Tools &amp; destinations</h3><p class="notice">Activity evidence unavailable. Your change receipt is preserved.</p></section>'
+    rows = ''.join(f'<li><span>{e(KINDS[item["kind"]])}</span><strong>{e(item["destination"] or "Destination not exposed")}</strong><span>{e(STATES[item["outcome"]])}</span></li>' for item in activity['events'][-8:])
+    evidence = (f'<ul class="activity-events">{rows}</ul>' if rows else '<p class="quiet">No supported tool events recorded. This does not mean no network activity occurred.</p>')
+    count = len(activity['events'])
+    limit = '<p class="notice">128-event limit reached. Activity is incomplete.</p>' if activity['truncated'] else ''
+    return f'<section class="activity"><div class="receipt-top"><h3>Tools &amp; destinations</h3><span class="badge">Experimental · partial coverage</span></div><p class="quiet">{count} retained tool events · latest {min(count, 8)} shown</p>{evidence}{limit}<p class="quiet">Reported by your coding tool. These are not verified API requests or a complete browsing history. Hostnames stay local and are excluded from share cards.</p><button class="secondary" data-activity="{index}">Save private activity JSON</button></section>'
+
+
 def article(record, index):
     receipt, evolution = record["receipt"], record["evolution"]
     trace = record["trace"] == "complete"
@@ -104,6 +118,7 @@ def article(record, index):
 <div class="receipt-numbers"><div><strong>{len(receipt["file_changes"])}</strong><span>files changed</span></div><div><strong>{record["during_count"]}</strong><span>meaningful changes</span></div>{between}</div>
 {render_change_map(record) if index == 0 else ''}
 {warning}<div class="change-preview">{preview}</div>{identity}<p class="quiet history-link">{history}</p>
+{activity_block(record, index)}
 <details class="receipt-detail"><summary>Details</summary>
 <p class="quiet">{e("Hook-reported tool" if receipt["tool_basis"] == "hook_reported" else "Selected by you")} · {e(receipt["capture_mode"].replace('_', ' '))} capture · elapsed time includes idle/sleep.</p>
 {revision}
@@ -135,6 +150,7 @@ def render(report, *, native=False):
 <body><a class="skip" href="#main">Skip to receipts</a><div class="shell"><aside><div class="brand"><img class="brand-logo" src="{logo_uri()}" alt="Forkit AI"><span class="oss">OSS</span></div><p class="section-label">LOCAL SESSION MEMORY</p><nav aria-label="Receipt views"><button data-view="latest" aria-pressed="true">Latest session <span>↗</span></button><button data-view="today" aria-pressed="false">Today</button><button data-view="week" aria-pressed="false">This week</button><button data-view="history" aria-pressed="false">History</button></nav><div class="local-note"><strong>No account. No uploads.</strong><p>Your receipts stay on your device.</p><a href="#workflow">Help</a><a href="#methodology">How counts work</a></div></aside>
 <main id="main"><header><div><div class="eyebrow">SESSION RECEIPT</div><h1>What changed?</h1></div><span class="local-badge">● Local only</span></header>
 <div class="context"><span>{report["project_count"]} local project{"s" if report["project_count"] != 1 else ""} · {report["total_receipts"]} saved receipt{"s" if report["total_receipts"] != 1 else ""}</span><span>{e(report["timezone"])}</span></div>
+<div class="snapshot-refresh"><span>Saved view · {e(report["generated_at"])} · new receipts require reopening</span><code>~/.local/bin/forkit-radar open</code></div>
 {active}<section class="metrics" aria-label="Selected view summary"><div><span>Sessions</span><strong id="metric-receipts">{report["total_receipts"]}</strong></div><div><span>Files changed</span><strong id="metric-files">{report["periods"]["history"]["file_changes"]}</strong></div><div><span>Meaningful changes</span><strong id="metric-changes">{report["periods"]["history"]["meaningful_changes"]}</strong></div></section>
 <div class="view-heading"><div><h2 id="view-title">Latest session</h2><p class="quiet" id="view-description"></p></div><button id="share" class="primary" type="button">Share card</button></div>
 <p id="share-status" class="quiet" role="status" aria-live="polite">Counts only. Saved locally.</p>
@@ -142,7 +158,9 @@ def render(report, *, native=False):
 <label class="search" for="search">Search history <input id="search" type="search" placeholder="Tool, file, dependency or Passport" autocomplete="off"></label>
 <p class="quiet" id="shown">Showing the latest {report["displayed_receipts"]} of {report["total_receipts"]} receipts.</p><div id="receipts">{content}</div>
 <section id="empty" class="empty" {"hidden" if report["records"] else ""}><div class="empty-mark">⌁</div><h2>No receipts in this view yet.</h2><p id="empty-description">Finish a coding session, then reopen Forkit.</p><a href="#workflow">Help</a></section>
-<details id="workflow" class="help"><summary>Help</summary><p>Open Forkit again to refresh this saved view. Automatic capture uses your coding tool's session hooks in local Git projects. Manual fallback:</p><pre>forkit-radar session start --tool cursor
+<details id="workflow" class="help"><summary>Help</summary><p>Open Forkit again to refresh this saved view. Automatic capture uses your coding tool's session hooks in local Git projects. Open the actual repository in your coding tool: a parent folder containing repositories is not captured. Start a new session after setup; existing conversations have no retroactive baseline.</p><p>Optional local tool activity for future sessions (review changed hooks in your coding tool):</p><pre>~/.local/bin/forkit-radar setup --activity
+# Stop future activity collection:
+~/.local/bin/forkit-radar setup --no-activity</pre><p>Experimental supported tool events only. Codex hosted WebSearch, hidden API calls inside scripts and personal browser history are not observed. No queries, URL paths, headers, prompts or results are stored. Activity is a private annotation; it is excluded from change totals, share cards and public reporting.</p><p>Manual fallback:</p><pre>forkit-radar session start --tool cursor
 # Work in your editor, then use the returned session ID:
 forkit-radar session stop &lt;session-id&gt;
 forkit-radar view --output next-private-view.html</pre><p>Command wrapper:</p><pre>forkit-radar session run --tool codex -- codex</pre><p>Missing session end? Check <code>forkit-radar session active</code>, then use <code>forkit-radar session recover &lt;id&gt;</code> after stopping work. Its end time stays unknown.</p><p>Local Passport: use <code>forkit-radar passport create --help</code> with your own metadata. Select it when starting capture with <code>--registry /your/local/registry --passport-id &lt;actual-agent-id&gt;</code>.</p><p>Search filters the shown timeline; daily/weekly totals include all retained receipts. For more entries use <code>view --limit 1000</code>. Local dates use {e(report["timezone"])}.</p></details>
@@ -159,6 +177,7 @@ forkit-radar view --output next-private-view.html</pre><p>Command wrapper:</p><p
 <p>If a tool closed without saving a receipt, use Recover session after work has stopped. Its ending time stays unknown.</p>
 <p>Share card exports counts; receipt JSON includes private filenames. Nothing is uploaded.</p></details>''' + page[end:]
         page = page.replace('Saved view · reopen Forkit to refresh', 'Local history · refreshes when receipts arrive')
+        page = page.replace(f'<div class="snapshot-refresh"><span>Saved view · {e(report["generated_at"])} · new receipts require reopening</span><code>~/.local/bin/forkit-radar open</code></div>', '')
         page = page.replace('<body>', '<body data-native="true">', 1)
     raw = page.encode()
     if len(raw) > MAX_VIEW_BYTES:

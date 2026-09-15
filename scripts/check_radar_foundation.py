@@ -114,7 +114,7 @@ def main() -> int:
                     raise RuntimeError("Local audit/instruction records leaked into source archive")
         report["source_archive_boundary"] = "passed"
         wheels = sorted(artifacts.glob("*.whl"))
-        expected = {"forkit_core-0.1.0-py3-none-any.whl", "forkit_radar-0.1.0b5-py3-none-any.whl"}
+        expected = {"forkit_core-0.1.0-py3-none-any.whl", "forkit_radar-0.1.0b6-py3-none-any.whl"}
         if {p.name for p in wheels} != expected:
             raise RuntimeError("Unexpected project wheel identity; review package versions")
         for wheel in wheels:
@@ -128,8 +128,8 @@ def main() -> int:
         wheel_requirements.write_text(
             "forkit-core==0.1.0 --hash=sha256:"
             + report["wheel_sha256"]["forkit_core-0.1.0-py3-none-any.whl"]
-            + "\nforkit-radar==0.1.0b5 --hash=sha256:"
-            + report["wheel_sha256"]["forkit_radar-0.1.0b5-py3-none-any.whl"]
+            + "\nforkit-radar==0.1.0b6 --hash=sha256:"
+            + report["wheel_sha256"]["forkit_radar-0.1.0b6-py3-none-any.whl"]
             + "\n"
         )
         install_projects = [
@@ -193,7 +193,7 @@ def main() -> int:
                 str(ROOT / "packages/radar"),
             ],
         )
-        rebuilt = rebuild / "forkit_radar-0.1.0b5-py3-none-any.whl"
+        rebuilt = rebuild / "forkit_radar-0.1.0b6-py3-none-any.whl"
         if sha256(rebuilt) != report["wheel_sha256"][rebuilt.name]:
             raise RuntimeError("Radar wheel rebuild differs under fixed SOURCE_DATE_EPOCH")
         report["reproducible_radar_wheel"] = True

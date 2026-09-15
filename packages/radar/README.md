@@ -1,3 +1,11 @@
+# Optional local tools and destinations — b6 experimental
+`~/.local/bin/forkit-radar setup --activity` opts in to supported tool-reported
+categories, hostname destinations and outcomes for new official-hook sessions.
+Review changed hooks before use. `setup --no-activity` stops future collection.
+This is partial tool evidence, not API traffic or a complete browsing history.
+No prompts, URL paths/queries, headers or response bodies are retained. Activity
+stays out of share cards and public counters. See [coverage and privacy](CAPTURE.md).
+
 # Forkit Radar — local Session Receipt
 
 Automatic capture: see [CAPTURE.md](CAPTURE.md) for install-once user hooks, wrapper fallback and manual recovery. Local features require no Forkit account.
@@ -12,26 +20,20 @@ Logging into a cloud service does not by itself verify a public Passport.
 
 ## Install and get your first receipt
 
-**Local beta candidate 0.1.0b5: immediate receipts, Today by default, branded cards and recorded-change highlights.**
+**Local beta candidate 0.1.0b6: immediate receipts, Today by default, branded cards and recorded-change highlights.**
 Read the [short beta guide](beta-kit/BETA.md) for the Mac/Linux paths and remaining distribution gates.
 The native Apple Silicon app bundles Python and Git; the separate CLI ZIP still needs them.
 The existing public b3 download is an older release with a hook-ended card bug. It does not provide this candidate.
 Unlimited free local history means no time-based account gate; the 64 MiB store cap still applies.
 No new candidate has been uploaded. Read [macOS release limitations](MACOS.md).
 
-The prepared files for this version are:
+Download the matching ZIP from the [Session Receipt 0.1.0b3 release](https://github.com/Forkit-Dev-Core/Forkit_Dev/releases/tag/radar-v0.1.0b3), extract it, and run:
 
-| Platform | File | Install |
-| --- | --- | --- |
-| macOS Apple Silicon | `Forkit-Session-Receipt-0.1.0b5-macos-arm64.zip` | Unzip, open the app; Python/Git included |
-| macOS Apple Silicon CLI | `forkit-session-receipt-0.1.0b5-macos-arm64-py311.zip` | Python 3.11 + Git; extract and run `sh install.sh` |
-| Ubuntu 24.04 ARM64 CLI | `forkit-session-receipt-0.1.0b5-linux-arm64-py312.zip` | Python 3.12 + Git; extract and run `sh install.sh` |
+```sh
+sh install.sh
+```
 
-These are local release candidates until the matching GitHub release is published.
-Use [the releases page](https://github.com/Forkit-Dev-Core/Forkit_Dev/releases)
-and check the version and SHA256SUMS. Do not substitute b3. CLI installs work
-offline after download and require venv/pip. Existing installations are preserved;
-select a separate `--prefix` and `--bin-dir` to try the CLI alongside one.
+macOS Apple Silicon needs Python 3.11; Linux x86_64 (Ubuntu 24.04) needs Python 3.12. Both need Git and Python venv/pip. After downloading, installation and local use work offline. Windows and a native signed app are not supported yet. Existing installations are preserved; select a separate `--prefix` and `--bin-dir` to try this release alongside one.
 
 For this candidate, installation sets up detected tools across local Git projects. No repository connection:
 
@@ -46,8 +48,6 @@ For this candidate, installation sets up detected tools across local Git project
 ```
 
 [Capture details and limitations](CAPTURE.md): official Codex lifecycle hooks first; separate experimental Claude Code and Cursor adapters; wrapper and manual fallbacks. This is an observed interval, not proof of AI authorship. Model/runtime claims are limited to detectable declarations; prompts and transcripts are never read by capture hooks.
-
-[Build from source](BUILD.md) · [Mac limitations](MACOS.md)
 
 ## Optional usage counts
 

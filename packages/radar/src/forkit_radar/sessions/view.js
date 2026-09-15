@@ -62,6 +62,10 @@ function save(blob,name) {
   link.href=url;link.download=name;document.body.append(link);link.click();link.remove();
   setTimeout(()=>URL.revokeObjectURL(url),10000);
 }
+document.querySelectorAll('[data-activity]').forEach(button=>button.addEventListener('click',()=>{
+  const record=records[Number(button.dataset.activity)];
+  save(new Blob([JSON.stringify({kind:'forkit_private_tool_activity',session_id:record.receipt.session_id,...record.activity},null,2)],{type:'application/json'}),'forkit-private-activity.json');
+}));
 document.querySelectorAll("[data-view]").forEach(button=>button.addEventListener("click",event=>{
   selectedView=button.dataset.view;
   if (selectedView === "latest") search.value="";

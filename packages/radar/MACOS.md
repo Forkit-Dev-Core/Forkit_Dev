@@ -1,8 +1,11 @@
-# macOS developer beta — 0.1.0b5
+# Mac CLI beta — b6
 
-The native Apple Silicon app bundles Python 3.11 and Git. Local installation,
-receipts, Passport creation, Today, unlimited-time history and cards need no
-Forkit account. The separate CLI ZIP needs Python 3.11, venv/pip and Git.
+This release supplies the CLI only. It requires Apple Silicon, Python 3.11 with
+venv/pip and Apple's Git. Use `sh install.sh --no-app`. Native archives are withheld.
+No certificate bypass, quarantine removal or Full Disk Access is required.
+Optional activity capture is experimental and requires explicit `setup --activity`
+and review of the changed hook definitions in your coding tool. No network audit,
+personal browsing, model-provider traffic or arbitrary script requests are claimed.
 
 Install once, restart the coding tool and review its official hooks once. Codex
 is the primary adapter; Claude Code and Cursor remain experimental. Existing
@@ -12,11 +15,11 @@ need another setup pass. Hook configuration is not proof that the tool trusted i
 
 ## What is validated
 
-One physical Apple Silicon Mac: 1,010 tests and controlled offline installation,
-update/rollback, callback capture, two-session history and local card generation.
-Native runtime checks deny network access, host Python, developer tools and system
-Git. The user reviewed the supplied-logo preview, replay and PNG export. These
-checks are development evidence, not independent customer acceptance.
+One physical Apple Silicon Mac: 1,033 automated tests passed for b6. Fresh CLI
+bundle installation, controlled hook callbacks and retained history are checked
+separately. Previous native-app and preview checks do not qualify a b6 native app
+for release. These checks are development evidence, not independent customer
+acceptance. New activity hooks still need review and real application acceptance.
 
 ## Limits before wider promotion
 
@@ -39,7 +42,7 @@ checks are development evidence, not independent customer acceptance.
   optional future integrations, not required local features.
 
 Intel Mac and Windows have no validated package. Linux ARM64 is a separate CLI
-path, not this native app; b5 Linux x86_64 validation is pending.
+path, not this native app; Linux x86_64 validation is pending.
 
 See [Apple's app security guidance](https://support.apple.com/en-gb/102445) and
 [the capture adapter guide](CAPTURE.md).

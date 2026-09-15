@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 from ..identity.storage import write_new
-from ..jsonio import MAX_DOCUMENT_BYTES, ContractError
+from ..jsonio import MAX_DOCUMENT_BYTES, ContractError, load_json
 from ..sessions.cli import selected
 from ..sessions.inventory import select_project
 from ..sessions.storage import SessionStore
@@ -56,6 +56,14 @@ def receive(args, raw):
     if action == 'ignore':
         return 'ignored'
     store = SessionStore(args.store)
+    if action == 'activity':
+        if not getattr(args, 'activity', False):
+            return 'activity_disabled'
+        current = store.active_in(project)
+        if not current:
+            return 'activity_no_active_capture'
+        from .activity import record
+        return record(store, current, args.agent, identity, load_json(raw))
     if action == 'start':
         if store.root == project or project in store.root.parents:
             raise ContractError('session_store_must_be_outside_project')
@@ -86,7 +94,8 @@ def receive(args, raw):
         else:
             choice = selected(args)
         try:
-            store.start(project, tool=args.agent, mode='official_hook', selection=choice, hook_identity=identity)
+            store.start(project, tool=args.agent, mode='official_hook', selection=choice,
+                        hook_identity=identity, observe_activity=getattr(args, 'activity', False))
         except ContractError as error:
             if str(error) != 'active_session_exists_stop_or_recover_it':
                 raise
