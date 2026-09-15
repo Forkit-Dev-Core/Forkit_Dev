@@ -1,0 +1,99 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "discovery": {
+      "enum": [
+        "configured",
+        "observed",
+        "unknown",
+        "unavailable"
+      ],
+      "title": "Discovery",
+      "type": "string"
+    },
+    "association": {
+      "enum": [
+        "unmatched",
+        "declared",
+        "enrolled",
+        "ambiguous",
+        "conflicted"
+      ],
+      "title": "Association",
+      "type": "string"
+    },
+    "passport": {
+      "enum": [
+        "absent",
+        "consistent",
+        "invalid",
+        "unsupported"
+      ],
+      "title": "Passport",
+      "type": "string"
+    },
+    "artifact": {
+      "enum": [
+        "not_measured",
+        "declared_digest",
+        "matched",
+        "mismatch",
+        "partial"
+      ],
+      "title": "Artifact",
+      "type": "string"
+    },
+    "provenance": {
+      "enum": [
+        "absent",
+        "untrusted_signer",
+        "verified",
+        "invalid",
+        "stale"
+      ],
+      "title": "Provenance",
+      "type": "string"
+    },
+    "runtime": {
+      "enum": [
+        "not_observed",
+        "process_correlated",
+        "externally_authenticated",
+        "expired"
+      ],
+      "title": "Runtime",
+      "type": "string"
+    },
+    "acceptance": {
+      "enum": [
+        "unreviewed",
+        "accepted",
+        "superseded",
+        "revoked"
+      ],
+      "title": "Acceptance",
+      "type": "string"
+    },
+    "freshness": {
+      "enum": [
+        "current_at_check",
+        "stale",
+        "unknown"
+      ],
+      "title": "Freshness",
+      "type": "string"
+    }
+  },
+  "required": [
+    "discovery",
+    "association",
+    "passport",
+    "artifact",
+    "provenance",
+    "runtime",
+    "acceptance",
+    "freshness"
+  ],
+  "title": "EvidenceState",
+  "type": "object"
+}

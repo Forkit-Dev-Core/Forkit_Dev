@@ -58,6 +58,7 @@ all = [
   "uvicorn>=0.30",
 ]
 dev = [
+  "build==1.6.1",
   "pytest>=7.0",
   "pytest-cov",
   "ruff",
@@ -84,9 +85,20 @@ Issues     = "https://github.com/Forkit-Dev-Core/Forkit_Dev/issues"
 [tool.hatch.build.targets.wheel]
 packages = ["forkit", "forkit_core", "forkit_langchain", "forkit_langgraph", "forkit_openclaw"]  # ship both during transition
 
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/docs/radar-audit",
+  "/FORKIT_RADAR_LOCK.md",
+  "/AGENTS.md",
+  "/packages/radar",
+  "/output",
+  "/.radar-venv",
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+extend-exclude = ["docs/radar-audit", ".radar-venv", "output"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]

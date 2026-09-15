@@ -1,0 +1,51 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_slot_id": {
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "title": "Source Slot Id",
+      "type": "string"
+    },
+    "logical_agent_id": {
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "title": "Logical Agent Id",
+      "type": "string"
+    },
+    "authority_id": {
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "title": "Authority Id",
+      "type": "string"
+    },
+    "locator_token": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Locator Token",
+      "type": "string"
+    },
+    "locator_scheme": {
+      "const": "hmac-sha256-local-v1",
+      "title": "Locator Scheme",
+      "type": "string"
+    },
+    "accepted_binding_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Accepted Binding Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "source_slot_id",
+    "logical_agent_id",
+    "authority_id",
+    "locator_token",
+    "locator_scheme",
+    "accepted_binding_digest"
+  ],
+  "title": "SourceBinding",
+  "type": "object"
+}

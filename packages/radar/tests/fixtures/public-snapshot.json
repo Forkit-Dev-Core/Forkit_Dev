@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "public_surface_id": "00000009-1234-4123-8123-123456789abc",
+  "publication_id": "0000000a-1234-4123-8123-123456789abc",
+  "measurement_kind": "self_reported",
+  "counts": {
+    "eligible_agents": 2,
+    "eligible_models": 1,
+    "consistent_passports": 2,
+    "enrolled_agents": 1,
+    "excluded_components": 3,
+    "unknown_components": 2
+  }
+}

@@ -1,0 +1,276 @@
+{
+  "$defs": {
+    "Counts": {
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "enum": [
+            "complete",
+            "partial",
+            "not_captured"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "added": {
+          "anyOf": [
+            {
+              "maximum": 4096,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Added"
+        },
+        "removed": {
+          "anyOf": [
+            {
+              "maximum": 4096,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Removed"
+        },
+        "changed": {
+          "anyOf": [
+            {
+              "maximum": 4096,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Changed"
+        }
+      },
+      "required": [
+        "state"
+      ],
+      "title": "Counts",
+      "type": "object"
+    },
+    "Prior": {
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "enum": [
+            "complete",
+            "partial",
+            "no_baseline",
+            "not_captured"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "files": {
+          "anyOf": [
+            {
+              "maximum": 4096,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Files"
+        },
+        "metadata_entries": {
+          "anyOf": [
+            {
+              "maximum": 4096,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metadata Entries"
+        },
+        "skipped_receipts": {
+          "default": 0,
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "Skipped Receipts",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "state"
+      ],
+      "title": "Prior",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "kind": {
+      "const": "forkit_session_card",
+      "default": "forkit_session_card",
+      "title": "Kind",
+      "type": "string"
+    },
+    "privacy": {
+      "const": "aggregate_only",
+      "default": "aggregate_only",
+      "title": "Privacy",
+      "type": "string"
+    },
+    "tool": {
+      "enum": [
+        "claude-code",
+        "codex",
+        "cursor",
+        "other"
+      ],
+      "title": "Tool",
+      "type": "string"
+    },
+    "tool_basis": {
+      "default": "user_selected",
+      "enum": [
+        "user_selected",
+        "hook_reported"
+      ],
+      "title": "Tool Basis",
+      "type": "string"
+    },
+    "elapsed_minutes": {
+      "anyOf": [
+        {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Elapsed Minutes"
+    },
+    "outcome": {
+      "enum": [
+        "manual_stop",
+        "hook_end",
+        "command_exited",
+        "command_failed",
+        "launch_failed",
+        "interrupted",
+        "recovered"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    },
+    "file_state": {
+      "enum": [
+        "complete",
+        "partial"
+      ],
+      "title": "File State",
+      "type": "string"
+    },
+    "file_changes": {
+      "maximum": 4000,
+      "minimum": 0,
+      "title": "File Changes",
+      "type": "integer"
+    },
+    "possible_renames": {
+      "maximum": 2000,
+      "minimum": 0,
+      "title": "Possible Renames",
+      "type": "integer"
+    },
+    "dependencies": {
+      "$ref": "#/$defs/Counts"
+    },
+    "tools": {
+      "$ref": "#/$defs/Counts"
+    },
+    "models": {
+      "$ref": "#/$defs/Counts"
+    },
+    "configuration": {
+      "$ref": "#/$defs/Counts"
+    },
+    "passport": {
+      "enum": [
+        "not_captured",
+        "not_selected",
+        "consistent",
+        "unavailable",
+        "conflicted"
+      ],
+      "title": "Passport",
+      "type": "string"
+    },
+    "passport_change": {
+      "enum": [
+        "not_captured",
+        "not_selected",
+        "unchanged",
+        "changed",
+        "unknown"
+      ],
+      "title": "Passport Change",
+      "type": "string"
+    },
+    "since_previous": {
+      "$ref": "#/$defs/Prior"
+    },
+    "between_sessions": {
+      "$ref": "#/$defs/Prior"
+    },
+    "attribution": {
+      "const": "observed_interval_not_proven_authorship",
+      "default": "observed_interval_not_proven_authorship",
+      "title": "Attribution",
+      "type": "string"
+    },
+    "runtime": {
+      "const": "not_observed",
+      "default": "not_observed",
+      "title": "Runtime",
+      "type": "string"
+    }
+  },
+  "required": [
+    "tool",
+    "elapsed_minutes",
+    "outcome",
+    "file_state",
+    "file_changes",
+    "possible_renames",
+    "dependencies",
+    "tools",
+    "models",
+    "configuration",
+    "passport",
+    "passport_change",
+    "since_previous",
+    "between_sessions"
+  ],
+  "title": "SessionCard",
+  "type": "object"
+}

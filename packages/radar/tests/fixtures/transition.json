@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "proposal_id": "00000001-1234-4123-8123-123456789abc",
+  "status": "pending",
+  "operation": "enroll",
+  "intent": "explicit",
+  "logical_agent_id": null,
+  "target_logical_agent_id": null,
+  "candidate_passport_id": null,
+  "candidate_revision_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "previous_event_digest": null,
+  "previous_accepted_binding_digest": null,
+  "requested_authority_id": "00000003-1234-4123-8123-123456789abc",
+  "new_authority_id": null,
+  "source_slot_id": "00000004-1234-4123-8123-123456789abc",
+  "target_source_slot_id": null,
+  "authorization_evidence_ids": []
+}

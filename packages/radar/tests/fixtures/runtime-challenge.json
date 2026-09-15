@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "challenge_id": "00000001-1234-4123-8123-123456789abc",
+  "nonce": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
+  "audience": "fixture-collector",
+  "logical_agent_id": "00000002-1234-4123-8123-123456789abc",
+  "revision_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "instance_id": "00000005-1234-4123-8123-123456789abc",
+  "source_slot_id": "00000004-1234-4123-8123-123456789abc",
+  "peer": {
+    "origin": "collector_os",
+    "pid": 1234,
+    "uid": 501,
+    "process_start_identity": "fixture-start-1"
+  },
+  "issued_at": "2026-09-14T10:00:00Z",
+  "expires_at": "2026-09-14T10:01:00Z"
+}

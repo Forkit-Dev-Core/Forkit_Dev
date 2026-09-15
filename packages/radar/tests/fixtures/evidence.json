@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "evidence_id": "00000001-1234-4123-8123-123456789abc",
+  "axis": "artifact",
+  "state": "declared_digest",
+  "basis": "declared",
+  "logical_agent_id": "00000002-1234-4123-8123-123456789abc",
+  "passport_id": null,
+  "revision_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "instance_id": null,
+  "authority_id": null,
+  "scope_profile": "passive-metadata-v1",
+  "reason_code": "manifest_digest_only",
+  "checked_at": "2026-09-14T10:00:00Z",
+  "expires_at": null,
+  "supporting_evidence_ids": [],
+  "verifier_version": "radar-0.1.0a1",
+  "policy_version": "local-authority-scoped-v1"
+}

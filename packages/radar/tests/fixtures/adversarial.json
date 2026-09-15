@@ -1,0 +1,283 @@
+[
+  {
+    "case_id": "private_prompt_in_manifest",
+    "contract": "manifest",
+    "changes": {
+      "system_prompt": "SENTINEL-PRIVATE-PROMPT"
+    },
+    "reason": "Unknown fields cannot enter the allowlisted manifest."
+  },
+  {
+    "case_id": "credential_in_tool",
+    "contract": "manifest",
+    "changes": {
+      "tools": [
+        {
+          "key": "shell",
+          "name": {
+            "value": "shell",
+            "origin": "supported_metadata"
+          },
+          "origin": "declared",
+          "transport": "stdio",
+          "permissions": [
+            "execute"
+          ],
+          "env": {
+            "API_KEY": "SENTINEL-SECRET"
+          }
+        }
+      ]
+    },
+    "reason": "Credential fields are rejected before storage/export."
+  },
+  {
+    "case_id": "both_local_ids",
+    "contract": "manifest",
+    "changes": {
+      "logical_agent_id": "00000002-1234-4123-8123-123456789abc"
+    },
+    "reason": "A provisional component cannot also claim an enrolled local identifier."
+  },
+  {
+    "case_id": "neither_local_id",
+    "contract": "manifest",
+    "changes": {
+      "provisional_component_key": null
+    },
+    "reason": "Unidentified records are rejected without inventing an ID."
+  },
+  {
+    "case_id": "ambiguous_numeric_version",
+    "contract": "manifest",
+    "changes": {
+      "declared_identity.version.value": 1
+    },
+    "reason": "Identity values are not coerced into strings."
+  },
+  {
+    "case_id": "unknown_is_not_empty",
+    "contract": "manifest",
+    "changes": {
+      "tools": null
+    },
+    "reason": "A complete empty result and an unavailable result are different."
+  },
+  {
+    "case_id": "unsupported_schema",
+    "contract": "manifest",
+    "changes": {
+      "schema_version": "2.0"
+    },
+    "reason": "Future schema versions require explicit support."
+  },
+  {
+    "case_id": "terminal_escape",
+    "contract": "manifest",
+    "changes": {
+      "declared_identity.name.value": "SENTINEL\u001b[2J"
+    },
+    "reason": "Terminal controls are rejected without rewriting signed content."
+  },
+  {
+    "case_id": "digest_is_not_measurement",
+    "contract": "evidence",
+    "changes": {
+      "state": "matched"
+    },
+    "reason": "A declared digest cannot structurally claim independent measurement."
+  },
+  {
+    "case_id": "adapter_is_not_os_peer",
+    "contract": "evidence",
+    "changes": {
+      "axis": "runtime",
+      "state": "process_correlated",
+      "basis": "adapter_report",
+      "instance_id": "00000005-1234-4123-8123-123456789abc",
+      "expires_at": "2026-09-14T10:00:30Z",
+      "supporting_evidence_ids": [
+        "00000003-1234-4123-8123-123456789abc"
+      ]
+    },
+    "reason": "Adapter claims cannot use the collector OS evidence basis."
+  },
+  {
+    "case_id": "copy_is_not_enrollment",
+    "contract": "evidence",
+    "changes": {
+      "axis": "association",
+      "state": "enrolled"
+    },
+    "reason": "Enrolled association needs scoped local authority and supporting evidence."
+  },
+  {
+    "case_id": "self_signed_is_not_provenance",
+    "contract": "evidence",
+    "changes": {
+      "axis": "provenance",
+      "state": "verified",
+      "basis": "local_authority"
+    },
+    "reason": "Signature possession does not establish external provenance."
+  },
+  {
+    "case_id": "missing_raw_core_check",
+    "contract": "evidence",
+    "changes": {
+      "axis": "passport",
+      "state": "consistent"
+    },
+    "reason": "Passport consistency requires a raw Core identity-check reference."
+  },
+  {
+    "case_id": "automatic_acceptance",
+    "contract": "transition",
+    "changes": {
+      "operation": "accept_revision",
+      "intent": "automatic_observation",
+      "logical_agent_id": "00000002-1234-4123-8123-123456789abc"
+    },
+    "reason": "Scanning does not authorize acceptance."
+  },
+  {
+    "case_id": "already_approved_proposal",
+    "contract": "transition",
+    "changes": {
+      "status": "accepted"
+    },
+    "reason": "A parsed proposal remains pending."
+  },
+  {
+    "case_id": "enroll_existing_agent",
+    "contract": "transition",
+    "changes": {
+      "logical_agent_id": "00000002-1234-4123-8123-123456789abc"
+    },
+    "reason": "Copying a reference cannot join an existing history during enrollment."
+  },
+  {
+    "case_id": "fork_same_agent",
+    "contract": "transition",
+    "changes": {
+      "operation": "fork",
+      "logical_agent_id": "00000002-1234-4123-8123-123456789abc",
+      "target_logical_agent_id": "00000002-1234-4123-8123-123456789abc"
+    },
+    "reason": "Forks require a distinct logical identity."
+  },
+  {
+    "case_id": "rotation_same_key",
+    "contract": "transition",
+    "changes": {
+      "operation": "rotate_key",
+      "logical_agent_id": "00000002-1234-4123-8123-123456789abc",
+      "new_authority_id": "00000003-1234-4123-8123-123456789abc"
+    },
+    "reason": "Rotation must introduce a new authority."
+  },
+  {
+    "case_id": "key_unavailable",
+    "contract": "authority",
+    "changes": {
+      "public_key": null
+    },
+    "reason": "An active authority needs public key material."
+  },
+  {
+    "case_id": "private_key_record",
+    "contract": "authority",
+    "changes": {
+      "private_key": "SENTINEL-PRIVATE-KEY"
+    },
+    "reason": "The authority wire record stores no private keys."
+  },
+  {
+    "case_id": "unscoped_signer",
+    "contract": "binding-predicate",
+    "changes": {
+      "signer_scope.logical_agent_ids": []
+    },
+    "reason": "The signed scope must name the logical agent; external trust still requires verification."
+  },
+  {
+    "case_id": "missing_previous_event",
+    "contract": "binding-predicate",
+    "changes": {
+      "sequence": 2
+    },
+    "reason": "A successor event must include its predecessor digest."
+  },
+  {
+    "case_id": "wrong_payload_type",
+    "contract": "dsse-envelope",
+    "changes": {
+      "payloadType": "text/plain"
+    },
+    "reason": "The receipt profile has an exact payload type."
+  },
+  {
+    "case_id": "foreign_predicate",
+    "contract": "binding-statement",
+    "changes": {
+      "predicateType": "https://example.invalid/predicate"
+    },
+    "reason": "Predicate identifiers are compared without network retrieval."
+  },
+  {
+    "case_id": "runtime_lifetime_too_long",
+    "contract": "runtime-challenge",
+    "changes": {
+      "expires_at": "2026-09-14T10:01:01Z"
+    },
+    "reason": "Challenges cannot exceed the 60-second window."
+  },
+  {
+    "case_id": "runtime_pid_missing",
+    "contract": "runtime-challenge",
+    "changes": {
+      "peer.pid": 0
+    },
+    "reason": "A UID alone is not process correlation."
+  },
+  {
+    "case_id": "public_private_name",
+    "contract": "public-snapshot",
+    "changes": {
+      "name": "SENTINEL-PRIVATE-NAME"
+    },
+    "reason": "The public snapshot is a separate aggregate-only schema."
+  },
+  {
+    "case_id": "public_coverage_overflow",
+    "contract": "public-snapshot",
+    "changes": {
+      "counts.consistent_passports": 4
+    },
+    "reason": "The coverage numerator cannot exceed eligible agents and models."
+  },
+  {
+    "case_id": "public_bool_count",
+    "contract": "public-snapshot",
+    "changes": {
+      "counts.eligible_agents": true
+    },
+    "reason": "Booleans are not integers in count fields."
+  },
+  {
+    "case_id": "disabled_authority_policy",
+    "contract": "trust-policy",
+    "changes": {
+      "automatic_enrollment": "allowed"
+    },
+    "reason": "An incoming policy cannot weaken locked enrollment rules."
+  },
+  {
+    "case_id": "failed_scan_with_inventory",
+    "contract": "observation",
+    "changes": {
+      "source_status": "denied"
+    },
+    "reason": "Failed reads cannot manufacture new inventory."
+  }
+]

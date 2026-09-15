@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="A local receipt for your AI coding session. Files, declared dependencies, tools and Passport changes. No Forkit account. Reporting off by default.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; form-action 'none'; connect-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'">
+<title>Forkit Session Receipt — You vibe code. Forkit remembers.</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="styles.css">
+<script src="page.js" defer></script>
+<script src="metrics.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<nav aria-label="Main navigation"><div class="wrap navin">
+  <a class="brand" href="#main"><span class="mark" aria-hidden="true">#</span><span>Forkit Dev</span></a>
+  <div class="links"><a href="#features">Session Receipt</a><a href="#history">History</a><a href="#activity">Community</a><a href="#privacy">Privacy</a><a href="#install">Docs</a></div>
+  <div class="navcta"><a class="btn" href="https://github.com/Forkit-Dev-Core/Forkit_Dev">Core GitHub ↗</a><a class="btn primary" href="#install">Get started</a></div>
+</div></nav>
+<main id="main" class="wrap">
+<section class="hero" aria-labelledby="hero-title">
+  <div>
+    <div class="eyebrow">◉ Open source · Local first · Beta candidate</div>
+    <h1 id="hero-title">You vibe code.<br><span class="accent">Forkit remembers.</span></h1>
+    <p class="lead">Finish an AI coding session. See the files, dependencies and configuration that changed. Come back for the next diff. Keep a receipt worth sharing.</p>
+    <div class="heroactions"><a class="btn primary" href="#install">Get your first receipt →</a><a class="btn" href="example-card.html">See a share card</a></div>
+    <div class="command"><code id="install-command">sh scripts/install_radar.sh</code><button type="button" class="copy" id="copy" aria-label="Copy source installation command">Copy</button></div>
+    <p class="install-note">From the supplied source checkout · macOS / Ubuntu · Python 3.10–3.13<br>Private beta candidate; public package distribution is still ahead.</p>
+    <div id="copy-status" class="sr-status" role="status" aria-live="polite"></div>
+    <div class="proof"><span><b>✓</b> No account</span><span><b>✓</b> Reporting off by default</span><span><b>✓</b> Your history stays local</span></div>
+  </div>
+  <div class="terminal" aria-label="Illustrative local receipt">
+    <div class="termbar"><span class="dot" aria-hidden="true"></span><span class="dot" aria-hidden="true"></span><span class="dot" aria-hidden="true"></span><span class="caption">Illustrative receipt · private local view</span></div>
+    <div class="term"><span class="tmut">$</span> forkit-radar receipt<br><br>
+      <span class="tteal receipt-title">FORKIT SESSION RECEIPT</span><br>Claude Code · 42 min elapsed<br>
+      <span class="big">27 file changes</span>
+      <span class="tpurple">DECLARED METADATA</span><br><span class="tgreen">+ 2 dependency entries</span><br><span class="tgreen">+ 1 MCP / tool entry</span><br><span class="tilde">~ 1 model entry</span><br><br>
+      <span class="tpurple">PREVIOUS COMPARISON</span><br>31 files since a comparable receipt<br>4 files changed between sessions<br><br>
+      <span class="tmut">Tool selected by you. Runtime unknown.<br>Observed changes; authorship unverified.<br>Saved locally. No signup.</span>
+    </div>
+  </div>
+</section>
+<section aria-label="Local product promises"><div class="live">
+  <div><strong>Your work. Your receipt.</strong><p>Useful from the first session. Built to remember the next.</p></div>
+  <div class="stat"><div class="num">0</div><div class="lab">Forkit accounts required</div></div>
+  <div class="stat"><div class="num">Local</div><div class="lab">Receipt history + diffs</div></div>
+  <div class="stat"><div class="num">Off</div><div class="lab">Reporting by default</div></div>
+  <div class="stat"><div class="num">You</div><div class="lab">Choose what to share</div></div>
+</div></section>
+<section class="section" id="features">
+  <h2>The first receipt is useful.<br>The next one has context.</h2>
+  <p class="sub">A session ends; your memory of what changed should not. Keep a small, readable record alongside your existing local Forkit identity.</p>
+  <div class="grid3">
+    <div class="card"><div class="icon teal" aria-hidden="true">⌁</div><h3>Capture the session</h3><p>Wrap an explicit coding command, or start and stop around your editor. Get elapsed time and supported file changes.</p></div>
+    <div class="card"><div class="icon" aria-hidden="true">◎</div><h3>Keep the context</h3><p>Compare declared dependencies, MCP/tools and model settings. Optionally associate an existing local Core Passport.</p></div>
+    <div class="card"><div class="icon orange" aria-hidden="true">Δ</div><h3>Return. Compare. Share.</h3><p>See local history, separate changes between sessions, and export an aggregate card as HTML, SVG or JSON. Save PNG in your browser.</p></div>
+  </div>
+</section>
+<section class="section diffwrap" id="history">
+  <div><div class="eyebrow">LOCAL CHANGE MEMORY</div><h2>Another session.<br>A clearer difference.</h2><p class="sub">See what changed during this session and since a comparable previous receipt. Unavailable data stays unknown. Human edits can be part of the interval.</p><a class="example-link" href="example-card.html">Open the example share card →</a></div>
+  <div class="diffbox"><div class="version"><div><strong>Illustrative comparison</strong><br><span>Same selected project</span></div><span class="pill">local history</span></div>
+    <div class="change plus">+ dependency declarations</div><div class="change plus">+ MCP configuration entries</div><div class="change tilde">~ configured model reference</div><div class="change">Passport association: explicitly selected</div><div class="change"><strong>Changes observed. Runtime unverified.</strong></div>
+  </div>
+</section>
+<section class="section community" id="activity" aria-labelledby="activity-title" data-metrics-endpoint="/api/v1/radar/metrics">
+  <div class="activity-heading"><div><div class="eyebrow">EXISTING MANUAL REPORTING</div><h2 id="activity-title">A small receipt.<br>A record that adds up.</h2></div><button id="refresh-metrics" class="btn" type="button">Refresh activity</button></div>
+  <p class="sub">This preserved schema-v1 metrics preview shows manual contributions only. New usage-v2 reporting uses separate consent and totals on the hosted Session Receipt candidate. Local receipts work fully without reporting.</p>
+  <p id="metrics-state" class="activity-state" role="status" aria-live="polite">Not connected to a collector. No activity numbers are available.</p>
+  <p id="metrics-window" class="quiet"></p>
+  <div id="metrics-grid" class="metrics-grid" aria-label="Reported community activity"></div>
+  <p id="metrics-notes" class="activity-note">Private installs and offline activity cannot be counted by the website. No example number is a traction claim.</p>
+  <details class="metric-methodology"><summary>What these numbers mean</summary>
+    <dl>
+      <dt>Reporting profiles</dt><dd>Random opt-in profiles with a current report received within seven days. One profile belongs to one selected local store. Reinstalls or separate stores can create another profile; this is not a count of unique people or all installs.</dd>
+      <dt>Successful scans</dt><dd>Selected Radar CLI scans whose requested sources all completed or were absent. Failed or partial attempts are counted separately. Only scans recorded while reporting was enabled are included.</dd>
+      <dt>Weekly Active Passports</dt><dd>Distinct consistent selected Agent Passport references in receipts this UTC calendar week, counted once within each profile. The same Passport can appear in several profiles. This does not count authenticated agents or model execution.</dd>
+      <dt>Repeat-check rate</dt><dd>Profiles with a receipt or scan on at least two different UTC days this week, divided by profiles with either activity on at least one day. No eligible profiles means no percentage.</dd>
+      <dt>Receipts, changes and Passport versions</dt><dd>Current UTC calendar week plus three previous weeks, from the latest report per current profile. Receipts can predate reporting consent and are included only through an explicit preview. Passport versions count distinct Core IDs actually created through the Radar CLI while enabled; other creation paths are outside measurement.</dd>
+      <dt>Reconstructable-change rate</dt><dd>Recorded meaningful changes with a checked local Passport + session + before/after revision trace, divided by all recorded meaningful changes, including gaps between sessions. Unknown edits cannot enter this denominator. If original counts cannot be established, the percentage is unavailable. Traces are unsigned local evidence, not authenticated AI authorship.</dd>
+      <dt>Model and agent observations</dt><dd>Sum of each reporting profile's latest recorded scan observations from the last seven UTC dates. They describe configured metadata, can overlap across sources/profiles, and do not establish runtime use or globally unique systems.</dd>
+      <dt>Privacy, consent and withdrawal</dt><dd>The separate metrics feature is off by default and sends only an explicitly approved preview. A separate random profile and revocable credential control each contribution. Public metrics require at least five current profiles. This reduces direct exposure of a single report but does not provide anonymity. The collector receives connection metadata; no prompts, code, chats, secrets, project/file/model names or Passport IDs enter the contribution.</dd>
+    </dl>
+    <p>Only the latest contribution from each profile counts. Identical retries do not increase totals. Withdrawal removes the contribution; stale profiles leave current totals after seven days. Already copied public counts cannot be retracted.</p>
+  </details>
+  <div class="howto"><h3>Contribute only when you choose</h3><p>After your first useful local result, use the collector address supplied by its operator:</p><pre>forkit-radar metrics enable --endpoint &lt;collector-base-ending-/api/v1/radar&gt;
+forkit-radar metrics preview --output contribution-preview.json
+# Read the exact preview, then send that file and its printed SHA-256:
+forkit-radar metrics send --preview contribution-preview.json --sha256 &lt;printed-hash&gt;
+forkit-radar metrics disable
+# Disabling stops local reporting. To remove an existing public contribution:
+forkit-radar metrics withdraw</pre><p>No collector is preselected. Sending these counts does not publish a verified Passport, create an account, or enable cloud sync.</p></div>
+</section>
+<section class="section" id="privacy">
+  <h2>Useful without giving Forkit your work.</h2><p class="sub">Install, capture, create a local Passport, browse history and generate a share card. Every local step works without a Forkit account.</p>
+  <div class="privacy"><div class="card yes"><h3>Private receipt. Local storage.</h3><p>Forkit compares bounded, supported project files and declared metadata. Source bytes are processed transiently; source contents, prompts, chats and command arguments are never stored or uploaded. Private JSON can contain project-relative filenames and declaration details.</p></div><div class="card no"><h3>A share card with fewer details.</h3><p>Only fixed labels, rounded duration, counts and comparison states. No project or agent names, paths, Passport IDs, dependency names, secrets or chats. Generate it locally, review it, then choose whether to share. No publishing happens automatically.</p></div></div>
+</section>
+<section class="section" id="install">
+  <div class="eyebrow">YOUR FIRST LOCAL RESULT</div><h2>Install once. Remember the next session.</h2><p class="sub">Use the supplied source checkout or a matching offline beta kit. Forkit does not add a signup step or change your shell configuration.</p>
+  <div class="flow"><div class="step"><small>01</small><h3>Install</h3><p>In the source checkout:<br><code>sh scripts/install_radar.sh</code></p></div><div class="step"><small>02</small><h3>Capture</h3><p>In your Git project:<br><code>forkit-radar start --tool cursor</code><br>Work, then <code>forkit-radar stop</code></p></div><div class="step"><small>03</small><h3>Come back</h3><p><code>forkit-radar receipt</code><br><code>forkit-radar history</code><br>Your next session adds another comparison.</p></div><div class="step"><small>04</small><h3>Share a card</h3><p><code>forkit-radar card --output receipt.html</code><br>Open it locally and save a PNG.</p></div></div>
+  <div class="howto"><h3>A short guide for your first trial</h3><p>Open the supplied beta kit's start page, check prerequisites, and choose the editor or CLI workflow. The guide also offers an isolated example and optional count reporting.</p><p><a class="btn" href="beta/START_HERE.html">Open the beta guide →</a></p><pre>~/.local/bin/forkit-radar doctor
+~/.local/bin/forkit-radar start --tool cursor
+# Work in your editor, then return to the same Git project:
+~/.local/bin/forkit-radar stop</pre><p>For a CLI agent, use <code>session run --tool codex -- codex</code> or <code>session run --tool claude-code -- claude</code>. Your AI tool's own login requirements are independent of Forkit.</p><p>Offline kit: extract the matching platform/Python bundle, then run <code>sh install.sh</code>. Its Python and Git prerequisites are explicit. The source installer downloads pinned Python dependencies; neither installer fetches a public Forkit package.</p><p>Private beta candidate: Apple silicon macOS/Python 3.11 and Ubuntu ARM64/Python 3.12 kits. No Windows/native desktop app or universal installer claim. Outside-user validation is pending; examples and test results are not traction.</p></div>
+  <p class="optional">Verified public Passport publishing, cloud sync, cross-device history and team/company or GitHub organization features may require authentication when available. They are outside this local beta. Optional aggregate reporting uses a separate reporting credential and never requires a Forkit account. Your first useful result stays local.</p>
+</section>
+<section class="section"><div class="cta"><div><h2>Get a receipt. Keep your work yours.</h2><p>Open source. No Forkit account. A little more memory for every coding session.</p></div><a class="btn" href="#install">Start locally →</a></div></section>
+</main>
+<footer class="wrap"><span>Forkit Dev · Session Receipt · Private beta candidate</span><span><a href="#features">Product</a> · <a href="#install">Docs</a> · <a href="#privacy">Privacy</a> · <a href="https://github.com/Forkit-Dev-Core/Forkit_Dev">Core GitHub</a></span></footer>
+</body>
+</html>

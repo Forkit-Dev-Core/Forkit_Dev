@@ -1,0 +1,193 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "proposal_id": {
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "title": "Proposal Id",
+      "type": "string"
+    },
+    "status": {
+      "const": "pending",
+      "title": "Status",
+      "type": "string"
+    },
+    "operation": {
+      "enum": [
+        "enroll",
+        "observe",
+        "accept_revision",
+        "move",
+        "fork",
+        "migrate",
+        "retire",
+        "rotate_key",
+        "revoke_key",
+        "recover"
+      ],
+      "title": "Operation",
+      "type": "string"
+    },
+    "intent": {
+      "enum": [
+        "explicit",
+        "automatic_observation"
+      ],
+      "title": "Intent",
+      "type": "string"
+    },
+    "logical_agent_id": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Logical Agent Id"
+    },
+    "target_logical_agent_id": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Target Logical Agent Id"
+    },
+    "candidate_passport_id": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Candidate Passport Id"
+    },
+    "candidate_revision_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Candidate Revision Digest"
+    },
+    "previous_event_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Previous Event Digest"
+    },
+    "previous_accepted_binding_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Previous Accepted Binding Digest"
+    },
+    "requested_authority_id": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Requested Authority Id"
+    },
+    "new_authority_id": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "New Authority Id"
+    },
+    "source_slot_id": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Source Slot Id"
+    },
+    "target_source_slot_id": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Target Source Slot Id"
+    },
+    "authorization_evidence_ids": {
+      "items": {
+        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+        "type": "string"
+      },
+      "maxLength": 256,
+      "title": "Authorization Evidence Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "proposal_id",
+    "status",
+    "operation",
+    "intent",
+    "logical_agent_id",
+    "target_logical_agent_id",
+    "candidate_passport_id",
+    "candidate_revision_digest",
+    "previous_event_digest",
+    "previous_accepted_binding_digest",
+    "requested_authority_id",
+    "new_authority_id",
+    "source_slot_id",
+    "target_source_slot_id",
+    "authorization_evidence_ids"
+  ],
+  "title": "TransitionProposal",
+  "type": "object"
+}

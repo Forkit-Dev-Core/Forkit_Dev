@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "policy_version": "local-authority-scoped-v1",
+  "automatic_enrollment": "forbidden",
+  "similarity_based_continuity": "forbidden",
+  "manifest_key_as_authority": "forbidden",
+  "copied_passport_as_ownership": "forbidden",
+  "revision_acceptance": "explicit_scoped_authority",
+  "rotation": "old_authority_and_new_key_possession",
+  "lost_key_recovery": "preestablished_recovery_or_continuity_gap",
+  "default_network": "forbidden",
+  "default_execution": "forbidden",
+  "signed_self_report": "not_independent_authenticity"
+}

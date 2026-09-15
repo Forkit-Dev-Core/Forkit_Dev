@@ -1,0 +1,90 @@
+{
+  "$defs": {
+    "PublicCounts": {
+      "additionalProperties": false,
+      "properties": {
+        "eligible_agents": {
+          "maximum": 100000,
+          "minimum": 0,
+          "title": "Eligible Agents",
+          "type": "integer"
+        },
+        "eligible_models": {
+          "maximum": 100000,
+          "minimum": 0,
+          "title": "Eligible Models",
+          "type": "integer"
+        },
+        "consistent_passports": {
+          "maximum": 200000,
+          "minimum": 0,
+          "title": "Consistent Passports",
+          "type": "integer"
+        },
+        "enrolled_agents": {
+          "maximum": 100000,
+          "minimum": 0,
+          "title": "Enrolled Agents",
+          "type": "integer"
+        },
+        "excluded_components": {
+          "maximum": 200000,
+          "minimum": 0,
+          "title": "Excluded Components",
+          "type": "integer"
+        },
+        "unknown_components": {
+          "maximum": 200000,
+          "minimum": 0,
+          "title": "Unknown Components",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "eligible_agents",
+        "eligible_models",
+        "consistent_passports",
+        "enrolled_agents",
+        "excluded_components",
+        "unknown_components"
+      ],
+      "title": "PublicCounts",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "public_surface_id": {
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "title": "Public Surface Id",
+      "type": "string"
+    },
+    "publication_id": {
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "title": "Publication Id",
+      "type": "string"
+    },
+    "measurement_kind": {
+      "const": "self_reported",
+      "title": "Measurement Kind",
+      "type": "string"
+    },
+    "counts": {
+      "$ref": "#/$defs/PublicCounts"
+    }
+  },
+  "required": [
+    "schema_version",
+    "public_surface_id",
+    "publication_id",
+    "measurement_kind",
+    "counts"
+  ],
+  "title": "PublicSnapshot",
+  "type": "object"
+}

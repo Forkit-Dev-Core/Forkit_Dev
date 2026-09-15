@@ -1,0 +1,114 @@
+{
+  "$defs": {
+    "ObservedPeer": {
+      "additionalProperties": false,
+      "properties": {
+        "origin": {
+          "const": "collector_os",
+          "title": "Origin",
+          "type": "string"
+        },
+        "pid": {
+          "maximum": 2147483647,
+          "minimum": 1,
+          "title": "Pid",
+          "type": "integer"
+        },
+        "uid": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "Uid",
+          "type": "integer"
+        },
+        "process_start_identity": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Process Start Identity",
+          "type": "string"
+        }
+      },
+      "required": [
+        "origin",
+        "pid",
+        "uid",
+        "process_start_identity"
+      ],
+      "title": "ObservedPeer",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "challenge_id": {
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "title": "Challenge Id",
+      "type": "string"
+    },
+    "nonce": {
+      "maxLength": 44,
+      "minLength": 44,
+      "title": "Nonce",
+      "type": "string"
+    },
+    "audience": {
+      "maxLength": 80,
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9_.-]*$",
+      "title": "Audience",
+      "type": "string"
+    },
+    "logical_agent_id": {
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "title": "Logical Agent Id",
+      "type": "string"
+    },
+    "revision_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Revision Digest",
+      "type": "string"
+    },
+    "instance_id": {
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "title": "Instance Id",
+      "type": "string"
+    },
+    "source_slot_id": {
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "title": "Source Slot Id",
+      "type": "string"
+    },
+    "peer": {
+      "$ref": "#/$defs/ObservedPeer"
+    },
+    "issued_at": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "title": "Issued At",
+      "type": "string"
+    },
+    "expires_at": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "title": "Expires At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "challenge_id",
+    "nonce",
+    "audience",
+    "logical_agent_id",
+    "revision_digest",
+    "instance_id",
+    "source_slot_id",
+    "peer",
+    "issued_at",
+    "expires_at"
+  ],
+  "title": "RuntimeChallenge",
+  "type": "object"
+}

@@ -1,0 +1,152 @@
+{
+  "$defs": {
+    "AuthorityScope": {
+      "additionalProperties": false,
+      "properties": {
+        "logical_agent_ids": {
+          "items": {
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+            "type": "string"
+          },
+          "maxLength": 256,
+          "title": "Logical Agent Ids",
+          "type": "array"
+        },
+        "allow_new_enrollment": {
+          "title": "Allow New Enrollment",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "logical_agent_ids",
+        "allow_new_enrollment"
+      ],
+      "title": "AuthorityScope",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "logical_agent_id": {
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "title": "Logical Agent Id",
+      "type": "string"
+    },
+    "passport_id": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Passport Id"
+    },
+    "revision_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Revision Digest",
+      "type": "string"
+    },
+    "previous_event_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Previous Event Digest"
+    },
+    "previous_accepted_binding_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Previous Accepted Binding Digest"
+    },
+    "event_type": {
+      "enum": [
+        "enroll",
+        "observe",
+        "accept_revision",
+        "move",
+        "fork",
+        "migrate",
+        "retire",
+        "rotate_key",
+        "revoke_key",
+        "recover"
+      ],
+      "title": "Event Type",
+      "type": "string"
+    },
+    "sequence": {
+      "maximum": 9007199254740991,
+      "minimum": 1,
+      "title": "Sequence",
+      "type": "integer"
+    },
+    "evidence_references": {
+      "items": {
+        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+        "type": "string"
+      },
+      "maxLength": 256,
+      "title": "Evidence References",
+      "type": "array"
+    },
+    "verifier_version": {
+      "maxLength": 80,
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9_.-]*$",
+      "title": "Verifier Version",
+      "type": "string"
+    },
+    "policy_version": {
+      "maxLength": 80,
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9_.-]*$",
+      "title": "Policy Version",
+      "type": "string"
+    },
+    "signer_scope": {
+      "$ref": "#/$defs/AuthorityScope"
+    },
+    "verified_at": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "title": "Verified At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "logical_agent_id",
+    "passport_id",
+    "revision_digest",
+    "previous_event_digest",
+    "previous_accepted_binding_digest",
+    "event_type",
+    "sequence",
+    "evidence_references",
+    "verifier_version",
+    "policy_version",
+    "signer_scope",
+    "verified_at"
+  ],
+  "title": "BindingPredicate",
+  "type": "object"
+}

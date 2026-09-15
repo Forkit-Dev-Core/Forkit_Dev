@@ -1,0 +1,10 @@
+{
+  "discovery": "configured",
+  "association": "declared",
+  "passport": "absent",
+  "artifact": "not_measured",
+  "provenance": "absent",
+  "runtime": "not_observed",
+  "acceptance": "unreviewed",
+  "freshness": "current_at_check"
+}

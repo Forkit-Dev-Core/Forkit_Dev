@@ -1,0 +1,58 @@
+{
+  "$defs": {
+    "EnvelopeSignature": {
+      "additionalProperties": false,
+      "properties": {
+        "keyid": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9_.-]*$",
+          "title": "Keyid",
+          "type": "string"
+        },
+        "sig": {
+          "maxLength": 88,
+          "minLength": 88,
+          "title": "Sig",
+          "type": "string"
+        }
+      },
+      "required": [
+        "keyid",
+        "sig"
+      ],
+      "title": "EnvelopeSignature",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "payloadType": {
+      "const": "application/vnd.in-toto+json",
+      "title": "Payloadtype",
+      "type": "string"
+    },
+    "payload": {
+      "maxLength": 131072,
+      "minLength": 4,
+      "title": "Payload",
+      "type": "string"
+    },
+    "signatures": {
+      "items": {
+        "$ref": "#/$defs/EnvelopeSignature"
+      },
+      "maxLength": 4,
+      "minLength": 1,
+      "title": "Signatures",
+      "type": "array"
+    }
+  },
+  "required": [
+    "payloadType",
+    "payload",
+    "signatures"
+  ],
+  "title": "DSSEEnvelope",
+  "type": "object"
+}

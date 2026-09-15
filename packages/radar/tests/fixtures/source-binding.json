@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0",
+  "source_slot_id": "00000004-1234-4123-8123-123456789abc",
+  "logical_agent_id": "00000002-1234-4123-8123-123456789abc",
+  "authority_id": "00000003-1234-4123-8123-123456789abc",
+  "locator_token": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "locator_scheme": "hmac-sha256-local-v1",
+  "accepted_binding_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+}

@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0",
+  "logical_agent_id": null,
+  "provisional_component_key": "00000001-1234-4123-8123-123456789abc",
+  "passport_id": null,
+  "component_kind": "agent",
+  "scope_profile": {
+    "profile_id": "passive-metadata-v1",
+    "normalization_version": "1",
+    "dimensions": [
+      "identity",
+      "tools",
+      "models",
+      "settings"
+    ]
+  },
+  "declared_identity": {
+    "name": {
+      "value": "support-agent",
+      "origin": "supported_metadata"
+    },
+    "version": {
+      "value": "1.0.0",
+      "origin": "supported_metadata"
+    },
+    "creator": {
+      "value": null,
+      "origin": "unknown"
+    },
+    "organization": {
+      "value": null,
+      "origin": "unknown"
+    }
+  },
+  "tools": [],
+  "models": null,
+  "artifacts": null,
+  "settings": {
+    "origin": "supported_metadata",
+    "temperature": "0.7",
+    "top_p": "1",
+    "max_tokens": 512
+  },
+  "measurement_completeness": {
+    "identity": "partial",
+    "tools": "complete",
+    "models": "unavailable",
+    "artifacts": "not_selected",
+    "settings": "complete"
+  }
+}

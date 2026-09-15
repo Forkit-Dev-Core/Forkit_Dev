@@ -1,0 +1,19 @@
+{
+  "name": "forkit-radar-metrics-collector",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test --test-concurrency=1 tests/*.test.mjs",
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "pg": "8.20.0"
+  },
+  "devDependencies": {
+    "express": "4.22.1"
+  }
+}

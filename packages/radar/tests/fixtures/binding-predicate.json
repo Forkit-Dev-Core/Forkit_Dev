@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "logical_agent_id": "00000002-1234-4123-8123-123456789abc",
+  "passport_id": null,
+  "revision_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "previous_event_digest": null,
+  "previous_accepted_binding_digest": null,
+  "event_type": "enroll",
+  "sequence": 1,
+  "evidence_references": [
+    "00000001-1234-4123-8123-123456789abc"
+  ],
+  "verifier_version": "radar-0.1.0a1",
+  "policy_version": "local-authority-scoped-v1",
+  "signer_scope": {
+    "logical_agent_ids": [
+      "00000002-1234-4123-8123-123456789abc"
+    ],
+    "allow_new_enrollment": false
+  },
+  "verified_at": "2026-09-14T10:00:00Z"
+}

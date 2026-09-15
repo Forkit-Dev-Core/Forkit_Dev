@@ -1,0 +1,120 @@
+{
+  "$defs": {
+    "AuthorityScope": {
+      "additionalProperties": false,
+      "properties": {
+        "logical_agent_ids": {
+          "items": {
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+            "type": "string"
+          },
+          "maxLength": 256,
+          "title": "Logical Agent Ids",
+          "type": "array"
+        },
+        "allow_new_enrollment": {
+          "title": "Allow New Enrollment",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "logical_agent_ids",
+        "allow_new_enrollment"
+      ],
+      "title": "AuthorityScope",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "authority_id": {
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "title": "Authority Id",
+      "type": "string"
+    },
+    "algorithm": {
+      "const": "ed25519",
+      "title": "Algorithm",
+      "type": "string"
+    },
+    "public_key": {
+      "anyOf": [
+        {
+          "maxLength": 44,
+          "minLength": 44,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Public Key"
+    },
+    "protection": {
+      "enum": [
+        "os_credential_store",
+        "explicit_file",
+        "external",
+        "unavailable"
+      ],
+      "title": "Protection",
+      "type": "string"
+    },
+    "role": {
+      "enum": [
+        "operator",
+        "recovery"
+      ],
+      "title": "Role",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "active",
+        "revoked",
+        "unavailable"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "scope": {
+      "$ref": "#/$defs/AuthorityScope"
+    },
+    "created_at": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "title": "Created At",
+      "type": "string"
+    },
+    "revoked_at": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Revoked At"
+    }
+  },
+  "required": [
+    "schema_version",
+    "authority_id",
+    "algorithm",
+    "public_key",
+    "protection",
+    "role",
+    "status",
+    "scope",
+    "created_at",
+    "revoked_at"
+  ],
+  "title": "AuthorityRecord",
+  "type": "object"
+}

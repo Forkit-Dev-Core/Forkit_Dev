@@ -1,0 +1,21 @@
+{
+  "commit": "c1e4c2a9c4939694c7a96ffbc308f88a39e20afc",
+  "sha256": {
+    "forkit/domain/identity.py": "5fdb6deb52a3311109925cc23eae8a982b2da4a3bbbe4bab456f652384b1accc",
+    "forkit/domain/integrity.py": "25888718239bc2a20a3948822054468493755cac61c68d4e7ec56f5d99ac2ca2",
+    "forkit/schemas/base.py": "feec435fdc88c7d2e77f1ece70af04781a3d9a48fb7c0c9e7234092eef0a2283",
+    "forkit/schemas/agent.py": "29484cf85ded4cb6e2c638b72b87fcf2ef3fc4d24280f5b2959180ef7b763a0d",
+    "forkit/schemas/model.py": "f5caf4a0c6fbf38a0524096e3847bf4026198d98455308d7eed7223787e00dfc",
+    "tests/test_schemas.py": "38e6ab69656884ab13eb6114ff783e4e21397533775957667641a8bc0ecd7615",
+    "tests/test_hashing.py": "29f48afae9ef776b9c3280e952742a2acce7449d24ef888f69580e80410dfc7d"
+  },
+  "identity_input": {
+    "passport_type": "agent",
+    "name": "support-agent",
+    "version": "1.0.0",
+    "creator_name": "Example developer",
+    "creator_org": null,
+    "artifact_hash": null
+  },
+  "expected_passport_id": "567990c4e0cccfcfca639c10c94b6c965c2dc9027e30f0d70f713ff4c7bdb191"
+}

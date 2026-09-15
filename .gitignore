@@ -13,9 +13,13 @@ pip-wheel-metadata/
 
 # Virtual envs
 .venv/
+/.radar-venv/
+/output/
+/.playwright-cli/
 venv/
 env/
 .env
+node_modules/
 
 # Testing
 .pytest_cache/

@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "authority_id": "00000003-1234-4123-8123-123456789abc",
+  "algorithm": "ed25519",
+  "public_key": "11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=",
+  "protection": "os_credential_store",
+  "role": "operator",
+  "status": "active",
+  "scope": {
+    "logical_agent_ids": [
+      "00000002-1234-4123-8123-123456789abc"
+    ],
+    "allow_new_enrollment": false
+  },
+  "created_at": "2026-09-14T09:00:00Z",
+  "revoked_at": null
+}
