@@ -133,6 +133,38 @@ class LocalRegistry:
 
     def get(self, passport_id: str) -> ModelPassport | AgentPassport | None:
         return self.get_model(passport_id) or self.get_agent(passport_id)
+    
+    def resolve_id(self, prefix: str) -> str | None:
+        """Resolve a partial or full passport ID prefix to a full ID."""
+        if not isinstance(prefix, str):
+            return None
+        
+        # Normalize prefix to lowercase
+        prefix = prefix.lower()
+        
+        # Accept only lowercase hex prefixes of at least 8 characters
+        if len(prefix) < 8 or not all(c in "0123456789abcdef" for c in prefix):
+            return None
+
+        self.models_dir.mkdir(parents=True, exist_ok=True)
+        self.agents_dir.mkdir(parents=True, exist_ok=True)
+        
+        candidates: set[str] = set()
+
+        # Match against files in models/ and agents/
+        for directory in (self.models_dir, self.agents_dir):
+            if not directory.exists():
+                continue
+            for path in directory.iterdir():
+                if path.is_file() and path.suffix == ".json" and path.stem.lower().startswith(prefix):
+                    candidates.add(path.stem)
+        
+        if not candidates:
+            return None
+        if len(candidates) > 1:
+            raise ValueError(f"Ambiguous prefix '{prefix}' matches multiple passports: {sorted(candidates)}")
+        
+        return next(iter(candidates))
 
     def delete(self, passport_id: str, *, record_change: bool = True) -> bool:
         deleted = False

@@ -166,7 +166,16 @@ def register_agent(yaml_file: Path = _AGENT_YAML_ARGUMENT):
 def inspect(passport_id: str = _INSPECT_ID_ARGUMENT):
     """Print a passport as formatted JSON."""
     reg = _registry()
-    p = reg.get(passport_id)
+    try:
+        resolved_id = reg.resolve_id(passport_id)
+    except ValueError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(1) from None
+
+    if resolved_id is None:
+        typer.echo(f"Not found: {passport_id}", err=True)
+        raise typer.Exit(1)
+    p = reg.get(resolved_id)
     if p is None:
         typer.echo(f"Not found: {passport_id}", err=True)
         raise typer.Exit(1)
