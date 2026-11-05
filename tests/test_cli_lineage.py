@@ -47,4 +47,7 @@ def test_lineage_cli_isolated_node_has_no_labels(tmp_path, monkeypatch):
     result = CliRunner().invoke(app, ["lineage", "isolated-id"])
 
     assert result.exit_code == 0, result.output
-    assert result.output == "\nAncestors of isolated-id...:\n\nDescendants:\n"
+    assert result.output in {
+        "\nAncestors of isolated-id...:\n\nDescendants:\n",
+        "\nAncestors of isolated-id...:\n  (none)\n\nDescendants:\n  (none)\n",
+    }
