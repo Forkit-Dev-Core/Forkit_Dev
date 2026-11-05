@@ -9,6 +9,13 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Require non-empty ASCII integer components in two- or three-part passport
+  versions, matching the identity specification. Previously accepted malformed
+  versions now fail validation in both schema backends, including on load;
+  valid versions retain their existing identity. Fixes #9.
+
 ---
 
 ## [0.1.0] — 2026-03-16
