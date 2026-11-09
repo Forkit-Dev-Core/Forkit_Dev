@@ -1,0 +1,150 @@
+{
+  "identity": [
+    {
+      "name": "model with omitted artifact and organization",
+      "passport": {
+        "passport_type": "model",
+        "name": "Atlas",
+        "version": "1.0",
+        "creator": {
+          "name": "Example Lab"
+        }
+      },
+      "payload": "{\"creator_name\": \"Example Lab\", \"creator_org\": null, \"name\": \"Atlas\", \"passport_type\": \"model\", \"version\": \"1.0\"}",
+      "expected_id": "da6f479783e9d8012574ec82d9a9df885eba919247e13086fb9c889de7d959c6"
+    },
+    {
+      "name": "fine-tuned model with a content hash",
+      "passport": {
+        "passport_type": "model",
+        "name": "Atlas fine-tune",
+        "version": "1.0.1",
+        "creator": {
+          "name": "Example Lab",
+          "organization": "Demo"
+        },
+        "artifact_hash": "0101010101010101010101010101010101010101010101010101010101010101",
+        "base_model_id": "da6f479783e9d8012574ec82d9a9df885eba919247e13086fb9c889de7d959c6"
+      },
+      "payload": "0101010101010101010101010101010101010101010101010101010101010101|{\"creator_name\": \"Example Lab\", \"creator_org\": \"Demo\", \"name\": \"Atlas fine-tune\", \"passport_type\": \"model\", \"version\": \"1.0.1\"}",
+      "expected_id": "26b94780345619d544d83f7fb73fe1a0398e0509fd94b0f01364e854cea44af6"
+    },
+    {
+      "name": "agent with Unicode and an empty organization",
+      "passport": {
+        "passport_type": "agent",
+        "name": "München 🤖",
+        "version": "2.00.1",
+        "creator": {
+          "name": "A \"Lab\"\nTeam",
+          "organization": ""
+        },
+        "artifact_hash": "abababababababababababababababababababababababababababababababab",
+        "model_id": "26b94780345619d544d83f7fb73fe1a0398e0509fd94b0f01364e854cea44af6",
+        "metadata": {
+          "context": {
+            "review_state": "example"
+          }
+        }
+      },
+      "payload": "abababababababababababababababababababababababababababababababab|{\"creator_name\": \"A \\\"Lab\\\"\\nTeam\", \"creator_org\": \"\", \"name\": \"M\\u00fcnchen \\ud83e\\udd16\", \"passport_type\": \"agent\", \"version\": \"2.00.1\"}",
+      "expected_id": "3554febec5670857e88473373e487adf898f429942d5eec12fa86e8accd13938"
+    },
+    {
+      "name": "agent fork with null instead of empty organization",
+      "passport": {
+        "passport_type": "agent",
+        "name": "München 🤖",
+        "version": "2.00.1",
+        "creator": {
+          "name": "A \"Lab\"\nTeam",
+          "organization": null
+        },
+        "artifact_hash": "abababababababababababababababababababababababababababababababab",
+        "model_id": "26b94780345619d544d83f7fb73fe1a0398e0509fd94b0f01364e854cea44af6",
+        "metadata": {
+          "context": {
+            "review_state": "example"
+          }
+        },
+        "parent_agent_id": "3554febec5670857e88473373e487adf898f429942d5eec12fa86e8accd13938"
+      },
+      "payload": "abababababababababababababababababababababababababababababababab|{\"creator_name\": \"A \\\"Lab\\\"\\nTeam\", \"creator_org\": null, \"name\": \"M\\u00fcnchen \\ud83e\\udd16\", \"passport_type\": \"agent\", \"version\": \"2.00.1\"}",
+      "expected_id": "05debc1fd27cb747332415b1a0f786a1a1880d5674e11be4378f3bfb1d3c6b9b"
+    }
+  ],
+  "lineage": {
+    "graph": {
+      "nodes": [
+        {
+          "id": "da6f479783e9d8012574ec82d9a9df885eba919247e13086fb9c889de7d959c6",
+          "node_type": "model",
+          "name": "Atlas",
+          "version": "1.0",
+          "metadata": {}
+        },
+        {
+          "id": "26b94780345619d544d83f7fb73fe1a0398e0509fd94b0f01364e854cea44af6",
+          "node_type": "model",
+          "name": "Atlas fine-tune",
+          "version": "1.0.1",
+          "metadata": {}
+        },
+        {
+          "id": "3554febec5670857e88473373e487adf898f429942d5eec12fa86e8accd13938",
+          "node_type": "agent",
+          "name": "München 🤖",
+          "version": "2.00.1",
+          "metadata": {}
+        },
+        {
+          "id": "05debc1fd27cb747332415b1a0f786a1a1880d5674e11be4378f3bfb1d3c6b9b",
+          "node_type": "agent",
+          "name": "München 🤖",
+          "version": "2.00.1",
+          "metadata": {}
+        }
+      ],
+      "edges": [
+        {
+          "source": "26b94780345619d544d83f7fb73fe1a0398e0509fd94b0f01364e854cea44af6",
+          "target": "da6f479783e9d8012574ec82d9a9df885eba919247e13086fb9c889de7d959c6",
+          "edge_type": "derived_from",
+          "reason": null,
+          "created_at": "2026-01-01T00:00:00+00:00"
+        },
+        {
+          "source": "3554febec5670857e88473373e487adf898f429942d5eec12fa86e8accd13938",
+          "target": "26b94780345619d544d83f7fb73fe1a0398e0509fd94b0f01364e854cea44af6",
+          "edge_type": "built_on",
+          "reason": null,
+          "created_at": "2026-01-01T00:00:00+00:00"
+        },
+        {
+          "source": "05debc1fd27cb747332415b1a0f786a1a1880d5674e11be4378f3bfb1d3c6b9b",
+          "target": "3554febec5670857e88473373e487adf898f429942d5eec12fa86e8accd13938",
+          "edge_type": "forked_from",
+          "reason": null,
+          "created_at": "2026-01-01T00:00:00+00:00"
+        },
+        {
+          "source": "05debc1fd27cb747332415b1a0f786a1a1880d5674e11be4378f3bfb1d3c6b9b",
+          "target": "26b94780345619d544d83f7fb73fe1a0398e0509fd94b0f01364e854cea44af6",
+          "edge_type": "built_on",
+          "reason": null,
+          "created_at": "2026-01-01T00:00:00+00:00"
+        }
+      ]
+    },
+    "query": {
+      "id": "3554febec5670857e88473373e487adf898f429942d5eec12fa86e8accd13938",
+      "ancestors": [
+        "26b94780345619d544d83f7fb73fe1a0398e0509fd94b0f01364e854cea44af6",
+        "da6f479783e9d8012574ec82d9a9df885eba919247e13086fb9c889de7d959c6"
+      ],
+      "descendants": [
+        "05debc1fd27cb747332415b1a0f786a1a1880d5674e11be4378f3bfb1d3c6b9b"
+      ]
+    }
+  }
+}
