@@ -268,3 +268,6 @@ contract.
 If a future hosted Forkit deployment attaches a public alias, account owner, or
 workspace metadata, those values must join on `passport_id` and must not change
 the deterministic ID derivation defined here.
+
+For cross-language examples and executable fixtures, see the draft
+[AI Passport v1 interoperability profile](passport-v1-interoperability.md).
