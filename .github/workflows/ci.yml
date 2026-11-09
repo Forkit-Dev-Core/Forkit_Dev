@@ -3,33 +3,48 @@ name: OSS CI
 on:
   pull_request:
   push:
-    branches:
-      - main
+    branches: [main]
+
+# Untrusted fork PRs must not receive write access or production credentials.
+permissions:
+  contents: read
+
+concurrency:
+  group: oss-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   python:
+    name: python
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install dev dependencies
-        run: python -m pip install --upgrade pip && pip install -e ".[dev]"
+      - name: Install dev and build dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -e ".[dev]" build
       - name: Ruff
         run: ruff check .
       - name: Pytest
         run: pytest
-      - name: Build package
+      - name: Build wheel and source distribution
         run: python -m build
 
   web:
+    name: web
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: web
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
