@@ -364,6 +364,10 @@ sync primitives for self-hosted or custom HTTP endpoints that preserve
 `examples/register_model.yaml` is runnable as checked in. `examples/register_agent.yaml`
 is a second-step sample and expects an already registered model passport ID in `model_id`.
 
+`forkit lineage <passport-id>` exits with status 1 and prints `Not found: <id>`
+to stderr for an unknown passport ID. For a known passport, each empty ancestor
+or descendant section displays `(none)`.
+
 When you want to bind an OSS passport into hosted Forkit later, first register
 or create the passport locally, then run `forkit hosted-proof <passport-id>`.
 That command looks up the passport in your local registry and

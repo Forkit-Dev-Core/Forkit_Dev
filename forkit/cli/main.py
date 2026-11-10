@@ -208,12 +208,19 @@ def search(query: str = _SEARCH_QUERY_ARGUMENT):
 def lineage(passport_id: str = _LINEAGE_ID_ARGUMENT):
     """Show ancestors and descendants for a passport."""
     reg  = _registry()
+    if reg.lineage.get_node(passport_id) is None:
+        typer.echo(f"Not found: {passport_id}", err=True)
+        raise typer.Exit(1)
     anc  = reg.lineage.ancestors(passport_id)
     desc = reg.lineage.descendants(passport_id)
     typer.echo(f"\nAncestors of {passport_id[:16]}...:")
+    if not anc:
+        typer.echo("  (none)")
     for n in anc:
         typer.echo(f"  [{n.node_type}] {n.name} v{n.version}  {n.id[:16]}...")
     typer.echo("\nDescendants:")
+    if not desc:
+        typer.echo("  (none)")
     for n in desc:
         typer.echo(f"  [{n.node_type}] {n.name} v{n.version}  {n.id[:16]}...")
 
