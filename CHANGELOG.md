@@ -9,6 +9,12 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- `verify_passport_id` now normalises uppercase `artifact_hash` and stored `id`
+  before comparison, matching the identity specification. Fixes #10.
+
+
 ---
 
 ## [0.1.0] — 2026-03-16
@@ -24,12 +30,9 @@ Initial public release.
 - `integrity.py` — `verify_passport_id`, `compute_metadata_hash`.
 
 **Schemas (`forkit.schemas`)**
-- `ModelPassport` — identity and provenance document for an AI model. Fields include `artifact_hash`, `parent_hash`, `base_model_id`, `base_model_name`, `fine_tuning_method`, `training_data`, `capabilities`, `parameter_count`.
-- `AgentPassport` — identity and provenance document for an AI agent. Fields include `model_id` (hard link to `ModelPassport`), `system_prompt`, `tools`, `parent_agent_id`, `endpoint_hash`, `fork_reason`.
-- Auto-selects Pydantic v2 backend when available; falls back to pure-Python dataclasses (zero hard dependencies).
-- Shared Pydantic inner models extracted to `pydantic/_types.py` — no duplication between model and agent backends.
-- Full `to_dict` / `from_dict` serialisation roundtrip with enum and datetime coercion.
-- `_PYDANTIC_AVAILABLE` flag exported from `forkit.schemas`.
+- `ModelPassport`, `AgentPassport` dataclasses with full validation.
+- Support for `Architecture`, `TaskType`, `LicenseType`, `Status` enums.
+- `CreatorInfo` nested structure.
 
 **Registry (`forkit.registry`)**
 - `LocalRegistry` — filesystem-backed store (JSON files + SQLite index).
@@ -62,8 +65,3 @@ Initial public release.
 - **Hash-chain provenance** — `artifact_hash` (content fingerprint) + `parent_hash` (lineage link) form a verifiable chain without PKI or central authority.
 - **Dual backend, one interface** — dataclass backend has zero external dependencies; install `pydantic>=2` for JSON Schema generation and `.model_validate()` / `.model_dump()` support.
 - **SQLite as a rebuildable index** — JSON files are the source of truth; SQLite is a query convenience, not the store of record.
-
----
-
-[Unreleased]: https://github.com/Forkit-Dev-Core/Forkit_Dev/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/Forkit-Dev-Core/Forkit_Dev/releases/tag/v0.1.0
