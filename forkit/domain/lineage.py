@@ -80,7 +80,7 @@ class LineageNode:
         }
 
     def __repr__(self) -> str:
-        return f"<LineageNode {self.node_type} {self.name!r} v{self.version}>"
+        return f"<LineageNode {self.node_type.value} {self.name!r} v{self.version}>"
 
 
 class LineageEdge:

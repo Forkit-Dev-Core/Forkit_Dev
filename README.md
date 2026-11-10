@@ -357,6 +357,9 @@ forkit sync push https://example.com/sync/passports --target main-server
 forkit sync pull https://example.com/export --source remote-dev
 ```
 
+`forkit lineage <passport-id>` lists ancestors and descendants with `[model]`
+or `[agent]` labels, followed by each passport's name, version, and short ID.
+
 The CLI is local-first. `forkit sync push` and `forkit sync pull` are generic
 sync primitives for self-hosted or custom HTTP endpoints that preserve
 `passport_id`. They are not a hosted Forkit publish or claim flow.
