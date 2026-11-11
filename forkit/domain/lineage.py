@@ -255,6 +255,7 @@ class LineageGraph:
 
     @classmethod
     def load(cls, path: str | Path) -> LineageGraph:
+        """Load a DAG, rejecting invalid edge types, missing endpoints, and cycles."""
         data = json.loads(Path(path).read_text())
         g = cls()
         for nd in data.get("nodes", []):
@@ -273,9 +274,10 @@ class LineageGraph:
                 reason    = ed.get("reason"),
             )
             edge.created_at = ed.get("created_at", edge.created_at)
-            g._edges.append(edge)
-            g._adj[ed["source"]].append(ed["target"])
-            g._radj[ed["target"]].append(ed["source"])
+            try:
+                g.add_edge(edge)
+            except KeyError as exc:
+                raise ValueError(f"Invalid lineage edge: {exc.args[0]}") from exc
         return g
 
     def summary(self) -> str:

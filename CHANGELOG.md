@@ -9,6 +9,11 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Reject cycles, missing endpoints, and unknown edge types when loading lineage
+  JSON, while preserving saved edge timestamps. Fixes #16.
+
 ---
 
 ## [0.1.0] — 2026-03-16
