@@ -113,3 +113,29 @@ class TestLineageGraph:
         assert "2 nodes" in s
         assert "1 models" in s
         assert "1 agents" in s
+
+
+@pytest.mark.parametrize("direction", ["ancestors", "descendants"])
+def test_deep_lineage_chain(direction):
+    graph = LineageGraph()
+    size = 3000
+    for i in range(size):
+        graph.add_node(_model_node(str(i)))
+    # Add from the leaf backwards so cycle checks do not revisit the whole chain.
+    for i in range(size - 1, 0, -1):
+        graph.add_edge(LineageEdge(str(i), str(i - 1), EdgeType.DERIVED_FROM))
+
+    start = str(size - 1) if direction == "ancestors" else "0"
+    expected = range(size - 2, -1, -1) if direction == "ancestors" else range(1, size)
+    assert [node.id for node in getattr(graph, direction)(start)] == [str(i) for i in expected]
+
+
+def test_lineage_preserves_depth_first_order_and_visits_shared_nodes_once():
+    graph = LineageGraph()
+    for node_id in "abcde":
+        graph.add_node(_model_node(node_id))
+    for source, target in [("a", "b"), ("a", "c"), ("b", "c"), ("b", "d"), ("c", "e")]:
+        graph.add_edge(LineageEdge(source, target, EdgeType.DERIVED_FROM))
+
+    assert [node.id for node in graph.ancestors("a")] == ["b", "c", "e", "d"]
+    assert [node.id for node in graph.descendants("e")] == ["c", "a", "b"]

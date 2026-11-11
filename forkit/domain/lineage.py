@@ -296,13 +296,16 @@ class LineageGraph:
         visited: set[str],
         result: list[LineageNode],
     ) -> None:
-        if start in visited:
-            return
-        visited.add(start)
-        if start in self._nodes:
-            result.append(self._nodes[start])
-        for neighbor in adj.get(start, []):
-            self._dfs(neighbor, adj, visited, result)
+        stack = [start]
+        while stack:
+            node = stack.pop()
+            if node in visited:
+                continue
+            visited.add(node)
+            if node in self._nodes:
+                result.append(self._nodes[node])
+            # Push in reverse so the first neighbor is visited first, as in recursive DFS.
+            stack.extend(reversed(adj.get(node, [])))
 
     def _would_cycle(self, source: str, target: str) -> bool:
         """DFS from target; True if we can reach source."""
