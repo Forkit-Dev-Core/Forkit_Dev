@@ -189,6 +189,16 @@ invalid: "1",  "1.0.0.0",  "v1.0.0",  "latest"
 
 The `v` prefix is not accepted. Strip it before constructing a passport.
 
+Each part must be a non-empty sequence of ASCII digits (`0`–`9`), representing
+a non-negative integer. Empty parts, signs, whitespace, non-ASCII digits, and
+prerelease or build suffixes are not accepted. Version text is not normalised.
+
+Validation now rejects previously accepted malformed values such as `a.b` and
+`1..0`, including when loading existing passports. Correct those versions at
+their source before loading them; `version` is an identity field, so changing
+it requires deriving a new passport ID. ID derivation for valid versions is
+unchanged.
+
 ---
 
 ## 8. Serialisation contract
