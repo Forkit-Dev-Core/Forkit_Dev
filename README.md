@@ -22,23 +22,11 @@ python scripts/generate_passport_template.py --passport-type model --output fork
 python scripts/validate_passport.py --path forkit-passport.json
 ```
 
-The open-source core works fully locally. If you want to attach hosted runtime evidence later, Forkit Connect is free to try:
-
-```bash
-npx forkit-connect init
-```
-
-Or install it globally:
-
-```bash
-npm install -g forkit-connect
-```
-
-Create a passport locally. Verify it in GitHub CI. Keep the identity portable. Connect it to Forkit.dev later when you need hosted visibility or governance workflows.
+Create and verify passports locally, then share reproducible examples with the community.
 
 AI models and agents often move across repos, tools, teams, and runtimes without stable identity, lineage, or verification. `forkit-core` gives them a local-first identity layer you can create, validate, and keep portable.
 
-Questions, launch feedback, or contributor interest: open a GitHub issue or join the Discord / Slack links in the [Community](#community) section.
+Questions and contributor ideas are welcome in [GitHub Issues](https://github.com/Forkit-Dev-Core/Forkit_Dev/issues).
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-2f2a62.svg)](#install)
@@ -156,31 +144,16 @@ pip install "forkit-core @ git+https://github.com/Forkit-Dev-Core/Forkit_Dev.git
 | Try the OpenClaw adapter | Advanced | `python examples/openclaw_quickstart.py` |
 | Explore the browser UI prototype | Early | `cd web && npm install && npm run dev` |
 
-## `forkit-core` and Forkit.dev
+## Forkit Core and Footprints
 
-`forkit-core` is the local-first open-source foundation in this repository:
-schemas, deterministic IDs, artifact hashing, lineage, local registry, SDK,
-CLI, sync primitives, optional local service, adapters, and the prototype web
-UI.
-
-`Forkit.dev` is the broader hosted direction around that core for teams that
-prefer browser-based passport creation, dashboards, private workspaces,
-telemetry, collaboration, approvals, and governance workflows. Those hosted
-workflows are not implemented in this repository today.
+Forkit Core provides the open-source passport engine. [Footprints](https://github.com/Forkit-Dev-Core/footprints) provides a local interface for discovery and passport workflows. Contributors worldwide can help with code, tests, documentation, accessible interfaces, and reproducible examples.
 
 ## Identity Boundary
 
 `forkit-core` uses the deterministic `passport_id` as the canonical
 portable identity for a passport.
 
-If a passport is later published or connected to a hosted Forkit deployment,
-the hosted system must preserve that `passport_id` and attach any hosted or
-public identity as additional application metadata. Hosted layers may join on
-`passport_id`, but they must not rewrite it.
-
-This repository does not implement a hosted account, claim, or publish flow
-today. It implements the local identity contract that those future workflows
-must respect.
+Applications that import or synchronize a passport must preserve its `passport_id`. Additional application identifiers belong in metadata.
 
 ## Install
 
@@ -364,8 +337,7 @@ sync primitives for self-hosted or custom HTTP endpoints that preserve
 `examples/register_model.yaml` is runnable as checked in. `examples/register_agent.yaml`
 is a second-step sample and expects an already registered model passport ID in `model_id`.
 
-When you want to bind an OSS passport into hosted Forkit later, first register
-or create the passport locally, then run `forkit hosted-proof <passport-id>`.
+To prepare a source verification proof for a locally registered passport, run `forkit hosted-proof <passport-id>`.
 That command looks up the passport in your local registry and
 prints the exact `/.well-known/forkit-verify.txt` proof line and target URL for
 supported GitHub, Hugging Face, and GitLab sources.
@@ -512,14 +484,13 @@ run [`examples/use_cases.py`](./examples/use_cases.py).
 
 ## Community
 
-- GitHub issues and pull requests: use the repository for bugs, proposals, and contribution review
-- Website: [forkit.dev](https://forkit.dev)
-- Open-source repository: [github.com/Forkit-Dev-Core/Forkit_Dev](https://github.com/Forkit-Dev-Core/Forkit_Dev)
-- Discord: [discord.gg/yJ4cdpt7c](https://discord.gg/yJ4cdpt7c)
-- Slack: [Forkit Dev workspace](https://join.slack.com/t/forkitdevworkspace/shared_invite/zt-3tgrdgk5v-83aev6ZwE7qQHe_M4q9HIw)
+Contributors worldwide are welcome, including first-time contributors, researchers, developers, and people improving documentation and accessibility.
 
-Use GitHub first when the discussion should produce a tracked change.
-Use Discord or Slack for earlier discussion, onboarding questions, and community contact.
+- [Issues](https://github.com/Forkit-Dev-Core/Forkit_Dev/issues) for bugs and proposals
+- [Discussions](https://github.com/Forkit-Dev-Core/Forkit_Dev/discussions) for questions and shared experiments
+- [Pull requests](https://github.com/Forkit-Dev-Core/Forkit_Dev/pulls) for contribution review
+
+Use synthetic data in examples, screenshots, and bug reports. Share only material you have permission to publish.
 
 ## Contributing
 
