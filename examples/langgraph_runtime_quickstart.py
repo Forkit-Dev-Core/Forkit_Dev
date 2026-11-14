@@ -38,7 +38,7 @@ class FakeCompiledGraph:
 
 
 REGISTRY_ROOT = "/tmp/forkit-langgraph-runtime-demo"
-CREATOR = {"name": "Hamza", "organization": "ForkIt"}
+CREATOR = {"name": "Example Maintainer", "organization": "Example Lab"}
 
 client = ForkitClient(registry_root=REGISTRY_ROOT)
 adapter = LangGraphAdapter(client=client)
