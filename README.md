@@ -334,10 +334,11 @@ sync primitives for self-hosted or custom HTTP endpoints that preserve
 `examples/register_model.yaml` is runnable as checked in. `examples/register_agent.yaml`
 is a second-step sample and expects an already registered model passport ID in `model_id`.
 
-To prepare a source verification proof for a locally registered passport, run `forkit hosted-proof <passport-id>`.
-That command looks up the passport in your local registry and
-prints the exact `/.well-known/forkit-verify.txt` proof line and target URL for
-supported GitHub, Hugging Face, and GitLab sources. Publication is a separate step.
+To prepare a source verification proof, set `metadata.source_url` on the
+passport before registration (models can also use `hub_url`). Provide a GitHub,
+Hugging Face, or GitLab repository URL. Then run `forkit hosted-proof <passport-id>`
+to print the `/.well-known/forkit-verify.txt` proof line and target URL. The command
+reads the local registry and does not publish the proof.
 
 ## Local Service and Sync
 
