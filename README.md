@@ -30,12 +30,10 @@ Questions and contributor ideas are welcome in [GitHub Issues](https://github.co
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-2f2a62.svg)](#install)
-[![Status](https://img.shields.io/badge/status-alpha-f49355.svg)](#current-status)
+[![Status](https://img.shields.io/badge/status-alpha-f49355.svg)](#current-scope)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-008190.svg)](#contributing)
 
-![forkit-core passport flow](./docs/assets/forkit-passport-flow.png)
-
-That quick start shows the core property:
+The deterministic identity demo checks these properties:
 
 - same stable passport inputs => same deterministic `passport_id`
 - changed artifact or creator => different `passport_id`
@@ -103,9 +101,8 @@ portable provenance rather than replacing supply-chain evidence standards.
 
 **Does `forkit-core` verify that a claim is true?**
 
-No. It verifies that a passport's deterministic identity still matches its
-declared contents. Truth, ownership, and publication claims still require
-source proof, review, or hosted governance workflows.
+It checks that the stored ID matches the passport's identity fields.
+Ownership and publication claims require evidence from the source and review.
 
 ## Current Scope
 
@@ -115,13 +112,13 @@ source proof, review, or hosted governance workflows.
 - GitHub CI validation for committed passport files
 - Framework adapters for LangGraph, LangChain, and OpenClaw
 - File-based Hugging Face model card export
-- A prototype browser UI under [`web/`](./web), clearly separate from any hosted control plane
+- A prototype browser UI with mock data under [`web/`](./web)
 
 Current maturity:
 
 - Alpha open-source core, but the identity contract and deterministic verification behavior are already stable enough to evaluate seriously
 - PyPI is not live yet
-- advanced flows such as hosted import preparation, self-host sync, adapters, and the prototype UI exist, but they are not the primary first-use path
+- Self-hosted sync, adapters, and the mock browser UI are available for evaluation
 
 Public install path:
 
@@ -332,15 +329,16 @@ forkit sync pull https://example.com/export --source remote-dev
 
 The CLI is local-first. `forkit sync push` and `forkit sync pull` are generic
 sync primitives for self-hosted or custom HTTP endpoints that preserve
-`passport_id`. They are not a hosted Forkit publish or claim flow.
+`passport_id`.
 
 `examples/register_model.yaml` is runnable as checked in. `examples/register_agent.yaml`
 is a second-step sample and expects an already registered model passport ID in `model_id`.
 
-To prepare a source verification proof for a locally registered passport, run `forkit hosted-proof <passport-id>`.
-That command looks up the passport in your local registry and
-prints the exact `/.well-known/forkit-verify.txt` proof line and target URL for
-supported GitHub, Hugging Face, and GitLab sources.
+To prepare a source verification proof, set `metadata.source_url` on the
+passport before registration (models can also use `hub_url`). Provide a GitHub,
+Hugging Face, or GitLab repository URL. Then run `forkit hosted-proof <passport-id>`
+to print the `/.well-known/forkit-verify.txt` proof line and target URL. The command
+reads the local registry and does not publish the proof.
 
 ## Local Service and Sync
 
@@ -489,6 +487,7 @@ Contributors worldwide are welcome, including first-time contributors, researche
 - [Issues](https://github.com/Forkit-Dev-Core/Forkit_Dev/issues) for bugs and proposals
 - [Discussions](https://github.com/Forkit-Dev-Core/Forkit_Dev/discussions) for questions and shared experiments
 - [Pull requests](https://github.com/Forkit-Dev-Core/Forkit_Dev/pulls) for contribution review
+- [Security policy](./SECURITY.md) for private vulnerability reports
 
 Use synthetic data in examples, screenshots, and bug reports. Share only material you have permission to publish.
 
@@ -505,15 +504,6 @@ Before opening a pull request:
 - run `npm run build` and `npm run lint` in `web/` if you changed the frontend
 - update [`docs/identity-spec.md`](./docs/identity-spec.md), examples, and regression tests when you change identity or verification behavior
 - do not change `compute_id` without updating the spec and regression anchors
-
-## Roadmap
-
-Near-term open-source priorities:
-
-- strengthen self-hosted registry and sync workflows
-- connect more of the web prototype to real local registry and service flows
-- deepen framework adapters while keeping the core dependency-light
-- improve contributor documentation and adoption examples for serious teams
 
 ## License
 

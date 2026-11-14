@@ -1,6 +1,6 @@
 # Maintainer checklist for a globally accessible, local-first Forkit Core
 
-These are **recommendations**, not GitHub settings already applied. Maintainers must verify them in GitHub **Settings** before the hackathon. Do not merge into `main` until required checks run and pass.
+Maintainers should verify these recommendations in GitHub **Settings** before a contribution event. Merge after required checks pass.
 
 ## Repository rules (highest priority)
 
@@ -27,9 +27,8 @@ Open **Settings → Rules → Rulesets → New branch ruleset** for branch `main
 - Keep `SECURITY.md`, `CONTRIBUTING.md`, `CODEOWNERS`, issue and PR templates discoverable. Use Issues for work, Discussions for questions and private reporting for vulnerabilities.
 - Record releases with a signed/tagged commit where practical, release notes and validated install commands; do not advertise PyPI if not live.
 
-## Three-day Core hackathon
+## Contribution events
 
 - Scope beginner tasks to identity validation, local CLI usability, lineage reliability, docs/examples and tests; cap proposed changes to reviewable PRs.
-- Make one issue per task with starting file, expected output and acceptance criteria. Label as `hackathon` and `good first issue` once those labels are created.
-- Review and merge only after CI has run on the proposed head, and only after contract/privacy review. Outstanding PRs #17, #18, #20, #21, #22 and #23 are **not** assumed safe merely because the author reported local passes.
-- Footprints is a separate **three-hour discovery hackathon**. Do not merge Footprints or private Connect code into Forkit Core.
+- Make one issue per task with a starting file, expected output, and acceptance criteria.
+- Review contract and privacy changes and require CI on the proposed commit before merging.
