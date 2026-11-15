@@ -32,3 +32,17 @@ Open **Settings → Rules → Rulesets → New branch ruleset** for branch `main
 - Scope beginner tasks to identity validation, local CLI usability, lineage reliability, docs/examples and tests; cap proposed changes to reviewable PRs.
 - Make one issue per task with a starting file, expected output, and acceptance criteria.
 - Review contract and privacy changes and require CI on the proposed commit before merging.
+
+## Ownership and next contribution cycle
+
+Maintainer contacts are [arpitasarker01](https://github.com/arpitasarker01) and [syedofc](https://github.com/syedofc), as listed in CODEOWNERS. For each issue, record the contributor and reviewing maintainer; confirm acceptance before treating a suggested owner as assigned. For releases, record a release owner and a verifier before building.
+
+Forkit Core provides the local AI Passport engine. [Footprints](https://github.com/Forkit-Dev-Core/footprints) provides a separate local interface for discovery and passport workflows. Keep public examples reproducible and synthetic, and keep customer information, business plans, private integrations, and personal device evidence out of commits and public discussions. Participation is open globally and does not require a commercial account.
+
+Prioritize small contributions with explicit acceptance criteria. Existing issues cover CLI output and errors, identity validation, and lineage behavior; check their current status and reproduce on main before starting. Identity and lineage changes need a maintainer review of compatibility, not just a passing test. Documentation, accessible explanations, and synthetic fixtures are also welcome.
+
+Preserve authorship and attribution when adapting a contribution. A superseded PR should link to its replacement and explain what remains. Use a merge method that preserves original contributor commits when their ancestry is part of the agreed credit; do not squash them by default.
+
+For the next Footprints preview, track the Core pin and source-archive hash update in a separate PR. Verify compatibility and build provenance against the exact merged source, then repeat the packaged Windows launcher test. Existing releases remain immutable.
+
+A cleanup of current files does not certify historical commits or release assets. Keep an inventory of any sensitive findings privately; coordinate credential revocation, invite invalidation, and any history rewrite separately. Do not publish the sensitive values in a cleanup issue. History rewrites need an explicit plan for affected refs, contributor coordination, releases, and caches.
