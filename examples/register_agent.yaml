@@ -10,9 +10,9 @@ role: assistant
 model_id: ""  # paste model passport ID here
 
 creator:
-  name: Forkit Team
-  organization: ForkIt
-  email: info@forkit.dev
+  name: Example Maintainer
+  organization: Example Lab
+  email: maintainer@example.org
 
 capabilities:
   roles: [assistant]

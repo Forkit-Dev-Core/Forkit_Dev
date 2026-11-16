@@ -84,6 +84,18 @@ Issues     = "https://github.com/Forkit-Dev-Core/Forkit_Dev/issues"
 [tool.hatch.build.targets.wheel]
 packages = ["forkit", "forkit_core", "forkit_langchain", "forkit_langgraph", "forkit_openclaw"]  # ship both during transition
 
+[tool.hatch.build.targets.sdist]
+include = [
+  "/pyproject.toml", "/README.md", "/LICENSE", "/NOTICE", "/CHANGELOG.md",
+  "/CONTRIBUTING.md", "/CODE_OF_CONDUCT.md", "/CODEOWNERS", "/SECURITY.md",
+  "/forkit/**/*.py", "/forkit_core/**/*.py", "/forkit_langchain/**/*.py",
+  "/forkit_langgraph/**/*.py", "/forkit_openclaw/**/*.py",
+]
+exclude = [
+  "**/node_modules", "**/__pycache__", "**/.forkit*", "**/.env*", "**/.venv",
+  "**/*.log", "**/*.pem", "**/*.key", "**/registry_test", "**/*-history.json",
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
