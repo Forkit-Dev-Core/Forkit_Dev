@@ -1,0 +1,276 @@
+{
+  "models": [
+    {
+      "name": "legacy-model",
+      "version": "1..0",
+      "creator": {
+        "name": "Fixture creator",
+        "organization": "Example",
+        "email": null,
+        "url": null
+      },
+      "artifact_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "parent_hash": null,
+      "license": "other",
+      "license_url": null,
+      "id": "235bb8e4965bff1b957862b2c951f87834ca32e419e4dad6314c57031c029e0d",
+      "description": null,
+      "status": "draft",
+      "tags": [],
+      "metadata": {},
+      "created_at": "2026-01-01T00:00:00+00:00",
+      "updated_at": "2026-01-01T00:00:00+00:00",
+      "passport_type": "model",
+      "task_type": "text-generation",
+      "architecture": "decoder-only",
+      "model_id": null,
+      "artifact_files": [],
+      "quantization": null,
+      "base_model_id": null,
+      "base_model_name": null,
+      "fine_tuning_method": null,
+      "training_data": [],
+      "parameter_count": null,
+      "capabilities": {
+        "modalities": [],
+        "context_length": null,
+        "supports_function_calling": false,
+        "supports_streaming": false,
+        "languages": [],
+        "benchmark_scores": {}
+      },
+      "usage_restrictions": [],
+      "hub_url": null,
+      "paper_url": null
+    },
+    {
+      "name": "valid-child-model",
+      "version": "1.0.0",
+      "creator": {
+        "name": "Fixture creator",
+        "organization": "Example",
+        "email": null,
+        "url": null
+      },
+      "artifact_hash": null,
+      "parent_hash": null,
+      "license": "other",
+      "license_url": null,
+      "id": "25ec8ff2167c6573d2d9ac904e63a506258671c19f1499ce4ea8fb4849a58495",
+      "description": null,
+      "status": "draft",
+      "tags": [],
+      "metadata": {},
+      "created_at": "2026-01-01T00:00:00+00:00",
+      "updated_at": "2026-01-01T00:00:00+00:00",
+      "passport_type": "model",
+      "task_type": "text-generation",
+      "architecture": "decoder-only",
+      "model_id": null,
+      "artifact_files": [],
+      "quantization": null,
+      "base_model_id": "235bb8e4965bff1b957862b2c951f87834ca32e419e4dad6314c57031c029e0d",
+      "base_model_name": null,
+      "fine_tuning_method": null,
+      "training_data": [],
+      "parameter_count": null,
+      "capabilities": {
+        "modalities": [],
+        "context_length": null,
+        "supports_function_calling": false,
+        "supports_streaming": false,
+        "languages": [],
+        "benchmark_scores": {}
+      },
+      "usage_restrictions": [],
+      "hub_url": null,
+      "paper_url": null
+    }
+  ],
+  "agents": [
+    {
+      "name": "legacy-agent",
+      "version": "1..0",
+      "creator": {
+        "name": "Fixture creator",
+        "organization": "Example",
+        "email": null,
+        "url": null
+      },
+      "artifact_hash": null,
+      "parent_hash": null,
+      "license": "other",
+      "license_url": null,
+      "id": "2131b483b66e5d741cfdb44f2261a2d407293d60af39db1f1074db16caee0530",
+      "description": null,
+      "status": "draft",
+      "tags": [],
+      "metadata": {},
+      "created_at": "2026-01-01T00:00:00+00:00",
+      "updated_at": "2026-01-01T00:00:00+00:00",
+      "passport_type": "agent",
+      "model_id": "235bb8e4965bff1b957862b2c951f87834ca32e419e4dad6314c57031c029e0d",
+      "task_type": "customer-support",
+      "architecture": "ReAct",
+      "model_version": null,
+      "role": "assistant",
+      "capabilities": {
+        "max_iterations": null,
+        "supports_streaming": false,
+        "supports_multi_turn": true,
+        "supports_tool_use": false,
+        "languages": []
+      },
+      "system_prompt": null,
+      "temperature": null,
+      "top_p": null,
+      "max_tokens": null,
+      "tools": [],
+      "memory_type": "none",
+      "memory_config": {},
+      "parent_agent_id": null,
+      "parent_agent_name": null,
+      "fork_reason": null,
+      "deployment_env": null,
+      "endpoint_hash": null
+    },
+    {
+      "name": "valid-child-agent",
+      "version": "1.0.0",
+      "creator": {
+        "name": "Fixture creator",
+        "organization": "Example",
+        "email": null,
+        "url": null
+      },
+      "artifact_hash": null,
+      "parent_hash": null,
+      "license": "other",
+      "license_url": null,
+      "id": "855da0452c07360e0beaecc165186f94f2710cafecb75f023518fce8f459f62d",
+      "description": null,
+      "status": "draft",
+      "tags": [],
+      "metadata": {},
+      "created_at": "2026-01-01T00:00:00+00:00",
+      "updated_at": "2026-01-01T00:00:00+00:00",
+      "passport_type": "agent",
+      "model_id": "235bb8e4965bff1b957862b2c951f87834ca32e419e4dad6314c57031c029e0d",
+      "task_type": "customer-support",
+      "architecture": "ReAct",
+      "model_version": null,
+      "role": "assistant",
+      "capabilities": {
+        "max_iterations": null,
+        "supports_streaming": false,
+        "supports_multi_turn": true,
+        "supports_tool_use": false,
+        "languages": []
+      },
+      "system_prompt": null,
+      "temperature": null,
+      "top_p": null,
+      "max_tokens": null,
+      "tools": [],
+      "memory_type": "none",
+      "memory_config": {},
+      "parent_agent_id": "2131b483b66e5d741cfdb44f2261a2d407293d60af39db1f1074db16caee0530",
+      "parent_agent_name": null,
+      "fork_reason": null,
+      "deployment_env": null,
+      "endpoint_hash": null
+    }
+  ],
+  "lineage": {
+    "nodes": [
+      {
+        "id": "235bb8e4965bff1b957862b2c951f87834ca32e419e4dad6314c57031c029e0d",
+        "node_type": "model",
+        "name": "legacy-model",
+        "version": "1..0",
+        "metadata": {
+          "creator": {
+            "name": "Fixture creator",
+            "organization": "Example",
+            "email": null,
+            "url": null
+          }
+        }
+      },
+      {
+        "id": "25ec8ff2167c6573d2d9ac904e63a506258671c19f1499ce4ea8fb4849a58495",
+        "node_type": "model",
+        "name": "valid-child-model",
+        "version": "1.0.0",
+        "metadata": {
+          "creator": {
+            "name": "Fixture creator",
+            "organization": "Example",
+            "email": null,
+            "url": null
+          }
+        }
+      },
+      {
+        "id": "2131b483b66e5d741cfdb44f2261a2d407293d60af39db1f1074db16caee0530",
+        "node_type": "agent",
+        "name": "legacy-agent",
+        "version": "1..0",
+        "metadata": {
+          "role": "assistant",
+          "creator": {
+            "name": "Fixture creator",
+            "organization": "Example",
+            "email": null,
+            "url": null
+          }
+        }
+      },
+      {
+        "id": "855da0452c07360e0beaecc165186f94f2710cafecb75f023518fce8f459f62d",
+        "node_type": "agent",
+        "name": "valid-child-agent",
+        "version": "1.0.0",
+        "metadata": {
+          "role": "assistant",
+          "creator": {
+            "name": "Fixture creator",
+            "organization": "Example",
+            "email": null,
+            "url": null
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "25ec8ff2167c6573d2d9ac904e63a506258671c19f1499ce4ea8fb4849a58495",
+        "target": "235bb8e4965bff1b957862b2c951f87834ca32e419e4dad6314c57031c029e0d",
+        "edge_type": "derived_from",
+        "reason": null,
+        "created_at": "2026-01-01T00:00:00+00:00"
+      },
+      {
+        "source": "2131b483b66e5d741cfdb44f2261a2d407293d60af39db1f1074db16caee0530",
+        "target": "235bb8e4965bff1b957862b2c951f87834ca32e419e4dad6314c57031c029e0d",
+        "edge_type": "built_on",
+        "reason": null,
+        "created_at": "2026-01-01T00:00:00+00:00"
+      },
+      {
+        "source": "855da0452c07360e0beaecc165186f94f2710cafecb75f023518fce8f459f62d",
+        "target": "235bb8e4965bff1b957862b2c951f87834ca32e419e4dad6314c57031c029e0d",
+        "edge_type": "built_on",
+        "reason": null,
+        "created_at": "2026-01-01T00:00:00+00:00"
+      },
+      {
+        "source": "855da0452c07360e0beaecc165186f94f2710cafecb75f023518fce8f459f62d",
+        "target": "2131b483b66e5d741cfdb44f2261a2d407293d60af39db1f1074db16caee0530",
+        "edge_type": "forked_from",
+        "reason": null,
+        "created_at": "2026-01-01T00:00:00+00:00"
+      }
+    ]
+  }
+}
