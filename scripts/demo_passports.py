@@ -70,7 +70,7 @@ def kv(k: str, v: str) -> None: print(f"  {GREY}{k:<22}{RESET} {v}")
 
 # ── shared fixture ─────────────────────────────────────────────────────────────
 
-CREATOR = {"name": "Hamza", "organization": "ForkIt"}
+CREATOR = {"name": "Example Maintainer", "organization": "Example Lab"}
 
 print(f"\n{BOLD}forkit-core demo  "
       f"{'(Pydantic v2)' if _PYDANTIC_AVAILABLE else '(pure-Python compat)'}{RESET}")

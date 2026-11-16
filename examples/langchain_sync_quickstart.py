@@ -35,7 +35,7 @@ except ImportError as exc:  # pragma: no cover - exercised by users without extr
     ) from exc
 
 
-CREATOR = {"name": "Hamza", "organization": "ForkIt"}
+CREATOR = {"name": "Example Maintainer", "organization": "Example Lab"}
 
 
 def _start_export_server(client: ForkitClient) -> tuple[str, ThreadingHTTPServer, Thread]:

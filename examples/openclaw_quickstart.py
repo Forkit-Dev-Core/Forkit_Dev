@@ -18,7 +18,7 @@ from forkit.schemas import TaskType
 from forkit.sdk import ForkitClient
 from forkit_openclaw import OpenClawAdapter
 
-CREATOR = {"name": "Hamza", "organization": "ForkIt"}
+CREATOR = {"name": "Example Maintainer", "organization": "Example Lab"}
 
 
 def write_plugin(plugin_root: Path) -> None:
