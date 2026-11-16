@@ -14,7 +14,7 @@ from forkit.sdk import ForkitClient
 from forkit_langgraph import LangGraphAdapter
 
 REGISTRY_ROOT = "/tmp/forkit-langgraph-demo"
-CREATOR = {"name": "Hamza", "organization": "ForkIt"}
+CREATOR = {"name": "Example Maintainer", "organization": "Example Lab"}
 
 client = ForkitClient(registry_root=REGISTRY_ROOT)
 adapter = LangGraphAdapter(client=client)

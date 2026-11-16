@@ -14,10 +14,10 @@ fine_tuning_method: LoRA
 base_model_id: null  # fill with parent model passport ID if known
 
 creator:
-  name: Forkit Team
-  organization: ForkIt
-  email: info@forkit.dev
-  url: https://forkit.dev
+  name: Example Maintainer
+  organization: Example Lab
+  email: maintainer@example.org
+  url: https://example.org
 
 capabilities:
   modalities: [text]

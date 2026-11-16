@@ -17,7 +17,7 @@ from forkit_langchain import LangChainAdapter
 def main() -> None:
     client = ForkitClient(registry_root=".forkit_langchain_demo")
     adapter = LangChainAdapter(client=client)
-    creator = {"name": "Hamza", "organization": "ForkIt"}
+    creator = {"name": "Example Maintainer", "organization": "Example Lab"}
 
     model_id = client.models.register(
         name="langchain-demo-model",
