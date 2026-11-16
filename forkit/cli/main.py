@@ -217,12 +217,12 @@ def lineage(passport_id: str = _LINEAGE_ID_ARGUMENT):
     if not anc:
         typer.echo("  (none)")
     for n in anc:
-        typer.echo(f"  [{n.node_type}] {n.name} v{n.version}  {n.id[:16]}...")
+        typer.echo(f"  [{n.node_type.value}] {n.name} v{n.version}  {n.id[:16]}...")
     typer.echo("\nDescendants:")
     if not desc:
         typer.echo("  (none)")
     for n in desc:
-        typer.echo(f"  [{n.node_type}] {n.name} v{n.version}  {n.id[:16]}...")
+        typer.echo(f"  [{n.node_type.value}] {n.name} v{n.version}  {n.id[:16]}...")
 
 
 # ── verify ────────────────────────────────────────────────────────────────────
