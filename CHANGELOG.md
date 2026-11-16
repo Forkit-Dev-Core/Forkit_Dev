@@ -9,6 +9,20 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Require non-empty ASCII integer components in two- or three-part passport
+  versions, matching the identity specification. Previously accepted malformed
+  versions now fail validation in both schema backends, including on load;
+  valid versions retain their existing identity. Fixes #9.
+  Legacy records remain available through `LocalRegistry.get_raw()` and
+  `forkit inspect <full-id> --raw` without validation or writes. Document explicit
+  recovery into a separate registry with a new ID, retained originals, and
+  unchanged lineage references; cover persisted upgrade fixtures in both backends.
+
+- Reject cycles, missing endpoints, and unknown edge types when loading lineage
+  JSON, while preserving saved edge timestamps. Fixes #16.
+
 ---
 
 ## [0.1.0] — 2026-03-16

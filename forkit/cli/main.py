@@ -56,6 +56,9 @@ _REGISTRY_ROOT = Path.home() / ".forkit" / "registry"
 _MODEL_YAML_ARGUMENT = typer.Argument(..., help="YAML file with ModelPassport fields")
 _AGENT_YAML_ARGUMENT = typer.Argument(..., help="YAML file with AgentPassport fields")
 _INSPECT_ID_ARGUMENT = typer.Argument(..., help="Full or partial passport ID")
+_INSPECT_RAW_OPTION = typer.Option(
+    False, "--raw", help="Read unvalidated stored JSON using the full passport ID (no writes)"
+)
 _SEARCH_QUERY_ARGUMENT = typer.Argument(..., help="Search term (name / creator)")
 _LINEAGE_ID_ARGUMENT = typer.Argument(..., help="Passport ID")
 _VERIFY_ID_ARGUMENT = typer.Argument(..., help="Passport ID to verify")
@@ -163,14 +166,28 @@ def register_agent(yaml_file: Path = _AGENT_YAML_ARGUMENT):
 # ── inspect ───────────────────────────────────────────────────────────────────
 
 @app.command()
-def inspect(passport_id: str = _INSPECT_ID_ARGUMENT):
-    """Print a passport as formatted JSON."""
+def inspect(passport_id: str = _INSPECT_ID_ARGUMENT, raw: bool = _INSPECT_RAW_OPTION):
+    """Print a passport as JSON; --raw also permits inspection of legacy records."""
     reg = _registry()
-    p = reg.get(passport_id)
-    if p is None:
+    try:
+        if raw:
+            data = reg.get_raw(passport_id)
+        else:
+            passport = reg.get(passport_id)
+            data = passport.to_dict() if passport is not None else None
+    except ValueError as exc:
+        typer.echo(f"Cannot inspect passport: {exc}", err=True)
+        if not raw:
+            typer.echo(
+                "Use inspect <full-id> --raw to read the stored JSON without validation. "
+                "See docs/identity-spec.md for legacy recovery and lineage handling.",
+                err=True,
+            )
+        raise typer.Exit(1) from exc
+    if data is None:
         typer.echo(f"Not found: {passport_id}", err=True)
         raise typer.Exit(1)
-    typer.echo(json.dumps(p.to_dict(), indent=2, default=str))
+    typer.echo(json.dumps(data, indent=2, default=str))
 
 
 # ── list ──────────────────────────────────────────────────────────────────────
@@ -208,14 +225,21 @@ def search(query: str = _SEARCH_QUERY_ARGUMENT):
 def lineage(passport_id: str = _LINEAGE_ID_ARGUMENT):
     """Show ancestors and descendants for a passport."""
     reg  = _registry()
+    if reg.lineage.get_node(passport_id) is None:
+        typer.echo(f"Not found: {passport_id}", err=True)
+        raise typer.Exit(1)
     anc  = reg.lineage.ancestors(passport_id)
     desc = reg.lineage.descendants(passport_id)
     typer.echo(f"\nAncestors of {passport_id[:16]}...:")
+    if not anc:
+        typer.echo("  (none)")
     for n in anc:
-        typer.echo(f"  [{n.node_type}] {n.name} v{n.version}  {n.id[:16]}...")
+        typer.echo(f"  [{n.node_type.value}] {n.name} v{n.version}  {n.id[:16]}...")
     typer.echo("\nDescendants:")
+    if not desc:
+        typer.echo("  (none)")
     for n in desc:
-        typer.echo(f"  [{n.node_type}] {n.name} v{n.version}  {n.id[:16]}...")
+        typer.echo(f"  [{n.node_type.value}] {n.name} v{n.version}  {n.id[:16]}...")
 
 
 # ── verify ────────────────────────────────────────────────────────────────────
@@ -240,7 +264,10 @@ def hosted_proof(passport_id: str = _HOSTED_PROOF_ID_ARGUMENT):
 
     payload = passport.to_dict()
     canonical_passport_id = str(payload.get("id") or "").strip().lower()
-    source_url = str(payload.get("source_url") or payload.get("sourceUrl") or "").strip() or None
+    metadata = payload.get("metadata") or {}
+    candidates = (payload.get("source_url"), payload.get("sourceUrl"),
+                  metadata.get("source_url"), payload.get("hub_url"))
+    source_url = next((value.strip() for value in candidates if isinstance(value, str) and value.strip()), None)
     verify_url = _build_hosted_proof_url(source_url)
 
     if not source_url:

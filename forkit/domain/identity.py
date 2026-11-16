@@ -63,12 +63,14 @@ def validate_hash(value: str | None) -> str | None:
 
 def validate_version(value: str) -> str:
     """
-    Validate that a version string looks like semver (2 or 3 parts).
+    Validate a version with 2 or 3 non-negative ASCII integer parts.
 
     Raises ValueError if the format does not match.
     """
     parts = str(value).split(".")
-    if not (2 <= len(parts) <= 3):
+    if not (2 <= len(parts) <= 3) or not all(
+        part.isascii() and part.isdecimal() for part in parts
+    ):
         raise ValueError(
             f"Version must be 2- or 3-part semver (e.g. '1.0' or '1.0.0'). Got: {value!r}"
         )

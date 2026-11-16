@@ -1,12 +1,12 @@
 # Contributing to Forkit Core
 
 Forkit Core is the **local-first, independent Apache-2.0 AI Passport identity layer**.
-It is separate from Footprints (AI discovery) and from hosted AI Passport Connect.
+Footprints is a separate local app that uses the Core engine.
 Contributions here must not require hosted Forkit accounts, production secrets, or private services.
 
 ## First contribution
 
-1. Pick an issue (prefer `good first issue` or the hackathon challenge label), comment that you are working on it, and fork this repository.
+1. Pick an issue (look for `good first issue` if you are new), comment that you are working on it, and fork this repository.
 2. Create a focused branch: `git switch -c fix/short-description`.
 3. Set up a Python 3.10+ environment and run:
 

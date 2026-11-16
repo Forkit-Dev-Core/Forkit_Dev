@@ -131,6 +131,28 @@ class LocalRegistry:
 
     # ── Generic ────────────────────────────────────────────────────────────────
 
+    def get_raw(self, passport_id: str) -> dict[str, Any] | None:
+        """Read stored JSON without schema validation or any registry writes.
+
+        For inspection/export of legacy records that no longer validate. The
+        result is unvalidated data, not a verified or registerable passport.
+        Requires the full, lowercase passport ID; does not consult the index.
+        """
+        if (
+            not isinstance(passport_id, str)
+            or len(passport_id) != 64
+            or any(char not in "0123456789abcdef" for char in passport_id)
+        ):
+            raise ValueError("Raw inspection requires a full lowercase SHA-256 passport ID.")
+        for directory in (self.models_dir, self.agents_dir):
+            path = directory / f"{passport_id}.json"
+            if path.exists():
+                data = json.loads(path.read_text(encoding="utf-8"))
+                if not isinstance(data, dict):
+                    raise ValueError("Stored passport JSON must be an object.")
+                return data
+        return None
+
     def get(self, passport_id: str) -> ModelPassport | AgentPassport | None:
         return self.get_model(passport_id) or self.get_agent(passport_id)
 

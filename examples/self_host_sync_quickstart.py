@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from forkit.schemas import AgentArchitecture, AgentTaskType, TaskType
 from forkit.sdk import ForkitClient
 
-CREATOR = {"name": "Hamza", "organization": "ForkIt"}
+CREATOR = {"name": "Example Maintainer", "organization": "Example Lab"}
 SYNC_TOKEN = "demo-sync-token"
 
 

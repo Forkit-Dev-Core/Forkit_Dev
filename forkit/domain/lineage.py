@@ -80,7 +80,7 @@ class LineageNode:
         }
 
     def __repr__(self) -> str:
-        return f"<LineageNode {self.node_type} {self.name!r} v{self.version}>"
+        return f"<LineageNode {self.node_type.value} {self.name!r} v{self.version}>"
 
 
 class LineageEdge:
@@ -255,6 +255,7 @@ class LineageGraph:
 
     @classmethod
     def load(cls, path: str | Path) -> LineageGraph:
+        """Load a DAG, rejecting invalid edge types, missing endpoints, and cycles."""
         data = json.loads(Path(path).read_text())
         g = cls()
         for nd in data.get("nodes", []):
@@ -273,9 +274,10 @@ class LineageGraph:
                 reason    = ed.get("reason"),
             )
             edge.created_at = ed.get("created_at", edge.created_at)
-            g._edges.append(edge)
-            g._adj[ed["source"]].append(ed["target"])
-            g._radj[ed["target"]].append(ed["source"])
+            try:
+                g.add_edge(edge)
+            except KeyError as exc:
+                raise ValueError(f"Invalid lineage edge: {exc.args[0]}") from exc
         return g
 
     def summary(self) -> str:
@@ -296,13 +298,16 @@ class LineageGraph:
         visited: set[str],
         result: list[LineageNode],
     ) -> None:
-        if start in visited:
-            return
-        visited.add(start)
-        if start in self._nodes:
-            result.append(self._nodes[start])
-        for neighbor in adj.get(start, []):
-            self._dfs(neighbor, adj, visited, result)
+        stack = [start]
+        while stack:
+            node = stack.pop()
+            if node in visited:
+                continue
+            visited.add(node)
+            if node in self._nodes:
+                result.append(self._nodes[node])
+            # Push in reverse so the first neighbor is visited first, as in recursive DFS.
+            stack.extend(reversed(adj.get(node, [])))
 
     def _would_cycle(self, source: str, target: str) -> bool:
         """DFS from target; True if we can reach source."""

@@ -189,6 +189,105 @@ invalid: "1",  "1.0.0.0",  "v1.0.0",  "latest"
 
 The `v` prefix is not accepted. Strip it before constructing a passport.
 
+Each part must be a non-empty sequence of ASCII digits (`0`–`9`), representing
+a non-negative integer. Empty parts, signs, whitespace, non-ASCII digits, and
+prerelease or build suffixes are not accepted. Version text is not normalised.
+
+Validation now rejects previously accepted malformed values such as `a.b` and
+`1..0`, including when loading existing passports. ID derivation for valid
+versions is unchanged.
+
+### 7.1 Inspecting and recovering a legacy record
+
+`rebuild_index()` reads stored JSON into the query index without schema
+validation. A legacy record can therefore appear in `list()` or `search()` yet
+raise `ValueError` in `get_model()`, `get_agent()` or `get()`. Rebuilding does
+not repair the record, and an index row is not evidence of schema validity.
+
+Keep a backup of the complete registry, including JSON, `lineage.json`, the
+index and any sync files. Inspect the original record with the full 64-character
+lowercase ID:
+
+```bash
+forkit inspect <full-id> --raw
+```
+
+Or use `LocalRegistry(root="old-registry").get_raw(full_id)`. This reads the
+stored JSON object without invoking either schema backend, initializing the
+registry, consulting the index, or writing anything. Missing records return
+`None`; malformed JSON and non-object JSON raise `ValueError`. Raw output is
+unvalidated evidence for inspection/export, not a valid passport or a way to
+bypass validation during registration or sync. The default `inspect` command
+continues to validate and reports how to request raw output on failure.
+
+Choose the intended corrected version explicitly; `1..0` does not tell the
+software which version was intended. Work on a copy and derive a **new ID** by
+removing the copied `id` before construction. Both backends replay an explicitly
+supplied ID, so retaining the old ID after changing `version` is unsafe. For
+example, using a backed-up model registry and a new, separate recovery directory:
+
+```python
+from copy import deepcopy
+
+from forkit.domain.integrity import verify_passport_id
+from forkit.registry import LocalRegistry
+from forkit.schemas import ModelPassport
+
+original = LocalRegistry(root="old-registry")
+legacy_id = "<full-original-model-id>"
+data = original.get_raw(legacy_id)
+if data is None:
+    raise ValueError("Original record not found")
+corrected_data = deepcopy(data)
+corrected_data.pop("id")
+corrected_data["version"] = "1.0.0"  # Example only: confirm the intended version.
+corrected_data.setdefault("metadata", {})["recovery"] = {
+    "original_passport_id": legacy_id,
+    "reason": "Correct malformed legacy version",
+}
+corrected = ModelPassport.from_dict(corrected_data)
+assert corrected.id != legacy_id
+assert verify_passport_id(corrected.to_dict())["valid"]
+
+recovery = LocalRegistry(root="recovered-registry")
+if recovery.root.exists():
+    raise ValueError("Choose a new recovery directory to avoid overwriting records")
+recovery.register_model(corrected)
+assert recovery.verify_passport(corrected.id)["valid"]
+print(legacy_id, "->", corrected.id)
+```
+
+For a legacy agent, use `AgentPassport.from_dict()` and `register_agent()`
+instead. Schema validation remains strict; another malformed replacement still
+fails. The example preserves original JSON and identity fields, retains the
+original registry, and stages a separate record. The `metadata.recovery` entry
+records an explicit old-to-new association outside ID derivation. It is an
+application annotation, not a new lineage edge or an attestation of provenance.
+ID consistency alone does not verify artifact bytes or provenance claims.
+
+### 7.2 Lineage and references after recovery
+
+The original ID, original lineage nodes/edges, and references from other
+passports remain unchanged. Existing `base_model_id`, agent `model_id` and
+`parent_agent_id` values still point to the original ID; they are **not** aliases
+for the corrected ID. Merely correcting version text is not a fine-tune or fork:
+do not invent `DERIVED_FROM` or `FORKED_FROM` edges to represent the correction.
+
+The separate recovery registry has no original lineage graph. Registering a
+corrected record creates its node; relationship edges are only created when
+the referenced nodes are present. Staging a corrected passport does not migrate
+the graph, dependent passports, sync history or external consumers. Preserve the
+old-to-new association for an explicit, separately reviewed reconciliation of
+those references. Do not overwrite existing records, edit identity fields in
+place, rename the old JSON file to the new ID, or erase the original record.
+No automatic migration or reference retargeting is performed.
+
+The persisted upgrade fixture in
+`tests/fixtures/legacy-version-registry.json` contains malformed model and agent
+versions accepted by the pre-strict validator, valid dependents, and their
+original lineage. Regression tests rebuild its index, exercise strict and raw
+reads with both backends, and stage recovery while preserving the source files.
+
 ---
 
 ## 8. Serialisation contract
@@ -260,14 +359,19 @@ increment the **major** version and will be accompanied by a migration script.
 
 ---
 
-## Hosted identity mapping note
+## External identity mapping
 
 `passport_id` remains the canonical portable identity for this open-source
 contract.
 
-If a future hosted Forkit deployment attaches a public alias, account owner, or
-workspace metadata, those values must join on `passport_id` and must not change
-the deterministic ID derivation defined here.
+External systems can associate aliases, ownership information, and application
+metadata with `passport_id`. These associations are outside the deterministic ID
+derivation defined here.
+
+## Interoperability fixtures
 
 For cross-language examples and executable fixtures, see the draft
 [AI Passport v1 interoperability profile](passport-v1-interoperability.md).
+Use the version rules in section 7 for new passports. When inspecting a legacy
+record, preserve its original version text and stored ID. Follow section 7.1
+for recovery into a separate registry and section 7.2 for lineage references.
