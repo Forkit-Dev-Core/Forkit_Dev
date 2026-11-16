@@ -337,6 +337,10 @@ sync primitives for self-hosted or custom HTTP endpoints that preserve
 `examples/register_model.yaml` is runnable as checked in. `examples/register_agent.yaml`
 is a second-step sample and expects an already registered model passport ID in `model_id`.
 
+`forkit lineage <passport-id>` exits with status 1 and prints `Not found: <id>`
+to stderr for an unknown passport ID. For a known passport, each empty ancestor
+or descendant section displays `(none)`.
+
 To prepare a source verification proof, set `metadata.source_url` on the
 passport before registration (models can also use `hub_url`). Provide a GitHub,
 Hugging Face, or GitLab repository URL. Then run `forkit hosted-proof <passport-id>`
