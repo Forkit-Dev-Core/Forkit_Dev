@@ -270,11 +270,11 @@ increment the **major** version and will be accompanied by a migration script.
 
 ---
 
-## Hosted identity mapping note
+## External identity mapping
 
 `passport_id` remains the canonical portable identity for this open-source
 contract.
 
-If a future hosted Forkit deployment attaches a public alias, account owner, or
-workspace metadata, those values must join on `passport_id` and must not change
-the deterministic ID derivation defined here.
+External systems can associate aliases, ownership information, and application
+metadata with `passport_id`. These associations are outside the deterministic ID
+derivation defined here.

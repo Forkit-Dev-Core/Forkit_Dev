@@ -16,6 +16,9 @@ This project uses [Semantic Versioning](https://semver.org/).
   versions now fail validation in both schema backends, including on load;
   valid versions retain their existing identity. Fixes #9.
 
+- Reject cycles, missing endpoints, and unknown edge types when loading lineage
+  JSON, while preserving saved edge timestamps. Fixes #16.
+
 ---
 
 ## [0.1.0] — 2026-03-16

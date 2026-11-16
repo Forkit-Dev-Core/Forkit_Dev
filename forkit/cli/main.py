@@ -212,10 +212,10 @@ def lineage(passport_id: str = _LINEAGE_ID_ARGUMENT):
     desc = reg.lineage.descendants(passport_id)
     typer.echo(f"\nAncestors of {passport_id[:16]}...:")
     for n in anc:
-        typer.echo(f"  [{n.node_type}] {n.name} v{n.version}  {n.id[:16]}...")
+        typer.echo(f"  [{n.node_type.value}] {n.name} v{n.version}  {n.id[:16]}...")
     typer.echo("\nDescendants:")
     for n in desc:
-        typer.echo(f"  [{n.node_type}] {n.name} v{n.version}  {n.id[:16]}...")
+        typer.echo(f"  [{n.node_type.value}] {n.name} v{n.version}  {n.id[:16]}...")
 
 
 # ── verify ────────────────────────────────────────────────────────────────────
@@ -240,7 +240,10 @@ def hosted_proof(passport_id: str = _HOSTED_PROOF_ID_ARGUMENT):
 
     payload = passport.to_dict()
     canonical_passport_id = str(payload.get("id") or "").strip().lower()
-    source_url = str(payload.get("source_url") or payload.get("sourceUrl") or "").strip() or None
+    metadata = payload.get("metadata") or {}
+    candidates = (payload.get("source_url"), payload.get("sourceUrl"),
+                  metadata.get("source_url"), payload.get("hub_url"))
+    source_url = next((value.strip() for value in candidates if isinstance(value, str) and value.strip()), None)
     verify_url = _build_hosted_proof_url(source_url)
 
     if not source_url:
