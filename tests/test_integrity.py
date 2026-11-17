@@ -5,6 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from forkit.domain.identity import compute_id
 from forkit.domain.integrity import verify_passport_id
 from forkit.schemas import Architecture, LicenseType, ModelPassport, TaskType
 
@@ -73,13 +74,31 @@ def test_validator_script_accepts_uppercase_artifact_hash(tmp_path: Path) -> Non
     assert result.returncode == 0, result.stderr
 
 
+def test_missing_id_preserves_empty_string_fields() -> None:
+    data = make_model().to_dict()
+    del data["id"]
+    assert verify_passport_id(data) == {
+        "valid": False,
+        "stored_id": "",
+        "derived_id": "",
+        "reason": "missing_id",
+    }
+
+
 def test_malformed_artifact_hash_rejected() -> None:
     """Malformed (non-digest) artifact_hash is rejected even if stored ID matches a hash of it."""
     m = make_model()
     d = m.to_dict()
     bad_hash = "not-a-digest"
     d["artifact_hash"] = bad_hash
-    # Recompute what a bad derived would be, but we expect rejection before match
+    d["id"] = compute_id(
+        passport_type=d["passport_type"],
+        name=d["name"],
+        version=d["version"],
+        creator_name=d["creator"]["name"],
+        creator_org=d["creator"]["organization"],
+        artifact_hash=bad_hash,
+    )
     result = verify_passport_id(d)
     assert result["valid"] is False
     assert result["reason"] == "malformed_artifact_hash"
