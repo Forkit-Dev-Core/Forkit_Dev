@@ -32,12 +32,12 @@ def verify_passport_id(passport_dict: dict[str, Any]) -> dict[str, Any]:
       - derived_id  (str | None)
       - reason      (str)
     """
-    stored_id = passport_dict.get("id")
+    stored_id = passport_dict.get("id", "")
     if not stored_id:
         return {
             "valid":      False,
             "stored_id":  stored_id,
-            "derived_id": None,
+            "derived_id": "",
             "reason":     "missing_id",
         }
 
