@@ -68,7 +68,7 @@ def kv(k: str, v)  -> None: print(f"  {GR}{k:<24}{R} {v}")
 
 # ── Shared fixture ─────────────────────────────────────────────────────────────
 
-CREATOR = {"name": "Hamza", "organization": "ForkIt"}
+CREATOR = {"name": "Example Maintainer", "organization": "Example Lab"}
 
 backend = "Pydantic v2" if _PYDANTIC_AVAILABLE else "pure-Python dataclass"
 print(f"\n{B}forkit-core — Schema Use Cases  ({backend}){R}")

@@ -13,6 +13,7 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 - `verify_passport_id` now normalises uppercase `artifact_hash` and stored `id`
   before comparison, matching the identity specification. Fixes #10.
+
 - Require non-empty ASCII integer components in two- or three-part passport
   versions, matching the identity specification. Previously accepted malformed
   versions now fail validation in both schema backends, including on load;
