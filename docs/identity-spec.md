@@ -367,3 +367,11 @@ contract.
 External systems can associate aliases, ownership information, and application
 metadata with `passport_id`. These associations are outside the deterministic ID
 derivation defined here.
+
+## Interoperability fixtures
+
+For cross-language examples and executable fixtures, see the draft
+[AI Passport v1 interoperability profile](passport-v1-interoperability.md).
+Use the version rules in section 7 for new passports. When inspecting a legacy
+record, preserve its original version text and stored ID. Follow section 7.1
+for recovery into a separate registry and section 7.2 for lineage references.
