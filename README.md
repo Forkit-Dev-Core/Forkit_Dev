@@ -3,6 +3,8 @@
 **Open-source AI passports with deterministic IDs and lineage.**
 
 Portable passports for AI models and agents: deterministic IDs, provenance links, artifact hashes, lineage records, and CI-friendly validation.
+[Contribution story](https://github.com/Forkit-Dev-Core/footprints/blob/main/CONTRIBUTIONS.md) · Meet the people who built Core and Footprints.
+
 
 ## Try it in 30 seconds
 
