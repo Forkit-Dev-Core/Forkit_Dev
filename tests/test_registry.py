@@ -182,3 +182,60 @@ class TestLocalRegistry:
         assert target.get_agent(agent.id) is not None
         assert exported["cursor"] == 0
         assert exported["items"] == []
+
+
+# [Rule] Test unique prefix resolves
+    def test_resolve_id_unique_prefix(self, registry):
+        m = make_model()
+        pid = registry.register_model(m)
+        prefix = pid[:12]
+        resolved = registry.resolve_id(prefix)
+        assert resolved == pid
+
+    # [Rule] Test full ID still works
+    def test_resolve_id_full_id(self, registry):
+        m = make_model()
+        pid = registry.register_model(m)
+        resolved = registry.resolve_id(pid)
+        assert resolved == pid
+
+    # [Rule] Test non-hex or too-short input is rejected
+    def test_resolve_id_too_short_or_non_hex_rejected(self, registry):
+        assert registry.resolve_id("abc") is None  # Too short (< 8)
+        assert registry.resolve_id("ABCDEFGH1234") is None  # Uppercase not allowed
+        assert registry.resolve_id("abcdefgh-nonhex") is None
+
+# [Rule] Test ambiguous prefix raises ValueError
+    def test_resolve_id_ambiguous_raises_value_error(self, registry):
+        registry.init()
+        
+        id1 = "abcdef0111111111111111111111111111111111111111111111111111111111"
+        id2 = "abcdef0122222222222222222222222222222222222222222222222222222222"
+        
+        path1 = registry.models_dir / f"{id1}.json"
+        path2 = registry.models_dir / f"{id2}.json"
+        
+        path1.write_text(f'{{"id": "{id1}", "name": "model-1", "version": "1.0.0", "task_type": "text-generation", "architecture": "transformer", "creator": {{"name": "Hamza", "organization": "ForkIt"}}}}')
+        path2.write_text(f'{{"id": "{id2}", "name": "model-2", "version": "1.0.0", "task_type": "text-generation", "architecture": "transformer", "creator": {{"name": "Hamza", "organization": "ForkIt"}}}}')
+
+        # Verify that calling resolve_id with the ambiguous prefix raises ValueError
+        with pytest.raises(ValueError, match="Ambiguous prefix"):
+            registry.resolve_id("abcdef01")
+            
+    # [Rule] A typer.testing.CliRunner test showing inspect <prefix> prints passport JSON
+    def test_cli_inspect_with_prefix(self, registry, monkeypatch):
+        from typer.testing import CliRunner
+
+        from forkit.cli.main import app
+
+        m = make_model()
+        pid = registry.register_model(m)
+        prefix = pid[:12]
+
+        # Patch the registry getter in the correct forkit namespace
+        monkeypatch.setattr("forkit.cli.main._registry", lambda: registry)
+
+        runner = CliRunner()
+        result = runner.invoke(app, ["inspect", prefix])
+        assert result.exit_code == 0
+        assert pid in result.output

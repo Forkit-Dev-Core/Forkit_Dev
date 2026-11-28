@@ -169,11 +169,20 @@ def register_agent(yaml_file: Path = _AGENT_YAML_ARGUMENT):
 def inspect(passport_id: str = _INSPECT_ID_ARGUMENT, raw: bool = _INSPECT_RAW_OPTION):
     """Print a passport as JSON; --raw also permits inspection of legacy records."""
     reg = _registry()
+    target = passport_id
+    if not raw:
+        # A partial ID (8 or more lowercase hex characters) names one passport; an ambiguous one is refused (#11).
+        # --raw keeps requiring the full ID and makes no registry writes.
+        try:
+            target = reg.resolve_id(passport_id) or passport_id
+        except ValueError as exc:
+            typer.echo(str(exc), err=True)
+            raise typer.Exit(1) from None
     try:
         if raw:
-            data = reg.get_raw(passport_id)
+            data = reg.get_raw(target)
         else:
-            passport = reg.get(passport_id)
+            passport = reg.get(target)
             data = passport.to_dict() if passport is not None else None
     except ValueError as exc:
         typer.echo(f"Cannot inspect passport: {exc}", err=True)
